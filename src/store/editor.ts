@@ -31,6 +31,8 @@ interface EditorState {
   applyDocMultiSpaces: (value: "none" | "en" | "em") => void;
   replaceFont: (from: string, to: string) => void;
   normalizeFonts: (to: string) => void;
+  revertParagraphField: (id: string, field: "style" | "runs" | keyof ParagraphRules) => void;
+  revertParagraph: (id: string) => void;
 }
 
 function mapParagraphs(blocks: Block[], fn: (p: ParagraphBlock) => ParagraphBlock): Block[] {
@@ -241,6 +243,40 @@ export const useEditor = create<EditorState>((set, get) => ({
         ...doc,
         paragraphStyles: doc.paragraphStyles.map((s) => ({ ...s, font: to })),
         detectedFonts: [{ name: to, count: doc.detectedFonts.reduce((n, f) => n + f.count, 0) }],
+      },
+    });
+  },
+  revertParagraphField: (id, field) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) => {
+          if (p.id !== id || !p.original) return p;
+          if (field === "style") return { ...p, style: p.original.style };
+          if (field === "runs") return { ...p, runs: p.original.runs.map((r) => ({ ...r })) };
+          return { ...p, rules: { ...p.rules, [field]: p.original.rules[field] } };
+        }),
+      },
+    });
+  },
+  revertParagraph: (id) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) =>
+          p.id === id && p.original
+            ? {
+                ...p,
+                style: p.original.style,
+                runs: p.original.runs.map((r) => ({ ...r })),
+                rules: { ...p.original.rules },
+              }
+            : p,
+        ),
       },
     });
   },

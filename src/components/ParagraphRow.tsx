@@ -17,6 +17,21 @@ interface Props {
   compact?: boolean;
 }
 
+const RULE_LABELS: Record<keyof ParagraphRules, string> = {
+  tabsToMargin: "Tabs→indent",
+  softToHard: "Soft→hard",
+  pageBreakBefore: "Page break",
+  keepWithNext: "Keep next",
+  smartQuotes: "Smart quotes",
+  dashes: "Em dashes",
+  trimTrailing: "Trim spaces",
+  multiSpaces: "Multi-space",
+};
+
+function runsText(runs: ParagraphBlock["runs"]) {
+  return runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
+}
+
 export function ParagraphRow({ paragraph: p, compact }: Props) {
   const doc = useEditor((s) => s.doc);
   const selected = useEditor((s) => s.selection.has(p.id));
@@ -24,15 +39,42 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
   const setStyle = useEditor((s) => s.setStyle);
   const setText = useEditor((s) => s.setText);
+  const revertField = useEditor((s) => s.revertParagraphField);
+  const revertAll = useEditor((s) => s.revertParagraph);
 
-  const text = p.runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
+  const text = runsText(p.runs);
   const isEmpty = p.runs.length === 0;
   const styles = doc?.paragraphStyles ?? [];
+
+  // Compute diffs vs original
+  const orig = p.original;
+  const changes: Array<{ key: "style" | "runs" | keyof ParagraphRules; label: string; detail: string }> = [];
+  if (orig) {
+    if (p.style !== orig.style)
+      changes.push({ key: "style", label: "Style", detail: `${orig.style} → ${p.style}` });
+    if (runsText(p.runs) !== runsText(orig.runs))
+      changes.push({ key: "runs", label: "Text", detail: "edited" });
+    (Object.keys(RULE_LABELS) as Array<keyof ParagraphRules>).forEach((k) => {
+      if (p.rules[k] !== orig.rules[k]) {
+        changes.push({
+          key: k,
+          label: RULE_LABELS[k],
+          detail: `${String(orig.rules[k])} → ${String(p.rules[k])}`,
+        });
+      }
+    });
+  }
+
+  const hasChanges = changes.length > 0;
 
   return (
     <div
       className={`group flex gap-3 rounded-md border p-2 ${
-        selected ? "border-primary bg-accent/40" : "border-transparent hover:border-border hover:bg-accent/20"
+        selected
+          ? "border-primary bg-accent/40"
+          : hasChanges
+            ? "border-amber-500/60 bg-amber-500/5"
+            : "border-transparent hover:border-border hover:bg-accent/20"
       } ${compact ? "text-xs" : ""}`}
     >
       <div className="flex flex-col items-center gap-1 pt-1">
@@ -129,6 +171,33 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
             className="mt-1 rounded px-1 py-0.5 text-sm leading-relaxed outline-none focus:bg-background focus:ring-1 focus:ring-ring"
           >
             {text}
+          </div>
+        )}
+
+        {hasChanges && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-amber-500/20 pt-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+              {changes.length} change{changes.length > 1 ? "s" : ""}
+            </span>
+            {changes.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => revertField(p.id, c.key)}
+                title={`Revert: ${c.detail}`}
+                className="group/chg inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+              >
+                <span>{c.label}</span>
+                <span className="opacity-50 group-hover/chg:opacity-100">↺</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => revertAll(p.id)}
+              className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent"
+            >
+              Revert all
+            </button>
           </div>
         )}
       </div>

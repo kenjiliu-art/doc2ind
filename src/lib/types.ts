@@ -61,6 +61,12 @@ export interface ParagraphBlock {
   isItalic?: boolean;
   alignment?: "left" | "center" | "right" | "justify";
   rules: ParagraphRules;
+  /** Snapshot of style/runs/rules right after parsing — used for change tracking & revert. */
+  original?: {
+    style: ParagraphStyle;
+    runs: RunSpan[];
+    rules: ParagraphRules;
+  };
 }
 
 export interface TableCellData {
