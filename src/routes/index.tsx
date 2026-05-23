@@ -46,15 +46,8 @@ function IndexPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border bg-sidebar/60">
-        <div className="mx-auto max-w-5xl px-6 py-5">
-          <h1 className="font-display text-lg font-bold tracking-tight text-primary">
-            Word → InDesign Reformatter
-          </h1>
-        </div>
-      </header>
-
       <main className="mx-auto max-w-3xl px-6 py-16">
+
         <h2 className="font-display text-4xl font-bold tracking-tight text-balance">
           Clean up Word for InDesign in minutes.
         </h2>
