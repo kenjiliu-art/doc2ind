@@ -184,6 +184,37 @@ export const useEditor = create<EditorState>((set, get) => ({
       },
     });
   },
+  replaceFont: (from, to) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        paragraphStyles: doc.paragraphStyles.map((s) =>
+          s.font === from ? { ...s, font: to } : s,
+        ),
+        detectedFonts: doc.detectedFonts
+          .map((f) => (f.name === from ? { ...f, name: to } : f))
+          .reduce<typeof doc.detectedFonts>((acc, f) => {
+            const existing = acc.find((x) => x.name === f.name);
+            if (existing) existing.count += f.count;
+            else acc.push({ ...f });
+            return acc;
+          }, []),
+      },
+    });
+  },
+  normalizeFonts: (to) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        paragraphStyles: doc.paragraphStyles.map((s) => ({ ...s, font: to })),
+        detectedFonts: [{ name: to, count: doc.detectedFonts.reduce((n, f) => n + f.count, 0) }],
+      },
+    });
+  },
 }));
 
 export { findParagraph };
