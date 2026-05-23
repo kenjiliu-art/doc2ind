@@ -457,5 +457,5 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  return { blocks, paragraphStyles, charStyles, detectedFonts };
+  return { blocks, paragraphStyles, charStyles, detectedFonts, footnotes };
 }
