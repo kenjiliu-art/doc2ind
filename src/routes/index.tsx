@@ -46,26 +46,28 @@ function IndexPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="border-b border-border">
+      <header className="border-b border-border bg-sidebar/60">
         <div className="mx-auto max-w-5xl px-6 py-5">
-          <h1 className="text-lg font-semibold">Word → InDesign Reformatter</h1>
+          <h1 className="font-display text-lg font-bold tracking-tight text-primary">
+            Word → InDesign Reformatter
+          </h1>
         </div>
       </header>
 
       <main className="mx-auto max-w-3xl px-6 py-16">
-        <h2 className="text-3xl font-semibold tracking-tight">
+        <h2 className="font-display text-4xl font-bold tracking-tight text-balance">
           Clean up Word for InDesign in minutes.
         </h2>
-        <p className="mt-4 text-muted-foreground">
-          Upload a <code className="font-mono">.docx</code>. Each paragraph is
-          parsed and tagged with a paragraph style and the cleanups it needs —
+        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+          Upload a <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
+          Each paragraph is parsed and tagged with a paragraph style and the cleanups it needs —
           tabs to margins, soft returns to hard, blank lines to page breaks,
           smart quotes, and more. Review or override every line, then export a
           clean Word file plus InDesign Tagged Text.
         </p>
 
         <label
-          className="mt-10 block cursor-pointer rounded-xl border-2 border-dashed border-border p-12 text-center transition-colors hover:border-primary hover:bg-accent/30"
+          className="mt-10 block cursor-pointer rounded-2xl border-2 border-dashed border-accent bg-sidebar/40 p-12 text-center transition-colors hover:border-primary hover:bg-sidebar"
           onDragOver={(e) => e.preventDefault()}
           onDrop={(e) => {
             e.preventDefault();
@@ -82,7 +84,7 @@ function IndexPage() {
               if (f) handleFile(f);
             }}
           />
-          <div className="text-base font-medium">
+          <div className="font-display text-lg font-semibold text-primary">
             {loading ? "Parsing…" : "Drop a .docx file here, or click to choose"}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
@@ -110,7 +112,7 @@ function IndexPage() {
             from blank-line runs.
           </Feature>
           <Feature title="Two outputs">
-            Reformatted <code className="font-mono">.docx</code> plus InDesign
+            Reformatted <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code> plus InDesign
             Tagged Text XML — File → Place and styles map automatically.
           </Feature>
         </div>
@@ -118,6 +120,16 @@ function IndexPage() {
     </div>
   );
 }
+
+function Feature({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="font-display font-semibold text-primary">{title}</div>
+      <div className="mt-1 text-muted-foreground">{children}</div>
+    </div>
+  );
+}
+
 
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
   return (
