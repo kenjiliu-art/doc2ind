@@ -30,6 +30,7 @@ export interface ParagraphRules {
   pageBreakBefore: boolean;
   keepWithNext: boolean;
   smartQuotes: boolean;
+  dashes: boolean;
   trimTrailing: boolean;
 }
 
