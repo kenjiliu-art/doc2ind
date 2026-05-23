@@ -368,5 +368,9 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
     { name: "SmallCaps", smallCaps: true },
   ];
 
-  return { blocks, paragraphStyles, charStyles };
+  const detectedFonts = [...fontCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return { blocks, paragraphStyles, charStyles, detectedFonts };
 }
