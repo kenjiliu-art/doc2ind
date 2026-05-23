@@ -26,7 +26,9 @@ interface EditorState {
   bulkToggleRule: (key: keyof ParagraphRules, value: boolean) => void;
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
-  applyDocCleanup: (keys: Array<keyof ParagraphRules>, value: boolean) => void;
+  applyDocCleanup: (keys: Array<Exclude<keyof ParagraphRules, "multiSpaces">>, value: boolean) => void;
+  bulkSetMultiSpaces: (value: "none" | "en" | "em") => void;
+  applyDocMultiSpaces: (value: "none" | "en" | "em") => void;
   replaceFont: (from: string, to: string) => void;
   normalizeFonts: (to: string) => void;
 }
@@ -179,12 +181,35 @@ export const useEditor = create<EditorState>((set, get) => ({
         blocks: mapParagraphs(doc.blocks, (p) => {
           const rules = { ...p.rules };
           for (const k of keys) {
-            if (k !== "multiSpaces") {
-              (rules as Record<string, unknown>)[k] = value;
-            }
+            (rules as Record<string, unknown>)[k] = value;
           }
           return { ...p, rules };
         }),
+      },
+    });
+  },
+  bulkSetMultiSpaces: (value) => {
+    const { doc, selection } = get();
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) =>
+          selection.has(p.id) ? { ...p, rules: { ...p.rules, multiSpaces: value } } : p,
+        ),
+      },
+    });
+  },
+  applyDocMultiSpaces: (value) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) => ({
+          ...p,
+          rules: { ...p.rules, multiSpaces: value },
+        })),
       },
     });
   },
