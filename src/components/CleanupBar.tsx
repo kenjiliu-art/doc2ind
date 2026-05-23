@@ -2,9 +2,10 @@ import { useEditor } from "@/store/editor";
 import type { ParagraphRules } from "@/lib/types";
 
 const DOC_CLEANUPS: Array<{ keys: Array<keyof ParagraphRules>; label: string }> = [
-  { keys: ["smartQuotes"], label: "Smart quotes everywhere" },
-  { keys: ["trimTrailing"], label: "Trim trailing spaces" },
-  { keys: ["smartQuotes", "trimTrailing"], label: "All cleanups on" },
+  { keys: ["smartQuotes"], label: "Smart quotes" },
+  { keys: ["dashes"], label: "Em dashes" },
+  { keys: ["trimTrailing"], label: "Trim trailing" },
+  { keys: ["smartQuotes", "dashes", "trimTrailing"], label: "All cleanups" },
 ];
 
 export function CleanupBar() {

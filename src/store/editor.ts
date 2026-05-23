@@ -27,6 +27,8 @@ interface EditorState {
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
   applyDocCleanup: (keys: Array<keyof ParagraphRules>, value: boolean) => void;
+  replaceFont: (from: string, to: string) => void;
+  normalizeFonts: (to: string) => void;
 }
 
 function mapParagraphs(blocks: Block[], fn: (p: ParagraphBlock) => ParagraphBlock): Block[] {
@@ -179,6 +181,37 @@ export const useEditor = create<EditorState>((set, get) => ({
           for (const k of keys) rules[k] = value;
           return { ...p, rules };
         }),
+      },
+    });
+  },
+  replaceFont: (from, to) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        paragraphStyles: doc.paragraphStyles.map((s) =>
+          s.font === from ? { ...s, font: to } : s,
+        ),
+        detectedFonts: doc.detectedFonts
+          .map((f) => (f.name === from ? { ...f, name: to } : f))
+          .reduce<typeof doc.detectedFonts>((acc, f) => {
+            const existing = acc.find((x) => x.name === f.name);
+            if (existing) existing.count += f.count;
+            else acc.push({ ...f });
+            return acc;
+          }, []),
+      },
+    });
+  },
+  normalizeFonts: (to) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        paragraphStyles: doc.paragraphStyles.map((s) => ({ ...s, font: to })),
+        detectedFonts: [{ name: to, count: doc.detectedFonts.reduce((n, f) => n + f.count, 0) }],
       },
     });
   },

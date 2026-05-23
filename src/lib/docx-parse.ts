@@ -24,6 +24,7 @@ const parser = new XMLParser({
 
 let idCounter = 0;
 const nextId = () => `b${++idCounter}`;
+const fontCounts = new Map<string, number>();
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
@@ -136,6 +137,7 @@ function parseRun(rNode: unknown): RunInfo {
           if (val) info.fontSize = parseInt(val, 10);
         } else if (kt === "w:rFonts") {
           info.font = getAttr(k)["@_w:ascii"];
+          if (info.font) fontCounts.set(info.font, (fontCounts.get(info.font) ?? 0) + 1);
         }
       }
     } else if (t === "w:t") {
@@ -292,6 +294,7 @@ function parseTable(tblNode: unknown): TableBlock {
 
 export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   idCounter = 0;
+  fontCounts.clear();
   const zip = await JSZip.loadAsync(file);
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
@@ -365,5 +368,9 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
     { name: "SmallCaps", smallCaps: true },
   ];
 
-  return { blocks, paragraphStyles, charStyles };
+  const detectedFonts = [...fontCounts.entries()]
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+
+  return { blocks, paragraphStyles, charStyles, detectedFonts };
 }

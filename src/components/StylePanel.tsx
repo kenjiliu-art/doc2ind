@@ -1,10 +1,14 @@
 import { useEditor } from "@/store/editor";
 import type { StyleDef } from "@/lib/types";
+import { useState } from "react";
 
 export function StylePanel() {
   const doc = useEditor((s) => s.doc);
   const updateStyleDef = useEditor((s) => s.updateStyleDef);
   const renameStyle = useEditor((s) => s.renameStyle);
+  const replaceFont = useEditor((s) => s.replaceFont);
+  const normalizeFonts = useEditor((s) => s.normalizeFonts);
+  const [normalizeTarget, setNormalizeTarget] = useState("Georgia");
 
   if (!doc) return null;
 
@@ -22,6 +26,47 @@ export function StylePanel() {
             onRename={(newName) => renameStyle(s.name, newName)}
           />
         ))}
+      </div>
+      <div className="border-t border-border px-4 py-3 text-sm font-semibold">
+        Fonts in document
+      </div>
+      <div className="space-y-2 px-4 py-3 text-xs">
+        {doc.detectedFonts.length === 0 && (
+          <div className="text-muted-foreground">No direct font formatting detected.</div>
+        )}
+        {doc.detectedFonts.map((f) => (
+          <div key={f.name} className="flex items-center gap-2">
+            <span className="flex-1 truncate" title={f.name}>
+              {f.name}
+            </span>
+            <span className="text-muted-foreground">{f.count}</span>
+            <input
+              defaultValue={f.name}
+              onBlur={(e) => {
+                const v = e.target.value.trim();
+                if (v && v !== f.name) replaceFont(f.name, v);
+              }}
+              className="w-24 rounded border border-border bg-background px-1.5 py-0.5"
+              title="Rename / replace this font"
+            />
+          </div>
+        ))}
+        {doc.detectedFonts.length > 1 && (
+          <div className="mt-2 flex items-center gap-2 border-t border-border pt-2">
+            <span className="text-muted-foreground">Normalize all →</span>
+            <input
+              value={normalizeTarget}
+              onChange={(e) => setNormalizeTarget(e.target.value)}
+              className="w-24 rounded border border-border bg-background px-1.5 py-0.5"
+            />
+            <button
+              onClick={() => normalizeTarget && normalizeFonts(normalizeTarget)}
+              className="rounded border border-border bg-background px-2 py-0.5 hover:bg-accent"
+            >
+              Apply
+            </button>
+          </div>
+        )}
       </div>
       <div className="border-t border-border px-4 py-3 text-sm font-semibold">
         Character styles

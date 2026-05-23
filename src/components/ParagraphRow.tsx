@@ -8,6 +8,7 @@ const RULE_LABELS: Array<{ key: keyof ParagraphRules; label: string; title: stri
   { key: "pageBreakBefore", label: "Page break", title: "Insert page break before this paragraph" },
   { key: "keepWithNext", label: "Keep next", title: "Keep with next paragraph" },
   { key: "smartQuotes", label: "Smart quotes", title: "Standardize straight quotes to curly" },
+  { key: "dashes", label: "Em dashes", title: "Convert -- and --- to em dash" },
   { key: "trimTrailing", label: "Trim spaces", title: "Remove trailing whitespace" },
 ];
 

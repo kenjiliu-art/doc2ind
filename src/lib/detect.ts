@@ -7,6 +7,7 @@ export function defaultRulesFor(): ParagraphRules {
     pageBreakBefore: false,
     keepWithNext: false,
     smartQuotes: true,
+    dashes: true,
     trimTrailing: true,
   };
 }

@@ -1,5 +1,5 @@
 import type { Block, ParagraphBlock, ParsedDoc, RunSpan, StyleDef, CharStyleDef } from "./types";
-import { smartQuotes, trimTrailing } from "./cleanup";
+import { smartQuotes, trimTrailing, dashes } from "./cleanup";
 
 function escapeTagged(text: string): string {
   // InDesign Tagged Text uses < and > for tags; escape them in content
@@ -40,6 +40,7 @@ function charStyleDecl(c: CharStyleDef): string {
 function applyCleanup(text: string, p: ParagraphBlock): string {
   let s = text;
   if (p.rules.smartQuotes) s = smartQuotes(s);
+  if (p.rules.dashes) s = dashes(s);
   if (p.rules.trimTrailing) s = trimTrailing(s);
   return s;
 }

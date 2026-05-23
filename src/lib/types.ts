@@ -30,6 +30,7 @@ export interface ParagraphRules {
   pageBreakBefore: boolean;
   keepWithNext: boolean;
   smartQuotes: boolean;
+  dashes: boolean;
   trimTrailing: boolean;
 }
 
@@ -97,8 +98,14 @@ export interface CharStyleDef {
   smallCaps?: boolean;
 }
 
+export interface FontUsage {
+  name: string;
+  count: number;
+}
+
 export interface ParsedDoc {
   blocks: Block[];
   paragraphStyles: StyleDef[];
   charStyles: CharStyleDef[];
+  detectedFonts: FontUsage[];
 }
