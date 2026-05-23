@@ -137,6 +137,7 @@ function parseRun(rNode: unknown): RunInfo {
           if (val) info.fontSize = parseInt(val, 10);
         } else if (kt === "w:rFonts") {
           info.font = getAttr(k)["@_w:ascii"];
+          if (info.font) fontCounts.set(info.font, (fontCounts.get(info.font) ?? 0) + 1);
         }
       }
     } else if (t === "w:t") {
