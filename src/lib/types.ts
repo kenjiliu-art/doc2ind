@@ -22,6 +22,8 @@ export type CharStyleName =
 export interface RunSpan {
   text: string;
   charStyle?: CharStyleName;
+  /** Reference to a footnote id when this run is a footnote anchor. */
+  footnoteRef?: number;
 }
 
 export interface ParagraphRules {
