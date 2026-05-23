@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { saveAs } from "file-saver";
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
@@ -9,7 +9,8 @@ import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
 import { BulkActionsBar } from "@/components/BulkActionsBar";
 import { CleanupBar } from "@/components/CleanupBar";
-import { FileText, Download, FileCode2 } from "lucide-react";
+import { FileText, Download, FileCode2, Minimize2, Maximize2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/edit")({
   head: () => ({
