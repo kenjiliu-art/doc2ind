@@ -40,15 +40,22 @@ function runsToDocxRuns(
   spans: RunSpan[],
   p: ParagraphBlock,
   charStyles: CharStyleDef[],
-): TextRun[] {
+  footnoteIdMap: Map<number, number>,
+): (TextRun | FootnoteReferenceRun)[] {
   const csMap = new Map(charStyles.map((c) => [c.name, c]));
-  const out: TextRun[] = [];
+  const out: (TextRun | FootnoteReferenceRun)[] = [];
   for (const s of spans) {
+    if (s.footnoteRef !== undefined) {
+      const mapped = footnoteIdMap.get(s.footnoteRef);
+      if (mapped !== undefined) out.push(new FootnoteReferenceRun(mapped));
+      continue;
+    }
     if (s.text === "\n") {
       // soft break inside paragraph - only kept if user did NOT enable softToHard
       out.push(new TextRun({ text: "", break: 1 }));
       continue;
     }
+    if (!s.text) continue;
     const cs = s.charStyle ? csMap.get(s.charStyle) : undefined;
     const opts: IRunOptions = {
       text: applyCleanup(s.text, p),
