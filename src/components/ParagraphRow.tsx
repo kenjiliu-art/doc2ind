@@ -2,7 +2,7 @@ import { useEditor } from "@/store/editor";
 import type { ParagraphBlock, ParagraphRules } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const RULE_LABELS: Array<{ key: keyof ParagraphRules; label: string; title: string }> = [
+const BOOL_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string; title: string }> = [
   { key: "tabsToMargin", label: "Tabs→indent", title: "Convert leading tabs and first-line indent to paragraph margin" },
   { key: "softToHard", label: "Soft→hard", title: "Split soft line breaks into separate paragraphs" },
   { key: "pageBreakBefore", label: "Page break", title: "Insert page break before this paragraph" },
