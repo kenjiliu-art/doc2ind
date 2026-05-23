@@ -28,6 +28,15 @@ function EditPage() {
   const fileName = useEditor((s) => s.fileName);
   const selectionCount = useEditor((s) => s.selection.size);
 
+  const [compact, setCompact] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("edit-compact-header") === "true";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("edit-compact-header", String(compact));
+  }, [compact]);
+
   const stats = useMemo(() => {
     if (!doc) return { paragraphs: 0, words: 0 };
     let paragraphs = 0;
