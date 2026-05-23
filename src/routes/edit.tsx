@@ -28,27 +28,29 @@ function EditPage() {
   const selectionCount = useEditor((s) => s.selection.size);
 
   const stats = useMemo(() => {
-    if (!doc) return { paragraphs: 0, changed: 0, words: 0 };
+    if (!doc) return { paragraphs: 0, words: 0 };
     let paragraphs = 0;
-    let changed = 0;
     let words = 0;
-    const walk = (p: { original?: unknown; runs: Array<{ text: string }> }) => {
+    const walk = (p: { runs: Array<{ text: string }> }) => {
       paragraphs++;
-      const text = p.runs.map((r) => r.text).join("");
-      words += text.trim().split(/\s+/).filter(Boolean).length;
-      if (p.original) {
-        // diff handled inside ParagraphRow; cheap heuristic here for counter
-        // (keeps logic local, just shows a friendly number in the header)
-        changed++;
+      for (const r of p.runs) {
+        // Cheap word count without regex/split allocation per call.
+        let inWord = false;
+        for (let i = 0; i < r.text.length; i++) {
+          const c = r.text.charCodeAt(i);
+          const isSpace = c === 32 || c === 9 || c === 10 || c === 13;
+          if (!isSpace && !inWord) {
+            words++;
+            inWord = true;
+          } else if (isSpace) inWord = false;
+        }
       }
     };
     doc.blocks.forEach((b) => {
       if (b.kind === "paragraph") walk(b);
       else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(walk)));
     });
-    // Subtract the always-present `original` baseline — only flag real diffs.
-    // ParagraphRow does the precise per-row diff; this is just a soft hint.
-    return { paragraphs, changed: 0, words };
+    return { paragraphs, words };
   }, [doc]);
 
   if (!doc) {
