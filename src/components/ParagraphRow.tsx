@@ -1,6 +1,8 @@
 import { useEditor } from "@/store/editor";
-import type { ParagraphBlock, ParagraphRules } from "@/lib/types";
+import type { ParagraphBlock, ParagraphRules, StyleDef } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
+
+const EMPTY_STYLES: StyleDef[] = [];
 
 const BOOL_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string; title: string }> = [
   { key: "tabsToMargin", label: "Tabs→indent", title: "Convert leading tabs and first-line indent to paragraph margin" },
