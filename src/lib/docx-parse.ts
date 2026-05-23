@@ -104,6 +104,7 @@ interface RunInfo {
   hasBreak: boolean;
   fontSize?: number;
   font?: string;
+  footnoteRef?: number;
 }
 
 function parseRun(rNode: unknown): RunInfo {
@@ -156,6 +157,9 @@ function parseRun(rNode: unknown): RunInfo {
       } else {
         info.text += "\n"; // soft break marker
       }
+    } else if (t === "w:footnoteReference") {
+      const id = parseInt(getAttr(child)["@_w:id"] ?? "", 10);
+      if (!Number.isNaN(id)) info.footnoteRef = id;
     }
   }
   return info;
