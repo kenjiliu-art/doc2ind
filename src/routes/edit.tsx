@@ -9,6 +9,7 @@ import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
 import { BulkActionsBar } from "@/components/BulkActionsBar";
 import { CleanupBar } from "@/components/CleanupBar";
+import { FileText, Download, FileCode2 } from "lucide-react";
 
 export const Route = createFileRoute("/edit")({
   head: () => ({
@@ -24,18 +25,30 @@ function EditPage() {
   const navigate = useNavigate();
   const doc = useEditor((s) => s.doc);
   const fileName = useEditor((s) => s.fileName);
+  const selectionCount = useEditor((s) => s.selection.size);
 
-  const allParagraphIds = useMemo(() => {
-    if (!doc) return [];
-    const ids: string[] = [];
+  const stats = useMemo(() => {
+    if (!doc) return { paragraphs: 0, changed: 0, words: 0 };
+    let paragraphs = 0;
+    let changed = 0;
+    let words = 0;
+    const walk = (p: { original?: unknown; runs: Array<{ text: string }> }) => {
+      paragraphs++;
+      const text = p.runs.map((r) => r.text).join("");
+      words += text.trim().split(/\s+/).filter(Boolean).length;
+      if (p.original) {
+        // diff handled inside ParagraphRow; cheap heuristic here for counter
+        // (keeps logic local, just shows a friendly number in the header)
+        changed++;
+      }
+    };
     doc.blocks.forEach((b) => {
-      if (b.kind === "paragraph") ids.push(b.id);
-      else
-        b.rows.forEach((r) =>
-          r.forEach((c) => c.paragraphs.forEach((p) => ids.push(p.id))),
-        );
+      if (b.kind === "paragraph") walk(b);
+      else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(walk)));
     });
-    return ids;
+    // Subtract the always-present `original` baseline — only flag real diffs.
+    // ParagraphRow does the precise per-row diff; this is just a soft hint.
+    return { paragraphs, changed: 0, words };
   }, [doc]);
 
   if (!doc) {
@@ -63,56 +76,133 @@ function EditPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background text-foreground">
-      <header className="sticky top-0 z-20 border-b border-border bg-background/95 backdrop-blur">
-        <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-6 py-3">
-          <div className="flex items-center gap-3">
-            <button
-              className="text-sm text-muted-foreground hover:text-foreground"
-              onClick={() => navigate({ to: "/" })}
-            >
-              ← New file
-            </button>
-            <span className="text-sm font-medium">{fileName}.docx</span>
-            <span className="text-xs text-muted-foreground">
-              {allParagraphIds.length} paragraphs
-            </span>
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      {/* ─────────── Sidebar ─────────── */}
+      <aside className="hidden w-80 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
+        <div className="border-b border-border px-6 py-5">
+          <button
+            className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+            onClick={() => navigate({ to: "/" })}
+          >
+            ← New file
+          </button>
+          <div className="mt-3 flex items-start gap-3">
+            <div className="rounded-md bg-accent/70 p-2 text-primary-foreground">
+              <FileText className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">
+                {fileName}.docx
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {stats.words.toLocaleString()} words · {stats.paragraphs} paragraphs
+              </p>
+            </div>
           </div>
-          <div className="flex gap-2">
+        </div>
+
+        <div className="flex-1 space-y-6 overflow-y-auto px-2 py-4">
+          <SidebarSection title="Cleanup rules">
+            <div className="rounded-lg bg-background/60">
+              <CleanupBar />
+            </div>
+          </SidebarSection>
+
+          <SidebarSection title="Mapped styles">
+            <StylePanel />
+          </SidebarSection>
+        </div>
+
+        <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-6 py-5">
+          <button
+            onClick={onExportDocx}
+            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+          >
+            <Download className="h-4 w-4" />
+            Export for InDesign
+          </button>
+          <button
+            onClick={onExportTagged}
+            className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
+          >
+            <FileCode2 className="h-4 w-4" />
+            Tagged Text (.txt)
+          </button>
+        </div>
+      </aside>
+
+      {/* ─────────── Main ─────────── */}
+      <main className="relative flex h-full min-w-0 flex-1 flex-col overflow-hidden">
+        <header className="z-10 flex h-16 shrink-0 items-center justify-between border-b border-border bg-background/60 px-8 backdrop-blur">
+          <div className="flex items-center gap-5">
+            <h1 className="font-display text-lg font-bold tracking-tight">
+              Review changes
+            </h1>
+            <span className="hidden h-4 w-px bg-border sm:block" />
+            <p className="hidden text-xs text-muted-foreground sm:block">
+              Every paragraph below is reviewable — toggle per line, or use bulk actions.
+            </p>
+          </div>
+          <div className="flex items-center gap-2 lg:hidden">
             <button
               onClick={onExportTagged}
-              className="rounded-md border border-border bg-background px-3 py-1.5 text-sm font-medium hover:bg-accent"
+              className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted"
             >
-              Export Tagged Text
+              Tagged Text
             </button>
             <button
               onClick={onExportDocx}
-              className="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
             >
-              Export .docx
+              Export
             </button>
           </div>
-        </div>
-        <CleanupBar />
-        <BulkActionsBar />
-      </header>
+        </header>
 
-      <div className="mx-auto flex w-full max-w-[1600px] flex-1 gap-6 px-6 py-6">
-        <main className="min-w-0 flex-1 space-y-1">
-          {doc.blocks.map((b) =>
-            b.kind === "paragraph" ? (
-              <ParagraphRow key={b.id} paragraph={b} />
-            ) : (
-              <TableRowView key={b.id} table={b} />
-            ),
-          )}
-        </main>
-        <aside className="hidden w-80 shrink-0 lg:block">
-          <div className="sticky top-32">
-            <StylePanel />
+        <div className="flex-1 overflow-y-auto px-6 py-10 pb-40 sm:px-10">
+          <div className="mx-auto max-w-3xl space-y-4">
+            {doc.blocks.map((b) =>
+              b.kind === "paragraph" ? (
+                <ParagraphRow key={b.id} paragraph={b} />
+              ) : (
+                <TableRowView key={b.id} table={b} />
+              ),
+            )}
           </div>
-        </aside>
-      </div>
+        </div>
+
+        {/* Floating bulk-action footer (always visible — friendly affordance) */}
+        <div className="pointer-events-none absolute inset-x-0 bottom-6 z-20 flex justify-center px-4">
+          <div className="pointer-events-auto w-full max-w-3xl rounded-2xl border border-border bg-background/95 shadow-lg ring-1 ring-accent/30 backdrop-blur">
+            <div className="flex items-center gap-2 px-3 py-1.5">
+              <span className="font-display text-xs font-bold uppercase tracking-wider text-muted-foreground">
+                {selectionCount > 0 ? `${selectionCount} selected` : "Bulk actions"}
+              </span>
+              <div className="h-4 w-px bg-border" />
+              <div className="min-w-0 flex-1 overflow-x-auto">
+                <BulkActionsBar />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
+  );
+}
+
+function SidebarSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="px-4">
+      <h3 className="mb-2 px-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+        {title}
+      </h3>
+      {children}
+    </section>
   );
 }
