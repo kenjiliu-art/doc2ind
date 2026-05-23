@@ -27,6 +27,8 @@ interface EditorState {
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
   applyDocCleanup: (keys: Array<keyof ParagraphRules>, value: boolean) => void;
+  replaceFont: (from: string, to: string) => void;
+  normalizeFonts: (to: string) => void;
 }
 
 function mapParagraphs(blocks: Block[], fn: (p: ParagraphBlock) => ParagraphBlock): Block[] {
