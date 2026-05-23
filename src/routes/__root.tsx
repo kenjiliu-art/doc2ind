@@ -110,10 +110,16 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // The /edit route owns a full-screen workspace layout; skip the global
+  // header there so it doesn't push the editor off-viewport.
+  const showHeader = !pathname.startsWith("/edit");
 
   return (
     <QueryClientProvider client={queryClient}>
+      {showHeader && <StudioHeader />}
       <Outlet />
     </QueryClientProvider>
   );
 }
+
