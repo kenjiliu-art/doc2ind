@@ -127,13 +127,15 @@ function paragraphToDocx(
       pageBreakBefore: idx === 0 && p.rules.pageBreakBefore,
       keepNext: p.rules.keepWithNext,
       alignment: p.alignment ? alignmentMap[p.alignment] : undefined,
+      ...(leftIndent || firstLine
+        ? {
+            indent: {
+              left: leftIndent || undefined,
+              firstLine: firstLine || undefined,
+            },
+          }
+        : {}),
     };
-    if (leftIndent || firstLine) {
-      opts.indent = {
-        left: leftIndent || undefined,
-        firstLine: firstLine || undefined,
-      };
-    }
     out.push(new Paragraph(opts));
   });
   return out;
