@@ -159,10 +159,14 @@ export function buildTaggedText(doc: ParsedDoc): string {
     .map(charStyleDecl)
     .join("\r\n");
 
+  const footnoteMap = new Map<number, ParagraphBlock[]>();
+  for (const fn of doc.footnotes) footnoteMap.set(fn.id, fn.paragraphs);
+  const listCounter = { n: 0 };
+
   let body = "";
   for (const block of doc.blocks) {
     if (block.kind === "paragraph") {
-      body += paragraphToTagged(block);
+      body += paragraphToTagged(block, footnoteMap, listCounter);
     } else {
       // InDesign Tagged Text table
       const rows = block.rows.length;
@@ -173,7 +177,7 @@ export function buildTaggedText(doc: ParsedDoc): string {
         for (const cell of row) {
           body += `<CellStart:1,1>`;
           for (const cp of cell.paragraphs) {
-            body += paragraphToTagged(cp);
+            body += paragraphToTagged(cp, footnoteMap, listCounter);
           }
           body += `<CellEnd:>`;
         }
