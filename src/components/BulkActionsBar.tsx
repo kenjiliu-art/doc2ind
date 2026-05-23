@@ -1,6 +1,5 @@
 import { useEditor } from "@/store/editor";
-import type { ParagraphRules } from "@/lib/types";
-import { useMemo } from "react";
+import type { ParagraphRules, StyleDef } from "@/lib/types";
 
 const BULK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string }> = [
   { key: "tabsToMargin", label: "Tabs→indent" },
@@ -12,17 +11,19 @@ const BULK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; lab
   { key: "trimTrailing", label: "Trim trailing" },
 ];
 
+const EMPTY_STYLES: StyleDef[] = [];
+
 export function BulkActionsBar() {
-  const doc = useEditor((s) => s.doc);
-  const selection = useEditor((s) => s.selection);
+  // Narrow selectors — avoid re-rendering on every doc mutation.
+  const styles = useEditor((s) => s.doc?.paragraphStyles) ?? EMPTY_STYLES;
+  const selectionSize = useEditor((s) => s.selection.size);
   const selectAll = useEditor((s) => s.selectAll);
   const clearSelection = useEditor((s) => s.clearSelection);
   const bulkSetStyle = useEditor((s) => s.bulkSetStyle);
   const bulkToggleRule = useEditor((s) => s.bulkToggleRule);
   const bulkSetMultiSpaces = useEditor((s) => s.bulkSetMultiSpaces);
 
-  const count = selection.size;
-  const styles = useMemo(() => doc?.paragraphStyles ?? [], [doc]);
+  const count = selectionSize;
 
   return (
     <div className="border-t border-border bg-muted/40">
