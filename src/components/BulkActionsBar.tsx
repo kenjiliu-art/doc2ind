@@ -8,6 +8,7 @@ const BULK_RULES: Array<{ key: keyof ParagraphRules; label: string }> = [
   { key: "pageBreakBefore", label: "Page break before" },
   { key: "keepWithNext", label: "Keep with next" },
   { key: "smartQuotes", label: "Smart quotes" },
+  { key: "dashes", label: "Em dashes" },
   { key: "trimTrailing", label: "Trim trailing" },
 ];
 
