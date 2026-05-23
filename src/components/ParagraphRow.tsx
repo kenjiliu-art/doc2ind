@@ -17,6 +17,21 @@ interface Props {
   compact?: boolean;
 }
 
+const RULE_LABELS: Record<keyof ParagraphRules, string> = {
+  tabsToMargin: "Tabs→indent",
+  softToHard: "Soft→hard",
+  pageBreakBefore: "Page break",
+  keepWithNext: "Keep next",
+  smartQuotes: "Smart quotes",
+  dashes: "Em dashes",
+  trimTrailing: "Trim spaces",
+  multiSpaces: "Multi-space",
+};
+
+function runsText(runs: ParagraphBlock["runs"]) {
+  return runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
+}
+
 export function ParagraphRow({ paragraph: p, compact }: Props) {
   const doc = useEditor((s) => s.doc);
   const selected = useEditor((s) => s.selection.has(p.id));
@@ -24,10 +39,31 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
   const setStyle = useEditor((s) => s.setStyle);
   const setText = useEditor((s) => s.setText);
+  const revertField = useEditor((s) => s.revertParagraphField);
+  const revertAll = useEditor((s) => s.revertParagraph);
 
-  const text = p.runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
+  const text = runsText(p.runs);
   const isEmpty = p.runs.length === 0;
   const styles = doc?.paragraphStyles ?? [];
+
+  // Compute diffs vs original
+  const orig = p.original;
+  const changes: Array<{ key: "style" | "runs" | keyof ParagraphRules; label: string; detail: string }> = [];
+  if (orig) {
+    if (p.style !== orig.style)
+      changes.push({ key: "style", label: "Style", detail: `${orig.style} → ${p.style}` });
+    if (runsText(p.runs) !== runsText(orig.runs))
+      changes.push({ key: "runs", label: "Text", detail: "edited" });
+    (Object.keys(RULE_LABELS) as Array<keyof ParagraphRules>).forEach((k) => {
+      if (p.rules[k] !== orig.rules[k]) {
+        changes.push({
+          key: k,
+          label: RULE_LABELS[k],
+          detail: `${String(orig.rules[k])} → ${String(p.rules[k])}`,
+        });
+      }
+    });
+  }
 
   return (
     <div
