@@ -50,13 +50,13 @@ function runsToDocxRuns(
     const cs = s.charStyle ? csMap.get(s.charStyle) : undefined;
     const opts: IRunOptions = {
       text: applyCleanup(s.text, p),
+      ...(cs?.bold ? { bold: true } : {}),
+      ...(cs?.italic ? { italics: true } : {}),
+      ...(cs?.underline ? { underline: {} } : {}),
+      ...(cs?.superscript ? { superScript: true } : {}),
+      ...(cs?.subscript ? { subScript: true } : {}),
+      ...(cs?.smallCaps ? { smallCaps: true } : {}),
     };
-    if (cs?.bold) opts.bold = true;
-    if (cs?.italic) opts.italics = true;
-    if (cs?.underline) opts.underline = {};
-    if (cs?.superscript) opts.superScript = true;
-    if (cs?.subscript) opts.subScript = true;
-    if (cs?.smallCaps) opts.smallCaps = true;
     out.push(new TextRun(opts));
   }
   return out;
