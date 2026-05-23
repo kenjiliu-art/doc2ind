@@ -62,6 +62,10 @@ export interface ParagraphBlock {
   isBold?: boolean;
   isItalic?: boolean;
   alignment?: "left" | "center" | "right" | "justify";
+  /** True when the paragraph immediately follows a section break in the source. */
+  sectionBreakBefore?: boolean;
+  /** When set, paragraph is part of a normalized list. */
+  listKind?: "bullet" | "number";
   rules: ParagraphRules;
   /** Snapshot of style/runs/rules right after parsing — used for change tracking & revert. */
   original?: {
