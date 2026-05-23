@@ -318,6 +318,7 @@ function parseTable(tblNode: unknown): TableBlock {
 export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   idCounter = 0;
   fontCounts.clear();
+  sectionBreakSeen = false;
   const zip = await JSZip.loadAsync(file);
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
@@ -340,34 +341,93 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   const bodyChildren = body as unknown[];
 
   const rawBlocks: Block[] = [];
+  const sectionAfterIdx = new Set<number>();
   for (const child of bodyChildren) {
     const t = tagOf(child);
     if (t === "w:p") {
+      sectionBreakSeen = false;
       const p = parseParagraph(child);
-      if (p) rawBlocks.push(p);
+      if (p) {
+        rawBlocks.push(p);
+        if (sectionBreakSeen) sectionAfterIdx.add(rawBlocks.length - 1);
+      }
     } else if (t === "w:tbl") {
       rawBlocks.push(parseTable(child));
     }
   }
 
-  // Compute blanksBefore for paragraph blocks
+  // Compute blanksBefore for paragraph blocks; promote section breaks to page break
   const blocks: Block[] = [];
   let blankCount = 0;
-  for (const b of rawBlocks) {
+  let pendingSectionBreak = false;
+  for (let i = 0; i < rawBlocks.length; i++) {
+    const b = rawBlocks[i];
     if (b.kind === "paragraph" && b.runs.length === 0) {
       blankCount++;
+      if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
       continue;
     }
     if (b.kind === "paragraph") {
       b.blanksBefore = blankCount;
-      // Auto-rule: collapse blanks into page break if 2+
       if (blankCount >= 2) b.rules.pageBreakBefore = true;
       if (b.hasSoftBreaks) b.rules.softToHard = true;
       if (b.leadingTabs > 0 || (b.firstLineIndent ?? 0) > 0) b.rules.tabsToMargin = true;
+      if (pendingSectionBreak) {
+        b.sectionBreakBefore = true;
+        b.rules.pageBreakBefore = true;
+      }
     }
+    if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
+    else pendingSectionBreak = false;
     blankCount = 0;
     blocks.push(b);
   }
+
+  // Parse footnotes (if present)
+  const footnotes: import("./types").Footnote[] = [];
+  const footnotesXml = await zip.file("word/footnotes.xml")?.async("string");
+  if (footnotesXml) {
+    const fnParsed = parser.parse(footnotesXml) as unknown[];
+    for (const item of fnParsed) {
+      if (!item || typeof item !== "object") continue;
+      const root = (item as Record<string, unknown>)["w:footnotes"];
+      if (!Array.isArray(root)) continue;
+      for (const fn of root) {
+        if (!fn || typeof fn !== "object") continue;
+        if (tagOf(fn) !== "w:footnote") continue;
+        const attrs = getAttr(fn);
+        const id = parseInt(attrs["@_w:id"] ?? "", 10);
+        const type = attrs["@_w:type"];
+        if (Number.isNaN(id) || id < 0 || type === "separator" || type === "continuationSeparator") continue;
+        const fnKids = findTagChildren(fn, "w:footnote");
+        const paragraphs: ParagraphBlock[] = [];
+        for (const fk of fnKids) {
+          if (tagOf(fk) === "w:p") {
+            const p = parseParagraph(fk);
+            if (p && p.runs.length > 0) paragraphs.push(p);
+          }
+        }
+        if (paragraphs.length) footnotes.push({ id, paragraphs });
+      }
+    }
+  }
+
+  // Snapshot original state for change tracking (post-parse baseline)
+  const snapshot = (p: ParagraphBlock) => {
+    p.original = {
+      style: p.style,
+      runs: p.runs.map((r) => ({ ...r })),
+      rules: { ...p.rules },
+    };
+  };
+  for (const b of blocks) {
+    if (b.kind === "paragraph") snapshot(b);
+    else
+      for (const row of b.rows)
+        for (const cell of row)
+          for (const p of cell.paragraphs) snapshot(p);
+  }
+  for (const fn of footnotes) for (const p of fn.paragraphs) snapshot(p);
 
   // Snapshot original state for change tracking (post-parse baseline)
   const snapshot = (p: ParagraphBlock) => {
