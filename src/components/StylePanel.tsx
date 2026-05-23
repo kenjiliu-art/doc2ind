@@ -1,10 +1,14 @@
 import { useEditor } from "@/store/editor";
 import type { StyleDef } from "@/lib/types";
+import { useState } from "react";
 
 export function StylePanel() {
   const doc = useEditor((s) => s.doc);
   const updateStyleDef = useEditor((s) => s.updateStyleDef);
   const renameStyle = useEditor((s) => s.renameStyle);
+  const replaceFont = useEditor((s) => s.replaceFont);
+  const normalizeFonts = useEditor((s) => s.normalizeFonts);
+  const [normalizeTarget, setNormalizeTarget] = useState("Georgia");
 
   if (!doc) return null;
 
