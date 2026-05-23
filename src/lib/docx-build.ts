@@ -81,6 +81,7 @@ function styleNameToHeading(name: string): (typeof HeadingLevel)[keyof typeof He
 function paragraphToDocx(
   p: ParagraphBlock,
   charStyles: CharStyleDef[],
+  footnoteIdMap: Map<number, number>,
 ): Paragraph[] {
   if (p.runs.length === 0) {
     return [new Paragraph({ children: [] })];
@@ -129,13 +130,18 @@ function paragraphToDocx(
       }
     }
 
+    const numbering = p.listKind
+      ? { reference: p.listKind === "bullet" ? "lov-bullets" : "lov-numbers", level: 0 }
+      : undefined;
+
     const opts: IParagraphOptions = {
-      children: runsToDocxRuns(spans, p, charStyles),
-      style: styleNameToHeading(p.style) ? undefined : styleIdFor(p.style),
+      children: runsToDocxRuns(spans, p, charStyles, footnoteIdMap),
+      style: styleNameToHeading(p.style) || p.listKind ? undefined : styleIdFor(p.style),
       heading: styleNameToHeading(p.style),
       pageBreakBefore: idx === 0 && p.rules.pageBreakBefore,
       keepNext: p.rules.keepWithNext,
       alignment: p.alignment ? alignmentMap[p.alignment] : undefined,
+      ...(numbering ? { numbering } : {}),
       ...(leftIndent || firstLine
         ? {
             indent: {
@@ -179,10 +185,21 @@ export async function buildDocx(doc: ParsedDoc): Promise<Blob> {
     })),
   };
 
+  // Build footnote map: source id -> docx-js footnote key (numeric)
+  const footnoteIdMap = new Map<number, number>();
+  const footnotesConfig: Record<number, { children: Paragraph[] }> = {};
+  doc.footnotes.forEach((fn, idx) => {
+    const key = idx + 1;
+    footnoteIdMap.set(fn.id, key);
+    footnotesConfig[key] = {
+      children: fn.paragraphs.flatMap((fp) => paragraphToDocx(fp, doc.charStyles, footnoteIdMap)),
+    };
+  });
+
   const children: (Paragraph | Table)[] = [];
   for (const block of doc.blocks) {
     if (block.kind === "paragraph") {
-      children.push(...paragraphToDocx(block, doc.charStyles));
+      children.push(...paragraphToDocx(block, doc.charStyles, footnoteIdMap));
     } else if (block.kind === "table") {
       children.push(
         new Table({
@@ -196,7 +213,7 @@ export async function buildDocx(doc: ParsedDoc): Promise<Blob> {
                       children:
                         cell.paragraphs.length > 0
                           ? cell.paragraphs.flatMap((cp) =>
-                              paragraphToDocx(cp, doc.charStyles),
+                              paragraphToDocx(cp, doc.charStyles, footnoteIdMap),
                             )
                           : [new Paragraph({ children: [] })],
                     }),
@@ -210,6 +227,35 @@ export async function buildDocx(doc: ParsedDoc): Promise<Blob> {
 
   const document = new Document({
     styles,
+    numbering: {
+      config: [
+        {
+          reference: "lov-bullets",
+          levels: [
+            {
+              level: 0,
+              format: LevelFormat.BULLET,
+              text: "\u2022",
+              alignment: AlignmentType.LEFT,
+              style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+            },
+          ],
+        },
+        {
+          reference: "lov-numbers",
+          levels: [
+            {
+              level: 0,
+              format: LevelFormat.DECIMAL,
+              text: "%1.",
+              alignment: AlignmentType.LEFT,
+              style: { paragraph: { indent: { left: 720, hanging: 360 } } },
+            },
+          ],
+        },
+      ],
+    },
+    footnotes: footnotesConfig,
     sections: [
       {
         properties: {
