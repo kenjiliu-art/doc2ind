@@ -178,7 +178,11 @@ export const useEditor = create<EditorState>((set, get) => ({
         ...doc,
         blocks: mapParagraphs(doc.blocks, (p) => {
           const rules = { ...p.rules };
-          for (const k of keys) rules[k] = value;
+          for (const k of keys) {
+            if (k !== "multiSpaces") {
+              (rules as Record<string, unknown>)[k] = value;
+            }
+          }
           return { ...p, rules };
         }),
       },
