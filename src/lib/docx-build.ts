@@ -5,16 +5,16 @@ import {
   TextRun,
   HeadingLevel,
   AlignmentType,
-  PageBreak,
   Table,
   TableRow,
   TableCell,
   WidthType,
+  LevelFormat,
+  FootnoteReferenceRun,
   type IRunOptions,
   type IParagraphOptions,
 } from "docx";
 import type {
-  Block,
   CharStyleDef,
   ParagraphBlock,
   ParsedDoc,
