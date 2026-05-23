@@ -21,7 +21,7 @@ import type {
   RunSpan,
   StyleDef,
 } from "./types";
-import { smartQuotes, trimTrailing, dashes } from "./cleanup";
+import { smartQuotes, trimTrailing, dashes, multiSpaces } from "./cleanup";
 
 function styleIdFor(name: string): string {
   return name.replace(/[^A-Za-z0-9]/g, "");
@@ -31,6 +31,7 @@ function applyCleanup(text: string, p: ParagraphBlock): string {
   let s = text;
   if (p.rules.smartQuotes) s = smartQuotes(s);
   if (p.rules.dashes) s = dashes(s);
+  if (p.rules.multiSpaces !== "none") s = multiSpaces(s, p.rules.multiSpaces);
   if (p.rules.trimTrailing) s = trimTrailing(s);
   return s;
 }
