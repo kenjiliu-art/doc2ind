@@ -73,14 +73,19 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
               soft breaks
             </span>
           )}
+          {p.hasMultiSpaces && (
+            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+              multi spaces
+            </span>
+          )}
           {p.fontSize && (
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {p.fontSize / 2}pt
             </span>
           )}
 
-          <div className="ml-auto flex flex-wrap gap-x-3 gap-y-1">
-            {RULE_LABELS.map(({ key, label, title }) => (
+          <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
+            {BOOL_RULES.map(({ key, label, title }) => (
               <label
                 key={key}
                 title={title}
@@ -94,6 +99,18 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
                 {label}
               </label>
             ))}
+            <label className="flex items-center gap-1 text-[11px] text-muted-foreground" title="Replace multiple spaces with en or em spaces">
+              <span>multi space</span>
+              <select
+                value={p.rules.multiSpaces}
+                onChange={(e) => updateParagraphRule(p.id, "multiSpaces", e.target.value as "none" | "en" | "em")}
+                className="rounded border border-border bg-background px-1 py-0.5 text-[11px]"
+              >
+                <option value="none">—</option>
+                <option value="en">en</option>
+                <option value="em">em</option>
+              </select>
+            </label>
           </div>
         </div>
 
