@@ -85,9 +85,17 @@ interface SEProps {
 }
 
 function StyleEditor({ style, onChange, onRename }: SEProps) {
+  const isHeading = /heading|title|h[1-6]/i.test(style.name);
   return (
-    <details className="px-4 py-2">
-      <summary className="cursor-pointer text-sm font-medium">{style.name}</summary>
+    <details className="px-4 py-2" open={isHeading}>
+      <summary className="cursor-pointer text-sm font-medium">
+        {style.name}
+        {isHeading && (
+          <span className="ml-2 rounded bg-primary/10 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-primary">
+            heading
+          </span>
+        )}
+      </summary>
       <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
         <label className="col-span-2 flex flex-col gap-1">
           <span className="text-muted-foreground">Name</span>
@@ -147,41 +155,71 @@ function StyleEditor({ style, onChange, onRename }: SEProps) {
           Keep w/ next
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-muted-foreground">Left indent (twips)</span>
+          <span className="text-muted-foreground">Left indent (pt)</span>
           <input
             type="number"
-            value={style.leftIndent ?? 0}
-            onChange={(e) => onChange({ leftIndent: Number(e.target.value) })}
+            value={style.leftIndent ? style.leftIndent / 20 : 0}
+            onChange={(e) => onChange({ leftIndent: Number(e.target.value) * 20 })}
             className="rounded border border-border bg-background px-2 py-1"
           />
         </label>
         <label className="flex flex-col gap-1">
-          <span className="text-muted-foreground">First-line (twips)</span>
+          <span className="text-muted-foreground">First-line (pt)</span>
           <input
             type="number"
-            value={style.firstLineIndent ?? 0}
-            onChange={(e) => onChange({ firstLineIndent: Number(e.target.value) })}
+            value={style.firstLineIndent ? style.firstLineIndent / 20 : 0}
+            onChange={(e) => onChange({ firstLineIndent: Number(e.target.value) * 20 })}
             className="rounded border border-border bg-background px-2 py-1"
           />
         </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-muted-foreground">Space before</span>
-          <input
-            type="number"
-            value={style.spaceBefore ?? 0}
-            onChange={(e) => onChange({ spaceBefore: Number(e.target.value) })}
-            className="rounded border border-border bg-background px-2 py-1"
-          />
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="text-muted-foreground">Space after</span>
-          <input
-            type="number"
-            value={style.spaceAfter ?? 0}
-            onChange={(e) => onChange({ spaceAfter: Number(e.target.value) })}
-            className="rounded border border-border bg-background px-2 py-1"
-          />
-        </label>
+
+        <div
+          className={`col-span-2 mt-2 grid grid-cols-2 gap-2 rounded-md p-2 ${
+            isHeading ? "bg-primary/5 ring-1 ring-primary/20" : "bg-muted/40"
+          }`}
+        >
+          <div className="col-span-2 flex items-center justify-between">
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Spacing {isHeading && "(headings often need extra room)"}
+            </span>
+            {isHeading && (
+              <div className="flex gap-1">
+                {[
+                  { label: "Tight", b: 12, a: 6 },
+                  { label: "Default", b: 18, a: 6 },
+                  { label: "Airy", b: 28, a: 12 },
+                ].map((p) => (
+                  <button
+                    key={p.label}
+                    type="button"
+                    onClick={() => onChange({ spaceBefore: p.b * 20, spaceAfter: p.a * 20 })}
+                    className="rounded border border-border bg-background px-1.5 py-0.5 text-[10px] hover:bg-accent"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <label className="flex flex-col gap-1">
+            <span className="text-muted-foreground">Space before (pt)</span>
+            <input
+              type="number"
+              value={style.spaceBefore ? style.spaceBefore / 20 : 0}
+              onChange={(e) => onChange({ spaceBefore: Number(e.target.value) * 20 })}
+              className="rounded border border-border bg-background px-2 py-1"
+            />
+          </label>
+          <label className="flex flex-col gap-1">
+            <span className="text-muted-foreground">Space after (pt)</span>
+            <input
+              type="number"
+              value={style.spaceAfter ? style.spaceAfter / 20 : 0}
+              onChange={(e) => onChange({ spaceAfter: Number(e.target.value) * 20 })}
+              className="rounded border border-border bg-background px-2 py-1"
+            />
+          </label>
+        </div>
       </div>
     </details>
   );
