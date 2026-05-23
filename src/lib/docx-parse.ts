@@ -429,21 +429,7 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   }
   for (const fn of footnotes) for (const p of fn.paragraphs) snapshot(p);
 
-  // Snapshot original state for change tracking (post-parse baseline)
-  const snapshot = (p: ParagraphBlock) => {
-    p.original = {
-      style: p.style,
-      runs: p.runs.map((r) => ({ ...r })),
-      rules: { ...p.rules },
-    };
-  };
-  for (const b of blocks) {
-    if (b.kind === "paragraph") snapshot(b);
-    else
-      for (const row of b.rows)
-        for (const cell of row)
-          for (const p of cell.paragraphs) snapshot(p);
-  }
+  // (snapshot already added above)
 
   // Default paragraph styles
   const paragraphStyles: StyleDef[] = [
