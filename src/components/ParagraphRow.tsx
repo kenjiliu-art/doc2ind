@@ -33,7 +33,10 @@ function runsText(runs: ParagraphBlock["runs"]) {
 }
 
 export function ParagraphRow({ paragraph: p, compact }: Props) {
-  const doc = useEditor((s) => s.doc);
+  // Narrow selectors: only the slices this row actually uses.
+  // Subscribing to the whole `doc` made every paragraph re-render on
+  // every keystroke or rule toggle (O(N²) for N paragraphs).
+  const styles = useEditor((s) => s.doc?.paragraphStyles) ?? EMPTY_STYLES;
   const selected = useEditor((s) => s.selection.has(p.id));
   const toggleSelect = useEditor((s) => s.toggleSelect);
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
@@ -44,7 +47,6 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
 
   const text = runsText(p.runs);
   const isEmpty = p.runs.length === 0;
-  const styles = doc?.paragraphStyles ?? [];
 
   // Compute diffs vs original
   const orig = p.original;
