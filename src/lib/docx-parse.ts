@@ -189,6 +189,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let anyRun = false;
   let allItalic = true;
   let leadingTabPhase = true;
+  let hasSectPr = false;
 
   for (const child of kids) {
     const t = tagOf(child);
@@ -206,11 +207,13 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           if (v === "center" || v === "right" || v === "left" || v === "both" || v === "justify") {
             alignment = v === "both" ? "justify" : (v as ParagraphBlock["alignment"]);
           }
+        } else if (kt === "w:sectPr") {
+          hasSectPr = true;
         }
       }
     } else if (t === "w:r") {
       const info = parseRun(child);
-      if (!info.text && !info.hasBreak) continue;
+      if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
       anyRun = true;
       // Count leading tabs while we're still in pure tab territory
       let text = info.text;
@@ -225,6 +228,10 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       if (info.fontSize && (!maxSize || info.fontSize > maxSize)) maxSize = info.fontSize;
       if (!info.bold) allBold = false;
       if (!info.italic) allItalic = false;
+      if (info.footnoteRef !== undefined && !text) {
+        runs.push({ text: "", footnoteRef: info.footnoteRef });
+        continue;
+      }
       // Split on soft breaks into multiple spans (still same paragraph for now)
       const parts = text.split("\n");
       parts.forEach((part, idx) => {
@@ -235,8 +242,14 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           runs.push({ text: "\n" });
         }
       });
+      if (info.footnoteRef !== undefined) {
+        runs.push({ text: "", footnoteRef: info.footnoteRef });
+      }
     }
   }
+
+  // Stash section break flag on a separate marker — handled by caller via a side-channel
+  if (hasSectPr) sectionBreakSeen = true;
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
