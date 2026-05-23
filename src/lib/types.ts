@@ -32,6 +32,7 @@ export interface ParagraphRules {
   smartQuotes: boolean;
   dashes: boolean;
   trimTrailing: boolean;
+  multiSpaces: "none" | "en" | "em";
 }
 
 export type BlockKind = "paragraph" | "table" | "image";
@@ -51,6 +52,8 @@ export interface ParagraphBlock {
   leftIndent?: number;
   /** True if source had soft line breaks (<w:br/>). */
   hasSoftBreaks: boolean;
+  /** True if paragraph contains two or more spaces in a row. */
+  hasMultiSpaces: boolean;
   /** Detected font size in half-points (Word convention). */
   fontSize?: number;
   /** True if entire paragraph is bold. */
