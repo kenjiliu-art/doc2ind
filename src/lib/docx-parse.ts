@@ -25,6 +25,7 @@ const parser = new XMLParser({
 let idCounter = 0;
 const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
+let sectionBreakSeen = false;
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
@@ -104,6 +105,7 @@ interface RunInfo {
   hasBreak: boolean;
   fontSize?: number;
   font?: string;
+  footnoteRef?: number;
 }
 
 function parseRun(rNode: unknown): RunInfo {
@@ -156,6 +158,9 @@ function parseRun(rNode: unknown): RunInfo {
       } else {
         info.text += "\n"; // soft break marker
       }
+    } else if (t === "w:footnoteReference") {
+      const id = parseInt(getAttr(child)["@_w:id"] ?? "", 10);
+      if (!Number.isNaN(id)) info.footnoteRef = id;
     }
   }
   return info;
@@ -185,6 +190,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let anyRun = false;
   let allItalic = true;
   let leadingTabPhase = true;
+  let hasSectPr = false;
 
   for (const child of kids) {
     const t = tagOf(child);
@@ -202,11 +208,13 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           if (v === "center" || v === "right" || v === "left" || v === "both" || v === "justify") {
             alignment = v === "both" ? "justify" : (v as ParagraphBlock["alignment"]);
           }
+        } else if (kt === "w:sectPr") {
+          hasSectPr = true;
         }
       }
     } else if (t === "w:r") {
       const info = parseRun(child);
-      if (!info.text && !info.hasBreak) continue;
+      if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
       anyRun = true;
       // Count leading tabs while we're still in pure tab territory
       let text = info.text;
@@ -221,6 +229,10 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       if (info.fontSize && (!maxSize || info.fontSize > maxSize)) maxSize = info.fontSize;
       if (!info.bold) allBold = false;
       if (!info.italic) allItalic = false;
+      if (info.footnoteRef !== undefined && !text) {
+        runs.push({ text: "", footnoteRef: info.footnoteRef });
+        continue;
+      }
       // Split on soft breaks into multiple spans (still same paragraph for now)
       const parts = text.split("\n");
       parts.forEach((part, idx) => {
@@ -231,8 +243,14 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           runs.push({ text: "\n" });
         }
       });
+      if (info.footnoteRef !== undefined) {
+        runs.push({ text: "", footnoteRef: info.footnoteRef });
+      }
     }
   }
+
+  // Stash section break flag on a separate marker — handled by caller via a side-channel
+  if (hasSectPr) sectionBreakSeen = true;
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
@@ -300,6 +318,7 @@ function parseTable(tblNode: unknown): TableBlock {
 export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   idCounter = 0;
   fontCounts.clear();
+  sectionBreakSeen = false;
   const zip = await JSZip.loadAsync(file);
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
@@ -322,33 +341,75 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   const bodyChildren = body as unknown[];
 
   const rawBlocks: Block[] = [];
+  const sectionAfterIdx = new Set<number>();
   for (const child of bodyChildren) {
     const t = tagOf(child);
     if (t === "w:p") {
+      sectionBreakSeen = false;
       const p = parseParagraph(child);
-      if (p) rawBlocks.push(p);
+      if (p) {
+        rawBlocks.push(p);
+        if (sectionBreakSeen) sectionAfterIdx.add(rawBlocks.length - 1);
+      }
     } else if (t === "w:tbl") {
       rawBlocks.push(parseTable(child));
     }
   }
 
-  // Compute blanksBefore for paragraph blocks
+  // Compute blanksBefore for paragraph blocks; promote section breaks to page break
   const blocks: Block[] = [];
   let blankCount = 0;
-  for (const b of rawBlocks) {
+  let pendingSectionBreak = false;
+  for (let i = 0; i < rawBlocks.length; i++) {
+    const b = rawBlocks[i];
     if (b.kind === "paragraph" && b.runs.length === 0) {
       blankCount++;
+      if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
       continue;
     }
     if (b.kind === "paragraph") {
       b.blanksBefore = blankCount;
-      // Auto-rule: collapse blanks into page break if 2+
       if (blankCount >= 2) b.rules.pageBreakBefore = true;
       if (b.hasSoftBreaks) b.rules.softToHard = true;
       if (b.leadingTabs > 0 || (b.firstLineIndent ?? 0) > 0) b.rules.tabsToMargin = true;
+      if (pendingSectionBreak) {
+        b.sectionBreakBefore = true;
+        b.rules.pageBreakBefore = true;
+      }
     }
+    if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
+    else pendingSectionBreak = false;
     blankCount = 0;
     blocks.push(b);
+  }
+
+  // Parse footnotes (if present)
+  const footnotes: import("./types").Footnote[] = [];
+  const footnotesXml = await zip.file("word/footnotes.xml")?.async("string");
+  if (footnotesXml) {
+    const fnParsed = parser.parse(footnotesXml) as unknown[];
+    for (const item of fnParsed) {
+      if (!item || typeof item !== "object") continue;
+      const root = (item as Record<string, unknown>)["w:footnotes"];
+      if (!Array.isArray(root)) continue;
+      for (const fn of root) {
+        if (!fn || typeof fn !== "object") continue;
+        if (tagOf(fn) !== "w:footnote") continue;
+        const attrs = getAttr(fn);
+        const id = parseInt(attrs["@_w:id"] ?? "", 10);
+        const type = attrs["@_w:type"];
+        if (Number.isNaN(id) || id < 0 || type === "separator" || type === "continuationSeparator") continue;
+        const fnKids = findTagChildren(fn, "w:footnote");
+        const paragraphs: ParagraphBlock[] = [];
+        for (const fk of fnKids) {
+          if (tagOf(fk) === "w:p") {
+            const p = parseParagraph(fk);
+            if (p && p.runs.length > 0) paragraphs.push(p);
+          }
+        }
+        if (paragraphs.length) footnotes.push({ id, paragraphs });
+      }
+    }
   }
 
   // Snapshot original state for change tracking (post-parse baseline)
@@ -366,6 +427,9 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
         for (const cell of row)
           for (const p of cell.paragraphs) snapshot(p);
   }
+  for (const fn of footnotes) for (const p of fn.paragraphs) snapshot(p);
+
+  // (snapshot already added above)
 
   // Default paragraph styles
   const paragraphStyles: StyleDef[] = [
@@ -393,5 +457,5 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  return { blocks, paragraphStyles, charStyles, detectedFonts };
+  return { blocks, paragraphStyles, charStyles, detectedFonts, footnotes };
 }

@@ -22,6 +22,8 @@ export type CharStyleName =
 export interface RunSpan {
   text: string;
   charStyle?: CharStyleName;
+  /** Reference to a footnote id when this run is a footnote anchor. */
+  footnoteRef?: number;
 }
 
 export interface ParagraphRules {
@@ -60,6 +62,10 @@ export interface ParagraphBlock {
   isBold?: boolean;
   isItalic?: boolean;
   alignment?: "left" | "center" | "right" | "justify";
+  /** True when the paragraph immediately follows a section break in the source. */
+  sectionBreakBefore?: boolean;
+  /** When set, paragraph is part of a normalized list. */
+  listKind?: "bullet" | "number";
   rules: ParagraphRules;
   /** Snapshot of style/runs/rules right after parsing — used for change tracking & revert. */
   original?: {
@@ -112,9 +118,15 @@ export interface FontUsage {
   count: number;
 }
 
+export interface Footnote {
+  id: number;
+  paragraphs: ParagraphBlock[];
+}
+
 export interface ParsedDoc {
   blocks: Block[];
   paragraphStyles: StyleDef[];
   charStyles: CharStyleDef[];
   detectedFonts: FontUsage[];
+  footnotes: Footnote[];
 }
