@@ -1,7 +1,7 @@
 import { useEditor } from "@/store/editor";
 import type { ParagraphRules } from "@/lib/types";
 
-const DOC_CLEANUPS: Array<{ keys: Array<keyof ParagraphRules>; label: string }> = [
+const DOC_CLEANUPS: Array<{ keys: Array<Exclude<keyof ParagraphRules, "multiSpaces">>; label: string }> = [
   { keys: ["smartQuotes"], label: "Smart quotes" },
   { keys: ["dashes"], label: "Em dashes" },
   { keys: ["trimTrailing"], label: "Trim trailing" },

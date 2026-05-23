@@ -2,7 +2,7 @@ import { useEditor } from "@/store/editor";
 import type { ParagraphRules } from "@/lib/types";
 import { useMemo } from "react";
 
-const BULK_RULES: Array<{ key: keyof ParagraphRules; label: string }> = [
+const BULK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string }> = [
   { key: "tabsToMargin", label: "Tabs→indent" },
   { key: "softToHard", label: "Soft→hard" },
   { key: "pageBreakBefore", label: "Page break before" },
