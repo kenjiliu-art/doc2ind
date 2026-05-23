@@ -118,9 +118,15 @@ export interface FontUsage {
   count: number;
 }
 
+export interface Footnote {
+  id: number;
+  paragraphs: ParagraphBlock[];
+}
+
 export interface ParsedDoc {
   blocks: Block[];
   paragraphStyles: StyleDef[];
   charStyles: CharStyleDef[];
   detectedFonts: FontUsage[];
+  footnotes: Footnote[];
 }
