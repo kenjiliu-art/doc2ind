@@ -8,6 +8,22 @@ import type {
   ParsedDoc,
   StyleDef,
 } from "@/lib/types";
+import {
+  stripUnusedStyles,
+  collapseBlanksToSpacing,
+  normalizeLists,
+  closeOrphanRuns,
+  sectionBreaksToPageBreaks,
+  sanitizeStyleNames,
+} from "@/lib/preflight";
+
+export type PreflightAction =
+  | "stripUnusedStyles"
+  | "collapseBlanksToSpacing"
+  | "normalizeLists"
+  | "closeOrphanRuns"
+  | "sectionBreaksToPageBreaks"
+  | "sanitizeStyleNames";
 
 interface EditorState {
   doc: ParsedDoc | null;
@@ -33,6 +49,7 @@ interface EditorState {
   normalizeFonts: (to: string) => void;
   revertParagraphField: (id: string, field: "style" | "runs" | keyof ParagraphRules) => void;
   revertParagraph: (id: string) => void;
+  runPreflight: (action: PreflightAction) => void;
 }
 
 function mapParagraphs(blocks: Block[], fn: (p: ParagraphBlock) => ParagraphBlock): Block[] {
