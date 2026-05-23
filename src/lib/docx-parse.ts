@@ -294,6 +294,7 @@ function parseTable(tblNode: unknown): TableBlock {
 
 export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   idCounter = 0;
+  fontCounts.clear();
   const zip = await JSZip.loadAsync(file);
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
