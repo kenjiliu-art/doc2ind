@@ -46,14 +46,29 @@ function applyCleanup(text: string, p: ParagraphBlock): string {
   return s;
 }
 
-function runsToTagged(spans: RunSpan[], p: ParagraphBlock): string {
+function runsToTagged(
+  spans: RunSpan[],
+  p: ParagraphBlock,
+  footnoteMap: Map<number, ParagraphBlock[]>,
+): string {
   let out = "";
   for (const s of spans) {
+    if (s.footnoteRef !== undefined) {
+      const fnPars = footnoteMap.get(s.footnoteRef);
+      if (fnPars && fnPars.length) {
+        const inner = fnPars
+          .map((fp) => runsToTagged(fp.runs, fp, footnoteMap))
+          .join(" ");
+        out += `<FootnoteStart:>${inner}<FootnoteEnd:>`;
+      }
+      continue;
+    }
     if (s.text === "\n") {
       // soft return rendered if not converted to hard
       if (!p.rules.softToHard) out += "<0x000A>";
       continue;
     }
+    if (!s.text) continue;
     const cleaned = escapeTagged(applyCleanup(s.text, p));
     if (s.charStyle) {
       out += `<CharStyle:${s.charStyle}>${cleaned}<CharStyle:>`;
@@ -64,7 +79,7 @@ function runsToTagged(spans: RunSpan[], p: ParagraphBlock): string {
   return out;
 }
 
-function paragraphToTagged(p: ParagraphBlock): string {
+function paragraphToTagged(p: ParagraphBlock, footnoteMap: Map<number, ParagraphBlock[]>, listCounter: { n: number }): string {
   if (p.runs.length === 0) return `<ParaStyle:${p.style}>\r\n`;
 
   // Strip leading tabs if tabsToMargin
@@ -78,6 +93,17 @@ function paragraphToTagged(p: ParagraphBlock): string {
     }
   }
 
+  // Prepend list bullet/number
+  let listPrefix = "";
+  if (p.listKind === "bullet") {
+    listPrefix = "\u2022\t";
+  } else if (p.listKind === "number") {
+    listCounter.n += 1;
+    listPrefix = `${listCounter.n}.\t`;
+  } else {
+    listCounter.n = 0;
+  }
+
   if (p.rules.softToHard) {
     // Split into separate paragraphs
     const groups: RunSpan[][] = [[]];
@@ -89,13 +115,14 @@ function paragraphToTagged(p: ParagraphBlock): string {
     return filtered
       .map((g, i) => {
         const prefix = i === 0 && p.rules.pageBreakBefore ? "<pBreakBefore:Page>" : "";
-        return `<ParaStyle:${p.style}>${prefix}${runsToTagged(g, p)}\r\n`;
+        const list = i === 0 ? listPrefix : "";
+        return `<ParaStyle:${p.style}>${prefix}${list}${runsToTagged(g, p, footnoteMap)}\r\n`;
       })
       .join("");
   }
 
   const prefix = p.rules.pageBreakBefore ? "<pBreakBefore:Page>" : "";
-  return `<ParaStyle:${p.style}>${prefix}${runsToTagged(spans, p)}\r\n`;
+  return `<ParaStyle:${p.style}>${prefix}${listPrefix}${runsToTagged(spans, p, footnoteMap)}\r\n`;
 }
 
 export function buildTaggedText(doc: ParsedDoc): string {
