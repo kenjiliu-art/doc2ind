@@ -9,6 +9,7 @@ export function defaultRulesFor(): ParagraphRules {
     smartQuotes: true,
     dashes: true,
     trimTrailing: true,
+    multiSpaces: "none",
   };
 }
 

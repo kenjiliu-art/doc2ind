@@ -27,3 +27,12 @@ export function collapseSpaces(input: string): string {
   return input.replace(/  +/g, " ");
 }
 
+const EN_SPACE = "\u2002";
+const EM_SPACE = "\u2003";
+
+export function multiSpaces(input: string, mode: "none" | "en" | "em"): string {
+  if (mode === "none") return input;
+  const repl = mode === "en" ? EN_SPACE : EM_SPACE;
+  return input.replace(/  +/g, (match) => repl.repeat(match.length));
+}
+

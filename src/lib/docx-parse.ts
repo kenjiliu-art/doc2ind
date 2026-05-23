@@ -244,9 +244,13 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       blanksBefore: 0,
       leadingTabs: 0,
       hasSoftBreaks: false,
+      hasMultiSpaces: false,
       rules: defaultRulesFor(),
     };
   }
+
+  const fullText = runs.map((r) => r.text).join("");
+  const hasMultiSpaces = /  +/.test(fullText);
 
   const block: ParagraphBlock = {
     id: nextId(),
@@ -258,6 +262,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
     firstLineIndent,
     leftIndent,
     hasSoftBreaks,
+    hasMultiSpaces,
     fontSize: maxSize,
     isBold: anyRun ? allBold : false,
     isItalic: anyRun ? allItalic : false,

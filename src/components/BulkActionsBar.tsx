@@ -2,7 +2,7 @@ import { useEditor } from "@/store/editor";
 import type { ParagraphRules } from "@/lib/types";
 import { useMemo } from "react";
 
-const BULK_RULES: Array<{ key: keyof ParagraphRules; label: string }> = [
+const BULK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string }> = [
   { key: "tabsToMargin", label: "Tabs→indent" },
   { key: "softToHard", label: "Soft→hard" },
   { key: "pageBreakBefore", label: "Page break before" },
@@ -19,6 +19,7 @@ export function BulkActionsBar() {
   const clearSelection = useEditor((s) => s.clearSelection);
   const bulkSetStyle = useEditor((s) => s.bulkSetStyle);
   const bulkToggleRule = useEditor((s) => s.bulkToggleRule);
+  const bulkSetMultiSpaces = useEditor((s) => s.bulkSetMultiSpaces);
 
   const count = selection.size;
   const styles = useMemo(() => doc?.paragraphStyles ?? [], [doc]);
@@ -84,6 +85,20 @@ export function BulkActionsBar() {
                 −{r.label}
               </button>
             </div>
+          ))}
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-muted-foreground">Multi spaces:</span>
+          {(["en", "em", "none"] as const).map((v) => (
+            <button
+              key={v}
+              disabled={count === 0}
+              onClick={() => bulkSetMultiSpaces(v)}
+              className="rounded border border-border bg-background px-2 py-1 hover:bg-accent disabled:opacity-50"
+            >
+              {v === "none" ? "−off" : `+${v}`}
+            </button>
           ))}
         </div>
       </div>
