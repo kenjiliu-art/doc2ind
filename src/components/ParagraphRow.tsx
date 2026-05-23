@@ -65,10 +65,16 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
     });
   }
 
+  const hasChanges = changes.length > 0;
+
   return (
     <div
       className={`group flex gap-3 rounded-md border p-2 ${
-        selected ? "border-primary bg-accent/40" : "border-transparent hover:border-border hover:bg-accent/20"
+        selected
+          ? "border-primary bg-accent/40"
+          : hasChanges
+            ? "border-amber-500/60 bg-amber-500/5"
+            : "border-transparent hover:border-border hover:bg-accent/20"
       } ${compact ? "text-xs" : ""}`}
     >
       <div className="flex flex-col items-center gap-1 pt-1">
@@ -165,6 +171,33 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
             className="mt-1 rounded px-1 py-0.5 text-sm leading-relaxed outline-none focus:bg-background focus:ring-1 focus:ring-ring"
           >
             {text}
+          </div>
+        )}
+
+        {hasChanges && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5 border-t border-amber-500/20 pt-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-400">
+              {changes.length} change{changes.length > 1 ? "s" : ""}
+            </span>
+            {changes.map((c) => (
+              <button
+                key={c.key}
+                type="button"
+                onClick={() => revertField(p.id, c.key)}
+                title={`Revert: ${c.detail}`}
+                className="group/chg inline-flex items-center gap-1 rounded border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[10px] text-amber-700 hover:bg-amber-500/20 dark:text-amber-300"
+              >
+                <span>{c.label}</span>
+                <span className="opacity-50 group-hover/chg:opacity-100">↺</span>
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => revertAll(p.id)}
+              className="ml-auto rounded border border-border px-1.5 py-0.5 text-[10px] text-muted-foreground hover:bg-accent"
+            >
+              Revert all
+            </button>
           </div>
         )}
       </div>
