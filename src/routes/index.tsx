@@ -129,13 +129,3 @@ function Feature({ title, children }: { title: string; children: React.ReactNode
     </div>
   );
 }
-
-
-function Feature({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="font-medium">{title}</div>
-      <div className="mt-1 text-muted-foreground">{children}</div>
-    </div>
-  );
-}
