@@ -169,46 +169,6 @@ function toastExportSummary(
   );
 }
 
-/** Detect newly-unlocked achievements at export time, persist, and toast each one. */
-function awardAchievements(
-  initial: IssueBreakdown | null,
-  current: IssueBreakdown,
-) {
-  const earnedNow = evaluateAchievements(initial, current);
-  if (earnedNow.length === 0) return;
-  const already = loadEarnedAchievements();
-  const fresh = earnedNow.filter((id) => !already.has(id));
-  if (fresh.length === 0) return;
-  for (const id of fresh) already.add(id);
-  saveEarnedAchievements(already);
-  window.dispatchEvent(new Event("achievements:update"));
-  fresh.forEach((id, i) => {
-    const a = getAchievement(id);
-    if (!a) return;
-    setTimeout(() => {
-      toast.success(
-        <div className="flex items-start gap-3">
-          <span
-            className={[
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base ring-1",
-              TONE_CLASSES[a.tone],
-            ].join(" ")}
-          >
-            {a.icon}
-          </span>
-          <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-widest opacity-70">
-              Badge unlocked
-            </div>
-            <div className="text-sm font-semibold leading-tight">{a.title}</div>
-            <div className="mt-0.5 text-[11px] opacity-80">{a.desc}</div>
-          </div>
-        </div>,
-        { duration: 4500 },
-      );
-    }, 350 + i * 250);
-  });
-}
 
 function IndexPage() {
   const doc = useEditor((s) => s.doc);
