@@ -18,6 +18,7 @@ import {
   trimRunBleed,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
+import { saveSessionDebounced, clearSession } from "@/lib/storage";
 
 export type PreflightAction =
   | "stripUnusedStyles"
@@ -28,18 +29,27 @@ export type PreflightAction =
   | "sectionBreaksToPageBreaks"
   | "sanitizeStyleNames";
 
+const HISTORY_LIMIT = 50;
+
 interface EditorState {
   doc: ParsedDoc | null;
   selection: Set<string>;
+  /** Last paragraph id toggled — anchor for shift-click range-select. */
+  selectionAnchor: string | null;
   fileName: string;
   preflightHistory: Set<PreflightAction>;
+  past: ParsedDoc[];
+  future: ParsedDoc[];
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
+  undo: () => void;
+  redo: () => void;
   updateParagraph: (id: string, patch: Partial<ParagraphBlock>) => void;
   updateParagraphRule: <K extends keyof ParagraphRules>(id: string, key: K, value: ParagraphRules[K]) => void;
   setStyle: (id: string, style: ParagraphStyle) => void;
   setText: (id: string, text: string) => void;
   toggleSelect: (id: string) => void;
+  rangeSelect: (id: string) => void;
   clearSelection: () => void;
   selectAll: () => void;
   bulkSetStyle: (style: ParagraphStyle) => void;
@@ -85,339 +95,437 @@ function findParagraph(blocks: Block[], id: string): ParagraphBlock | undefined 
   return undefined;
 }
 
-export const useEditor = create<EditorState>((set, get) => ({
-  doc: null,
-  selection: new Set(),
-  fileName: "document",
-  preflightHistory: new Set(),
-  setDoc: (doc, fileName) => {
-    const settings = useSettings.getState().autoApply;
-    const blocks = mapParagraphs(doc.blocks, (p) => ({
-      ...p,
-      rules: applyAutoSettingsToRules(p.rules, settings, {
-        sectionBreakBefore: p.sectionBreakBefore,
+/** Flat list of paragraph ids in document order (top-level only — tables not included in range select). */
+function flatParaIds(blocks: Block[]): string[] {
+  const out: string[] = [];
+  for (const b of blocks) {
+    if (b.kind === "paragraph") out.push(b.id);
+    else
+      for (const row of b.rows)
+        for (const cell of row)
+          for (const p of cell.paragraphs) out.push(p.id);
+  }
+  return out;
+}
+
+export const useEditor = create<EditorState>((set, get) => {
+  /** Snapshot current doc into past[] before a mutation. */
+  const snap = () => {
+    const cur = get().doc;
+    if (!cur) return;
+    const past = get().past.concat(cur).slice(-HISTORY_LIMIT);
+    set({ past, future: [] });
+  };
+
+  return {
+    doc: null,
+    selection: new Set(),
+    selectionAnchor: null,
+    fileName: "document",
+    preflightHistory: new Set(),
+    past: [],
+    future: [],
+    setDoc: (doc, fileName) => {
+      const settings = useSettings.getState().autoApply;
+      const blocks = mapParagraphs(doc.blocks, (p) => ({
+        ...p,
+        rules: applyAutoSettingsToRules(p.rules, settings, {
+          sectionBreakBefore: p.sectionBreakBefore,
+        }),
+      }));
+      set({
+        doc: { ...doc, blocks },
+        fileName,
+        selection: new Set(),
+        selectionAnchor: null,
+        preflightHistory: new Set(),
+        past: [],
+        future: [],
+      });
+    },
+    reset: () => {
+      clearSession();
+      set({
+        doc: null,
+        selection: new Set(),
+        selectionAnchor: null,
+        fileName: "document",
+        preflightHistory: new Set(),
+        past: [],
+        future: [],
+      });
+    },
+    undo: () => {
+      const { past, doc, future } = get();
+      if (past.length === 0 || !doc) return;
+      const prev = past[past.length - 1];
+      set({
+        doc: prev,
+        past: past.slice(0, -1),
+        future: future.concat(doc).slice(-HISTORY_LIMIT),
+      });
+    },
+    redo: () => {
+      const { past, doc, future } = get();
+      if (future.length === 0 || !doc) return;
+      const next = future[future.length - 1];
+      set({
+        doc: next,
+        future: future.slice(0, -1),
+        past: past.concat(doc).slice(-HISTORY_LIMIT),
+      });
+    },
+    updateParagraph: (id, patch) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) => (p.id === id ? { ...p, ...patch } : p)),
+        },
+      });
+    },
+    updateParagraphRule: (id, key, value) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            p.id === id ? { ...p, rules: { ...p.rules, [key]: value } } : p,
+          ),
+        },
+      });
+    },
+    setStyle: (id, style) => {
+      get().updateParagraph(id, { style });
+    },
+    setText: (id, text) => {
+      const doc = get().doc;
+      if (!doc) return;
+      const p = findParagraph(doc.blocks, id);
+      if (!p) return;
+      const charStyle = p.runs[0]?.charStyle;
+      get().updateParagraph(id, { runs: text ? [{ text, charStyle }] : [] });
+    },
+    toggleSelect: (id) =>
+      set((state) => {
+        const next = new Set(state.selection);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return { selection: next, selectionAnchor: id };
       }),
-    }));
-    set({ doc: { ...doc, blocks }, fileName, selection: new Set(), preflightHistory: new Set() });
-  },
-  reset: () => set({ doc: null, selection: new Set(), fileName: "document", preflightHistory: new Set() }),
-  updateParagraph: (id, patch) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) => (p.id === id ? { ...p, ...patch } : p)),
-      },
-    });
-  },
-  updateParagraphRule: (id, key, value) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          p.id === id ? { ...p, rules: { ...p.rules, [key]: value } } : p,
-        ),
-      },
-    });
-  },
-  setStyle: (id, style) => {
-    get().updateParagraph(id, { style });
-  },
-  setText: (id, text) => {
-    const doc = get().doc;
-    if (!doc) return;
-    const p = findParagraph(doc.blocks, id);
-    if (!p) return;
-    // Replace text but keep first run's charStyle
-    const charStyle = p.runs[0]?.charStyle;
-    get().updateParagraph(id, { runs: text ? [{ text, charStyle }] : [] });
-  },
-  toggleSelect: (id) =>
-    set((state) => {
-      const next = new Set(state.selection);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return { selection: next };
-    }),
-  clearSelection: () => set({ selection: new Set() }),
-  selectAll: () => {
-    const doc = get().doc;
-    if (!doc) return;
-    const ids = new Set<string>();
-    doc.blocks.forEach((b) => {
-      if (b.kind === "paragraph") ids.add(b.id);
-      else
-        b.rows.forEach((r) =>
-          r.forEach((c) => c.paragraphs.forEach((p) => ids.add(p.id))),
-        );
-    });
-    set({ selection: ids });
-  },
-  bulkSetStyle: (style) => {
-    const { doc, selection } = get();
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          selection.has(p.id) ? { ...p, style } : p,
-        ),
-      },
-    });
-  },
-  bulkToggleRule: (key, value) => {
-    const { doc, selection } = get();
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          selection.has(p.id) ? { ...p, rules: { ...p.rules, [key]: value } } : p,
-        ),
-      },
-    });
-  },
-  updateStyleDef: (name, patch) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        paragraphStyles: doc.paragraphStyles.map((s) =>
-          s.name === name ? { ...s, ...patch } : s,
-        ),
-      },
-    });
-  },
-  renameStyle: (oldName, newName) => {
-    const doc = get().doc;
-    if (!doc || oldName === newName) return;
-    set({
-      doc: {
-        ...doc,
-        paragraphStyles: doc.paragraphStyles.map((s) =>
-          s.name === oldName ? { ...s, name: newName } : s,
-        ),
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          p.style === oldName ? { ...p, style: newName } : p,
-        ),
-      },
-    });
-  },
-  mapSourceStyle: (sourceStyle, target) => {
-    const doc = get().doc;
-    if (!doc) return;
-    if (target === "__discard") {
-      const filtered: Block[] = [];
-      for (const b of doc.blocks) {
-        if (b.kind === "paragraph") {
-          if (b.sourceStyle !== sourceStyle) filtered.push(b);
-        } else {
-          filtered.push({
-            ...b,
-            rows: b.rows.map((row) =>
-              row.map((cell) => ({
-                ...cell,
-                paragraphs: cell.paragraphs.filter((p) => p.sourceStyle !== sourceStyle),
-              })),
-            ),
-          });
-        }
+    rangeSelect: (id) => {
+      const { doc, selectionAnchor, selection } = get();
+      if (!doc || !selectionAnchor || selectionAnchor === id) {
+        get().toggleSelect(id);
+        return;
       }
-      set({ doc: { ...doc, blocks: filtered } });
-      return;
-    }
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          p.sourceStyle === sourceStyle ? { ...p, style: target } : p,
-        ),
-      },
-    });
-  },
-  applyDocCleanup: (keys, value) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) => {
-          const rules = { ...p.rules };
-          for (const k of keys) {
-            (rules as Record<string, unknown>)[k] = value;
+      const ids = flatParaIds(doc.blocks);
+      const a = ids.indexOf(selectionAnchor);
+      const b = ids.indexOf(id);
+      if (a === -1 || b === -1) {
+        get().toggleSelect(id);
+        return;
+      }
+      const [lo, hi] = a < b ? [a, b] : [b, a];
+      const next = new Set(selection);
+      for (let i = lo; i <= hi; i++) next.add(ids[i]);
+      set({ selection: next });
+    },
+    clearSelection: () => set({ selection: new Set(), selectionAnchor: null }),
+    selectAll: () => {
+      const doc = get().doc;
+      if (!doc) return;
+      set({ selection: new Set(flatParaIds(doc.blocks)) });
+    },
+    bulkSetStyle: (style) => {
+      const { doc, selection } = get();
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            selection.has(p.id) ? { ...p, style } : p,
+          ),
+        },
+      });
+    },
+    bulkToggleRule: (key, value) => {
+      const { doc, selection } = get();
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            selection.has(p.id) ? { ...p, rules: { ...p.rules, [key]: value } } : p,
+          ),
+        },
+      });
+    },
+    updateStyleDef: (name, patch) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          paragraphStyles: doc.paragraphStyles.map((s) =>
+            s.name === name ? { ...s, ...patch } : s,
+          ),
+        },
+      });
+    },
+    renameStyle: (oldName, newName) => {
+      const doc = get().doc;
+      if (!doc || oldName === newName) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          paragraphStyles: doc.paragraphStyles.map((s) =>
+            s.name === oldName ? { ...s, name: newName } : s,
+          ),
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            p.style === oldName ? { ...p, style: newName } : p,
+          ),
+        },
+      });
+    },
+    mapSourceStyle: (sourceStyle, target) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      if (target === "__discard") {
+        const filtered: Block[] = [];
+        for (const b of doc.blocks) {
+          if (b.kind === "paragraph") {
+            if (b.sourceStyle !== sourceStyle) filtered.push(b);
+          } else {
+            filtered.push({
+              ...b,
+              rows: b.rows.map((row) =>
+                row.map((cell) => ({
+                  ...cell,
+                  paragraphs: cell.paragraphs.filter((p) => p.sourceStyle !== sourceStyle),
+                })),
+              ),
+            });
           }
-          return { ...p, rules };
-        }),
-      },
-    });
-  },
-  bulkSetMultiSpaces: (value) => {
-    const { doc, selection } = get();
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          selection.has(p.id) ? { ...p, rules: { ...p.rules, multiSpaces: value } } : p,
-        ),
-      },
-    });
-  },
-  applyDocMultiSpaces: (value) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) => ({
-          ...p,
-          rules: { ...p.rules, multiSpaces: value },
-        })),
-      },
-    });
-  },
-  replaceFont: (from, to) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        paragraphStyles: doc.paragraphStyles.map((s) =>
-          s.font === from ? { ...s, font: to } : s,
-        ),
-        detectedFonts: doc.detectedFonts
-          .map((f) => (f.name === from ? { ...f, name: to } : f))
-          .reduce<typeof doc.detectedFonts>((acc, f) => {
-            const existing = acc.find((x) => x.name === f.name);
-            if (existing) existing.count += f.count;
-            else acc.push({ ...f });
-            return acc;
-          }, []),
-      },
-    });
-  },
-  normalizeFonts: (to) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        paragraphStyles: doc.paragraphStyles.map((s) => ({ ...s, font: to })),
-        detectedFonts: [{ name: to, count: doc.detectedFonts.reduce((n, f) => n + f.count, 0) }],
-      },
-    });
-  },
-  revertParagraphField: (id, field) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) => {
-          if (p.id !== id || !p.original) return p;
-          if (field === "style") return { ...p, style: p.original.style };
-          if (field === "runs") return { ...p, runs: p.original.runs.map((r) => ({ ...r })) };
-          return { ...p, rules: { ...p.rules, [field]: p.original.rules[field] } };
-        }),
-      },
-    });
-  },
-  revertParagraph: (id) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) =>
-          p.id === id && p.original
-            ? {
-                ...p,
-                style: p.original.style,
-                runs: p.original.runs.map((r) => ({ ...r })),
-                rules: { ...p.original.rules },
+        }
+        set({ doc: { ...doc, blocks: filtered } });
+        return;
+      }
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            p.sourceStyle === sourceStyle ? { ...p, style: target } : p,
+          ),
+        },
+      });
+    },
+    applyDocCleanup: (keys, value) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) => {
+            const rules = { ...p.rules };
+            for (const k of keys) {
+              (rules as Record<string, unknown>)[k] = value;
+            }
+            return { ...p, rules };
+          }),
+        },
+      });
+    },
+    bulkSetMultiSpaces: (value) => {
+      const { doc, selection } = get();
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            selection.has(p.id) ? { ...p, rules: { ...p.rules, multiSpaces: value } } : p,
+          ),
+        },
+      });
+    },
+    applyDocMultiSpaces: (value) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) => ({
+            ...p,
+            rules: { ...p.rules, multiSpaces: value },
+          })),
+        },
+      });
+    },
+    replaceFont: (from, to) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          paragraphStyles: doc.paragraphStyles.map((s) =>
+            s.font === from ? { ...s, font: to } : s,
+          ),
+          detectedFonts: doc.detectedFonts
+            .map((f) => (f.name === from ? { ...f, name: to } : f))
+            .reduce<typeof doc.detectedFonts>((acc, f) => {
+              const existing = acc.find((x) => x.name === f.name);
+              if (existing) existing.count += f.count;
+              else acc.push({ ...f });
+              return acc;
+            }, []),
+        },
+      });
+    },
+    normalizeFonts: (to) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          paragraphStyles: doc.paragraphStyles.map((s) => ({ ...s, font: to })),
+          detectedFonts: [{ name: to, count: doc.detectedFonts.reduce((n, f) => n + f.count, 0) }],
+        },
+      });
+    },
+    revertParagraphField: (id, field) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) => {
+            if (p.id !== id || !p.original) return p;
+            if (field === "style") return { ...p, style: p.original.style };
+            if (field === "runs") return { ...p, runs: p.original.runs.map((r) => ({ ...r })) };
+            return { ...p, rules: { ...p.rules, [field]: p.original.rules[field] } };
+          }),
+        },
+      });
+    },
+    revertParagraph: (id) => {
+      const doc = get().doc;
+      if (!doc) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) =>
+            p.id === id && p.original
+              ? {
+                  ...p,
+                  style: p.original.style,
+                  runs: p.original.runs.map((r) => ({ ...r })),
+                  rules: { ...p.original.rules },
+                }
+              : p,
+          ),
+        },
+      });
+    },
+    applyCharStyleRange: (id, start, end, charStyle) => {
+      const doc = get().doc;
+      if (!doc || end <= start) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          blocks: mapParagraphs(doc.blocks, (p) => {
+            if (p.id !== id) return p;
+            let pos = 0;
+            const next: typeof p.runs = [];
+            for (const r of p.runs) {
+              if (r.footnoteRef !== undefined || r.text.length === 0) {
+                next.push(r);
+                continue;
               }
-            : p,
-        ),
-      },
-    });
-  },
-  applyCharStyleRange: (id, start, end, charStyle) => {
-    const doc = get().doc;
-    if (!doc || end <= start) return;
-    set({
-      doc: {
-        ...doc,
-        blocks: mapParagraphs(doc.blocks, (p) => {
-          if (p.id !== id) return p;
-          let pos = 0;
-          const next: typeof p.runs = [];
-          for (const r of p.runs) {
-            if (r.footnoteRef !== undefined || r.text.length === 0) {
-              next.push(r);
-              continue;
+              const len = r.text.length;
+              const rs = pos;
+              const re = pos + len;
+              pos = re;
+              const a = Math.max(start, rs);
+              const b = Math.min(end, re);
+              if (a >= b) {
+                next.push(r);
+                continue;
+              }
+              const before = r.text.slice(0, a - rs);
+              const middle = r.text.slice(a - rs, b - rs);
+              const after = r.text.slice(b - rs);
+              if (before) next.push({ ...r, text: before });
+              if (middle) {
+                const nr = { ...r, text: middle };
+                if (charStyle) nr.charStyle = charStyle;
+                else delete (nr as { charStyle?: string }).charStyle;
+                next.push(nr);
+              }
+              if (after) next.push({ ...r, text: after });
             }
-            const len = r.text.length;
-            const rs = pos;
-            const re = pos + len;
-            pos = re;
-            const a = Math.max(start, rs);
-            const b = Math.min(end, re);
-            if (a >= b) {
-              next.push(r);
-              continue;
+            const merged: typeof next = [];
+            for (const r of next) {
+              const last = merged[merged.length - 1];
+              if (
+                last &&
+                r.footnoteRef === undefined &&
+                last.footnoteRef === undefined &&
+                last.charStyle === r.charStyle
+              ) {
+                last.text += r.text;
+              } else {
+                merged.push({ ...r });
+              }
             }
-            const before = r.text.slice(0, a - rs);
-            const middle = r.text.slice(a - rs, b - rs);
-            const after = r.text.slice(b - rs);
-            if (before) next.push({ ...r, text: before });
-            if (middle) {
-              const nr = { ...r, text: middle };
-              if (charStyle) nr.charStyle = charStyle;
-              else delete (nr as { charStyle?: string }).charStyle;
-              next.push(nr);
-            }
-            if (after) next.push({ ...r, text: after });
-          }
-          // Merge adjacent runs with identical charStyle (and no footnoteRef)
-          const merged: typeof next = [];
-          for (const r of next) {
-            const last = merged[merged.length - 1];
-            if (
-              last &&
-              r.footnoteRef === undefined &&
-              last.footnoteRef === undefined &&
-              last.charStyle === r.charStyle
-            ) {
-              last.text += r.text;
-            } else {
-              merged.push({ ...r });
-            }
-          }
-          return { ...p, runs: merged };
-        }),
-      },
-    });
-  },
-  runPreflight: (action) => {
-    const doc = get().doc;
-    if (!doc) return;
-    const fns: Record<PreflightAction, (d: ParsedDoc) => ParsedDoc> = {
-      stripUnusedStyles,
-      collapseBlanksToSpacing,
-      normalizeLists,
-      closeOrphanRuns,
-      trimRunBleed,
-      sectionBreaksToPageBreaks,
-      sanitizeStyleNames,
-    };
-    const nextHistory = new Set(get().preflightHistory);
-    nextHistory.add(action);
-    set({ doc: fns[action](doc), preflightHistory: nextHistory });
-  },
-}));
+            return { ...p, runs: merged };
+          }),
+        },
+      });
+    },
+    runPreflight: (action) => {
+      const doc = get().doc;
+      if (!doc) return;
+      const fns: Record<PreflightAction, (d: ParsedDoc) => ParsedDoc> = {
+        stripUnusedStyles,
+        collapseBlanksToSpacing,
+        normalizeLists,
+        closeOrphanRuns,
+        trimRunBleed,
+        sectionBreaksToPageBreaks,
+        sanitizeStyleNames,
+      };
+      snap();
+      const nextHistory = new Set(get().preflightHistory);
+      nextHistory.add(action);
+      set({ doc: fns[action](doc), preflightHistory: nextHistory });
+    },
+  };
+});
+
+// Auto-save: persist doc + fileName whenever the doc reference changes.
+if (typeof window !== "undefined") {
+  useEditor.subscribe((state, prev) => {
+    if (state.doc && state.doc !== prev?.doc) {
+      saveSessionDebounced(state.doc, state.fileName);
+    }
+  });
+}
 
 export { findParagraph };
