@@ -150,15 +150,24 @@ function UploadView() {
           )}
         </label>
 
-        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           <span>No file handy?</span>
           <button
             type="button"
-            onClick={loadSample}
+            onClick={() => loadSample("sample")}
             disabled={loading}
             className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
           >
-            Try with a sample document
+            Try a prose sample
+          </button>
+          <span>or</span>
+          <button
+            type="button"
+            onClick={() => loadSample("sample-poems")}
+            disabled={loading}
+            className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
+          >
+            three poems by Langston Hughes
           </button>
           <span>— you can replace it any time.</span>
         </div>
