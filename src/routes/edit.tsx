@@ -234,6 +234,7 @@ function EditPage() {
           </div>
         </div>
       </main>
+      <LivePreview open={previewOpen} onToggle={() => setPreviewOpen((v) => !v)} />
     </div>
   );
 }
