@@ -1,62 +1,47 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type {
   Block,
   ParagraphBlock,
+  ParagraphRules,
   ParsedDoc,
   RunSpan,
   StyleDef,
   TableBlock,
 } from "@/lib/types";
 import { smartQuotes, trimTrailing, dashes, multiSpaces } from "@/lib/cleanup";
-import { Eye, EyeOff } from "lucide-react";
+import { Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string }> = [
+  { key: "smartQuotes", label: "Smart quotes" },
+  { key: "dashes", label: "Em dash" },
+  { key: "trimTrailing", label: "Trim" },
+  { key: "tabsToMargin", label: "Tabs→indent" },
+  { key: "softToHard", label: "Soft→hard" },
+  { key: "pageBreakBefore", label: "Page break" },
+];
+
 interface LivePreviewProps {
-  open: boolean;
-  onToggle: () => void;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
 }
 
-export function LivePreview({ open, onToggle }: LivePreviewProps) {
+export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
-
+  if (!doc) {
+    return (
+      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+        No document
+      </div>
+    );
+  }
   return (
-    <aside
-      className={cn(
-        "relative flex h-full shrink-0 flex-col border-l border-border bg-muted/20 transition-all duration-300",
-        open ? "w-[44%] min-w-[380px]" : "w-10",
-      )}
-    >
-      <button
-        onClick={onToggle}
-        title={open ? "Hide live preview" : "Show live preview"}
-        className="flex h-10 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/60 px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-      >
-        {open ? (
-          <>
-            <span className="flex items-center gap-1.5">
-              <Eye className="h-3.5 w-3.5" />
-              Live preview
-            </span>
-            <EyeOff className="h-3.5 w-3.5" />
-          </>
-        ) : (
-          <Eye className="mx-auto h-4 w-4" />
-        )}
-      </button>
-
-      {open && (
-        <div className="flex-1 overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
-          {doc ? (
-            <div className="mx-auto w-full max-w-[640px] rounded-sm bg-white px-12 py-14 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
-              <DocPreview doc={doc} />
-            </div>
-          ) : (
-            <p className="text-center text-xs text-muted-foreground">No document</p>
-          )}
-        </div>
-      )}
-    </aside>
+    <div className="h-full overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
+      <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
+        <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} />
+      </div>
+    </div>
   );
 }
 
@@ -69,7 +54,15 @@ function applyCleanup(text: string, p: ParagraphBlock): string {
   return s;
 }
 
-function DocPreview({ doc }: { doc: ParsedDoc }) {
+function DocPreview({
+  doc,
+  selectedId,
+  onSelect,
+}: {
+  doc: ParsedDoc;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+}) {
   const styleMap = useMemo(() => {
     const m = new Map<string, StyleDef>();
     for (const s of doc.paragraphStyles) m.set(s.name, s);
@@ -79,36 +72,42 @@ function DocPreview({ doc }: { doc: ParsedDoc }) {
   return (
     <>
       {doc.blocks.map((b) => (
-        <BlockView key={(b as { id: string }).id} block={b} styleMap={styleMap} charStyles={doc.charStyles} />
+        <BlockView
+          key={(b as { id: string }).id}
+          block={b}
+          styleMap={styleMap}
+          charStyles={doc.charStyles}
+          selectedId={selectedId}
+          onSelect={onSelect}
+          styles={doc.paragraphStyles}
+        />
       ))}
     </>
   );
 }
 
-function BlockView({
-  block,
-  styleMap,
-  charStyles,
-}: {
+interface BlockViewProps {
   block: Block;
   styleMap: Map<string, StyleDef>;
   charStyles: ParsedDoc["charStyles"];
-}) {
-  if (block.kind === "paragraph") {
-    return <ParaView p={block} styleMap={styleMap} charStyles={charStyles} />;
-  }
-  return <TableView t={block} styleMap={styleMap} charStyles={charStyles} />;
+  selectedId: string | null;
+  onSelect: (id: string | null) => void;
+  styles: StyleDef[];
+}
+
+function BlockView(props: BlockViewProps) {
+  if (props.block.kind === "paragraph") return <ParaView {...props} p={props.block} />;
+  return <TableView {...props} t={props.block} />;
 }
 
 function TableView({
   t,
   styleMap,
   charStyles,
-}: {
-  t: TableBlock;
-  styleMap: Map<string, StyleDef>;
-  charStyles: ParsedDoc["charStyles"];
-}) {
+  selectedId,
+  onSelect,
+  styles,
+}: BlockViewProps & { t: TableBlock }) {
   return (
     <table className="my-3 w-full border-collapse text-[12px]">
       <tbody>
@@ -117,7 +116,16 @@ function TableView({
             {row.map((cell, ci) => (
               <td key={ci} className="border border-neutral-300 p-2 align-top">
                 {cell.paragraphs.map((p) => (
-                  <ParaView key={p.id} p={p} styleMap={styleMap} charStyles={charStyles} />
+                  <ParaView
+                    key={p.id}
+                    p={p}
+                    block={p}
+                    styleMap={styleMap}
+                    charStyles={charStyles}
+                    selectedId={selectedId}
+                    onSelect={onSelect}
+                    styles={styles}
+                  />
                 ))}
               </td>
             ))}
@@ -162,14 +170,26 @@ function alignmentClass(a?: ParagraphBlock["alignment"]): string {
   }
 }
 
+function runsText(runs: RunSpan[]) {
+  return runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
+}
+
 function ParaView({
   p,
   charStyles,
-}: {
-  p: ParagraphBlock;
-  styleMap: Map<string, StyleDef>;
-  charStyles: ParsedDoc["charStyles"];
-}) {
+  selectedId,
+  onSelect,
+  styles,
+}: BlockViewProps & { p: ParagraphBlock }) {
+  const isSelected = selectedId === p.id;
+  const hasChanges =
+    !!p.original &&
+    (p.style !== p.original.style ||
+      runsText(p.runs) !== runsText(p.original.runs) ||
+      (Object.keys(p.rules) as Array<keyof ParagraphRules>).some(
+        (k) => p.rules[k] !== p.original!.rules[k],
+      ));
+
   // Soft → hard splits into multiple paragraphs
   const groups: RunSpan[][] = [];
   if (p.rules.softToHard) {
@@ -185,25 +205,38 @@ function ParaView({
     groups.push(p.runs);
   }
 
-  if (groups.length === 0) return <p className="h-3" />;
+  if (groups.length === 0) {
+    return (
+      <ParaShell
+        p={p}
+        isSelected={isSelected}
+        hasChanges={hasChanges}
+        onSelect={onSelect}
+        styles={styles}
+      >
+        <p className="h-3" />
+      </ParaShell>
+    );
+  }
 
   const cls = cn(paragraphClasses(p), alignmentClass(p.alignment));
-
-  // Indent in pixels: 96dpi, 1440 twips = 1in = 96px
   const twipsToPx = (t: number) => (t / 1440) * 96;
-
-  let leftIndent = p.leftIndent ?? 0;
+  const leftIndent = p.leftIndent ?? 0;
   let firstLine = p.firstLineIndent ?? 0;
   if (p.rules.tabsToMargin && p.leadingTabs > 0) {
     firstLine = Math.max(firstLine, p.leadingTabs * 720);
   }
-
   const csMap = new Map(charStyles.map((c) => [c.name, c]));
 
   return (
-    <>
+    <ParaShell
+      p={p}
+      isSelected={isSelected}
+      hasChanges={hasChanges}
+      onSelect={onSelect}
+      styles={styles}
+    >
       {groups.map((spans, idx) => {
-        // Strip leading tabs when tabsToMargin and first group
         let working = spans;
         if (p.rules.tabsToMargin && idx === 0) {
           working = [...spans];
@@ -213,44 +246,6 @@ function ParaView({
           }
         }
         const isPageBreak = idx === 0 && p.rules.pageBreakBefore;
-
-        const content = (
-          <>
-            {p.listKind === "bullet" && idx === 0 && (
-              <span className="mr-2 inline-block">•</span>
-            )}
-            {p.listKind === "number" && idx === 0 && (
-              <span className="mr-2 inline-block">1.</span>
-            )}
-            {working.map((r, i) => {
-              if (r.footnoteRef !== undefined) {
-                return (
-                  <sup key={i} className="text-[9px] text-neutral-500">
-                    [{r.footnoteRef}]
-                  </sup>
-                );
-              }
-              const cs = r.charStyle ? csMap.get(r.charStyle) : undefined;
-              let text = applyCleanup(r.text, p);
-              // visually expand remaining tabs as 4 spaces
-              text = text.replace(/\t/g, "    ");
-              return (
-                <span
-                  key={i}
-                  className={cn(
-                    cs?.bold && "font-bold",
-                    cs?.italic && "italic",
-                    cs?.underline && "underline",
-                    cs?.smallCaps && "uppercase tracking-wide text-[0.85em]",
-                  )}
-                  style={cs?.superscript ? { verticalAlign: "super", fontSize: "0.75em" } : cs?.subscript ? { verticalAlign: "sub", fontSize: "0.75em" } : undefined}
-                >
-                  {text}
-                </span>
-              );
-            })}
-          </>
-        );
 
         return (
           <div key={idx}>
@@ -266,11 +261,169 @@ function ParaView({
                 textIndent: firstLine && idx === 0 ? twipsToPx(firstLine) : undefined,
               }}
             >
-              {content}
+              {p.listKind === "bullet" && idx === 0 && (
+                <span className="mr-2 inline-block">•</span>
+              )}
+              {p.listKind === "number" && idx === 0 && (
+                <span className="mr-2 inline-block">1.</span>
+              )}
+              {working.map((r, i) => {
+                if (r.footnoteRef !== undefined) {
+                  return (
+                    <sup key={i} className="text-[9px] text-neutral-500">
+                      [{r.footnoteRef}]
+                    </sup>
+                  );
+                }
+                const cs = r.charStyle ? csMap.get(r.charStyle) : undefined;
+                let text = applyCleanup(r.text, p);
+                text = text.replace(/\t/g, "    ");
+                return (
+                  <span
+                    key={i}
+                    className={cn(
+                      cs?.bold && "font-bold",
+                      cs?.italic && "italic",
+                      cs?.underline && "underline",
+                      cs?.smallCaps && "uppercase tracking-wide text-[0.85em]",
+                    )}
+                    style={
+                      cs?.superscript
+                        ? { verticalAlign: "super", fontSize: "0.75em" }
+                        : cs?.subscript
+                          ? { verticalAlign: "sub", fontSize: "0.75em" }
+                          : undefined
+                    }
+                  >
+                    {text}
+                  </span>
+                );
+              })}
             </p>
           </div>
         );
       })}
-    </>
+    </ParaShell>
+  );
+}
+
+function ParaShell({
+  p,
+  isSelected,
+  hasChanges,
+  onSelect,
+  styles,
+  children,
+}: {
+  p: ParagraphBlock;
+  isSelected: boolean;
+  hasChanges: boolean;
+  onSelect: (id: string | null) => void;
+  styles: StyleDef[];
+  children: React.ReactNode;
+}) {
+  return (
+    <div
+      onClick={(e) => {
+        e.stopPropagation();
+        onSelect(isSelected ? null : p.id);
+      }}
+      className={cn(
+        "group relative -mx-3 cursor-pointer rounded px-3 transition",
+        isSelected
+          ? "bg-blue-50 ring-2 ring-blue-400"
+          : hasChanges
+            ? "bg-amber-50 hover:bg-amber-100/70"
+            : "hover:bg-neutral-100/70",
+      )}
+    >
+      {children}
+      {isSelected && (
+        <InlineEditor p={p} styles={styles} onClose={() => onSelect(null)} />
+      )}
+    </div>
+  );
+}
+
+function InlineEditor({
+  p,
+  styles,
+  onClose,
+}: {
+  p: ParagraphBlock;
+  styles: StyleDef[];
+  onClose: () => void;
+}) {
+  const setStyle = useEditor((s) => s.setStyle);
+  const setText = useEditor((s) => s.setText);
+  const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
+  const revertAll = useEditor((s) => s.revertParagraph);
+
+  const [draft, setDraft] = useState(runsText(p.runs));
+
+  return (
+    <div
+      onClick={(e) => e.stopPropagation()}
+      className="mt-2 mb-3 space-y-2 rounded-md border border-blue-300 bg-white p-3 text-[12px] text-neutral-800 shadow-sm"
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={p.style}
+          onChange={(e) => setStyle(p.id, e.target.value)}
+          className="rounded border border-neutral-300 bg-white px-2 py-1 text-[11px] font-medium"
+        >
+          {styles.map((s) => (
+            <option key={s.name} value={s.name}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        <div className="flex flex-wrap gap-1">
+          {QUICK_RULES.map((r) => {
+            const on = p.rules[r.key];
+            return (
+              <button
+                key={r.key}
+                onClick={() => updateParagraphRule(p.id, r.key, !on)}
+                className={cn(
+                  "rounded border px-1.5 py-0.5 text-[10px] transition",
+                  on
+                    ? "border-blue-500 bg-blue-500 text-white"
+                    : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50",
+                )}
+              >
+                {r.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="ml-auto flex items-center gap-1">
+          {p.original && (
+            <button
+              onClick={() => revertAll(p.id)}
+              title="Revert this paragraph"
+              className="inline-flex items-center gap-1 rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-[10px] text-neutral-600 hover:bg-neutral-50"
+            >
+              <Undo2 className="h-3 w-3" /> Revert
+            </button>
+          )}
+          <button
+            onClick={onClose}
+            className="rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-[10px] text-neutral-600 hover:bg-neutral-50"
+          >
+            Done
+          </button>
+        </div>
+      </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        onBlur={() => {
+          if (draft !== runsText(p.runs)) setText(p.id, draft);
+        }}
+        rows={Math.min(8, Math.max(2, draft.split("\n").length))}
+        className="w-full resize-y rounded border border-neutral-300 bg-white px-2 py-1.5 font-sans text-[12px] leading-relaxed text-neutral-900 outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-300"
+      />
+    </div>
   );
 }
