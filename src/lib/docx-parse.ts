@@ -191,6 +191,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let allItalic = true;
   let leadingTabPhase = true;
   let hasSectPr = false;
+  let pPrPageBreak = false;
+  let runPageBreak = false;
 
   for (const child of kids) {
     const t = tagOf(child);
@@ -210,10 +212,13 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           }
         } else if (kt === "w:sectPr") {
           hasSectPr = true;
+        } else if (kt === "w:pageBreakBefore") {
+          pPrPageBreak = true;
         }
       }
     } else if (t === "w:r") {
       const info = parseRun(child);
+      if (info.hasBreak) runPageBreak = true;
       if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
       anyRun = true;
       // Count leading tabs while we're still in pure tab territory
@@ -254,7 +259,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
-    return {
+    const empty: ParagraphBlock = {
       id: nextId(),
       kind: "paragraph",
       style: "Body",
@@ -265,6 +270,9 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       hasMultiSpaces: false,
       rules: defaultRulesFor(),
     };
+    (empty as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__pPrPageBreak = pPrPageBreak;
+    (empty as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__runPageBreak = runPageBreak;
+    return empty;
   }
 
   const fullText = runs.map((r) => r.text).join("");
@@ -287,6 +295,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
     alignment,
     rules: defaultRulesFor(),
   };
+  (block as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__pPrPageBreak = pPrPageBreak;
+  (block as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__runPageBreak = runPageBreak;
   block.style = detectParagraphStyle(block);
   return block;
 }
@@ -360,11 +370,15 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   const blocks: Block[] = [];
   let blankCount = 0;
   let pendingSectionBreak = false;
+  let pendingPageBreak = false;
+  type PBExtras = ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean };
   for (let i = 0; i < rawBlocks.length; i++) {
     const b = rawBlocks[i];
     if (b.kind === "paragraph" && b.runs.length === 0) {
       blankCount++;
       if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
+      const eb = b as PBExtras;
+      if (eb.__pPrPageBreak || eb.__runPageBreak) pendingPageBreak = true;
       continue;
     }
     if (b.kind === "paragraph") {
@@ -374,9 +388,16 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
       if (pendingSectionBreak) {
         b.sectionBreakBefore = true;
       }
+      const eb = b as PBExtras;
+      if (pendingPageBreak || eb.__pPrPageBreak || eb.__runPageBreak) {
+        b.rules.pageBreakBefore = true;
+      }
+      delete eb.__pPrPageBreak;
+      delete eb.__runPageBreak;
     }
     if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
     else pendingSectionBreak = false;
+    pendingPageBreak = false;
     blankCount = 0;
     blocks.push(b);
   }
