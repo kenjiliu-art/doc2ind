@@ -1,6 +1,12 @@
 import { useEditor, type PreflightAction } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Check, Info } from "lucide-react";
+import {
+  TooltipProvider,
+  Tooltip,
+  TooltipTrigger,
+  TooltipContent,
+} from "@/components/ui/tooltip";
 
 const AUTO_APPLY: Array<{ key: AutoApplyKey; label: string }> = [
   { key: "smartQuotes", label: "Smart quotes" },
@@ -11,70 +17,128 @@ const AUTO_APPLY: Array<{ key: AutoApplyKey; label: string }> = [
   { key: "pageBreakBefore", label: "Section → page break" },
 ];
 
-const PREFLIGHT: Array<{ action: PreflightAction; label: string }> = [
-  { action: "stripUnusedStyles", label: "Strip unused styles" },
-  { action: "collapseBlanksToSpacing", label: "Blanks → spacing" },
-  { action: "normalizeLists", label: "Normalize lists" },
-  { action: "closeOrphanRuns", label: "Close orphan runs" },
-  { action: "sanitizeStyleNames", label: "Sanitize style names" },
+const PREFLIGHT: Array<{
+  action: PreflightAction;
+  label: string;
+  description: string;
+}> = [
+  {
+    action: "stripUnusedStyles",
+    label: "Strip unused styles",
+    description:
+      "Removes paragraph and character style definitions that are not referenced by any text in the document, keeping the style list lean.",
+  },
+  {
+    action: "collapseBlanksToSpacing",
+    label: "Blanks → spacing",
+    description:
+      "Converts blank lines between paragraphs into extra space-after on the preceding paragraph's style, eliminating visual gaps.",
+  },
+  {
+    action: "normalizeLists",
+    label: "Normalize lists",
+    description:
+      "Detects bullet or number prefixes in paragraph text and converts them into proper list paragraphs with consistent formatting.",
+  },
+  {
+    action: "closeOrphanRuns",
+    label: "Close orphan runs",
+    description:
+      "Moves trailing whitespace out of styled character runs so bold or italic formatting does not bleed into surrounding text.",
+  },
+  {
+    action: "sanitizeStyleNames",
+    label: "Sanitize style names",
+    description:
+      "Renames messy auto-generated style names like 'Normal + Bold + 12pt' into clean, readable labels such as 'Body'.",
+  },
 ];
 
 export function CleanupBar() {
   const runPreflight = useEditor((s) => s.runPreflight);
+  const preflightHistory = useEditor((s) => s.preflightHistory);
   const applyDocCleanup = useEditor((s) => s.applyDocCleanup);
   const autoApply = useSettings((s) => s.autoApply);
   const setAutoApply = useSettings((s) => s.setAutoApply);
 
   return (
-    <div className="space-y-4 px-3 py-3 text-xs">
-      <section>
-        <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-          Auto-apply on import
-        </p>
-        <div className="space-y-0.5">
-          {AUTO_APPLY.map((opt) => {
-            const on = autoApply[opt.key];
-            return (
-              <label
-                key={opt.key}
-                className="flex cursor-pointer items-center justify-between gap-2 rounded px-1.5 py-1 hover:bg-accent/40"
-              >
-                <span className="text-[11px] text-foreground">{opt.label}</span>
-                <input
-                  type="checkbox"
-                  className="h-3.5 w-3.5 accent-primary"
-                  checked={on}
-                  onChange={(e) => {
-                    setAutoApply(opt.key, e.target.checked);
-                    // Also apply to the currently loaded doc so the preview updates live.
-                    if (opt.key !== "pageBreakBefore") {
-                      applyDocCleanup([opt.key], e.target.checked);
-                    }
-                  }}
-                />
-              </label>
-            );
-          })}
-        </div>
-      </section>
+    <TooltipProvider delayDuration={300}>
+      <div className="space-y-4 px-3 py-3 text-xs">
+        <section>
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Auto-apply on import
+          </p>
+          <div className="space-y-0.5">
+            {AUTO_APPLY.map((opt) => {
+              const on = autoApply[opt.key];
+              return (
+                <label
+                  key={opt.key}
+                  className="flex cursor-pointer items-center justify-between gap-2 rounded px-1.5 py-1 hover:bg-accent/40"
+                >
+                  <span className="text-[11px] text-foreground">{opt.label}</span>
+                  <input
+                    type="checkbox"
+                    className="h-3.5 w-3.5 accent-primary"
+                    checked={on}
+                    onChange={(e) => {
+                      setAutoApply(opt.key, e.target.checked);
+                      if (opt.key !== "pageBreakBefore") {
+                        applyDocCleanup([opt.key], e.target.checked);
+                      }
+                    }}
+                  />
+                </label>
+              );
+            })}
+          </div>
+        </section>
 
-      <section>
-        <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary">
-          <Sparkles className="h-3 w-3" /> Pre-flight
-        </p>
-        <div className="space-y-1">
-          {PREFLIGHT.map((p) => (
-            <button
-              key={p.action}
-              onClick={() => runPreflight(p.action)}
-              className="flex w-full items-center justify-between rounded border border-border bg-background px-2 py-1.5 text-left text-[11px] hover:border-primary hover:bg-accent"
-            >
-              <span>{p.label}</span>
-              <span className="text-[10px] text-muted-foreground">Run →</span>
-            </button>
-          ))}
-        </div>
-      </section>
-    </div>
+        <section>
+          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+            <Sparkles className="h-3 w-3" /> Pre-flight
+          </p>
+          <div className="space-y-1">
+            {PREFLIGHT.map((p) => {
+              const hasRun = preflightHistory.has(p.action);
+              return (
+                <Tooltip key={p.action}>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => runPreflight(p.action)}
+                      className="flex w-full items-center justify-between rounded border border-border bg-background px-2 py-1.5 text-left text-[11px] hover:border-primary hover:bg-accent"
+                    >
+                      <span className="flex items-center gap-1.5">
+                        {hasRun && (
+                          <Check className="h-3 w-3 shrink-0 text-emerald-500" />
+                        )}
+                        <span className={hasRun ? "text-muted-foreground" : "text-foreground"}>
+                          {p.label}
+                        </span>
+                      </span>
+                      <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                        {hasRun && <span className="text-emerald-500">Done</span>}
+                        <span>Run →</span>
+                      </span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right" className="w-56 space-y-1.5">
+                    <p className="text-[11px] font-semibold text-foreground">{p.label}</p>
+                    <p className="text-[11px] text-muted-foreground leading-relaxed">
+                      {p.description}
+                    </p>
+                    {hasRun && (
+                      <p className="text-[10px] text-emerald-500 font-medium">
+                        This tool has already been run on the current document.
+                      </p>
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </section>
+      </div>
+    </TooltipProvider>
   );
 }

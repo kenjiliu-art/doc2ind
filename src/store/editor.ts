@@ -30,6 +30,7 @@ interface EditorState {
   doc: ParsedDoc | null;
   selection: Set<string>;
   fileName: string;
+  preflightHistory: Set<PreflightAction>;
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
   updateParagraph: (id: string, patch: Partial<ParagraphBlock>) => void;
@@ -84,6 +85,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   doc: null,
   selection: new Set(),
   fileName: "document",
+  preflightHistory: new Set(),
   setDoc: (doc, fileName) => {
     const settings = useSettings.getState().autoApply;
     const blocks = mapParagraphs(doc.blocks, (p) => ({
@@ -92,9 +94,9 @@ export const useEditor = create<EditorState>((set, get) => ({
         sectionBreakBefore: p.sectionBreakBefore,
       }),
     }));
-    set({ doc: { ...doc, blocks }, fileName, selection: new Set() });
+    set({ doc: { ...doc, blocks }, fileName, selection: new Set(), preflightHistory: new Set() });
   },
-  reset: () => set({ doc: null, selection: new Set(), fileName: "document" }),
+  reset: () => set({ doc: null, selection: new Set(), fileName: "document", preflightHistory: new Set() }),
   updateParagraph: (id, patch) => {
     const doc = get().doc;
     if (!doc) return;
@@ -318,7 +320,9 @@ export const useEditor = create<EditorState>((set, get) => ({
       sectionBreaksToPageBreaks,
       sanitizeStyleNames,
     };
-    set({ doc: fns[action](doc) });
+    const nextHistory = new Set(get().preflightHistory);
+    nextHistory.add(action);
+    set({ doc: fns[action](doc), preflightHistory: nextHistory });
   },
 }));
 
