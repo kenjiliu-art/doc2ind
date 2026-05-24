@@ -26,6 +26,7 @@ let idCounter = 0;
 const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
 let sectionBreakSeen = false;
+let styleIdToName = new Map<string, string>();
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
