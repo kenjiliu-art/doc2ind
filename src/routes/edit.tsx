@@ -14,6 +14,7 @@ import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
 import { buildTaggedText } from "@/lib/tagged-text";
 import { CleanupBar } from "@/components/CleanupBar";
+import { CharStylesPanel } from "@/components/CharStylesPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { FileText, Download, FileCode2 } from "lucide-react";
 
@@ -108,8 +109,9 @@ function EditPage() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto py-2">
+        <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
           <CleanupBar />
+          <CharStylesPanel />
         </div>
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
