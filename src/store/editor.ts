@@ -85,6 +85,7 @@ export const useEditor = create<EditorState>((set, get) => ({
   doc: null,
   selection: new Set(),
   fileName: "document",
+  preflightHistory: new Set(),
   setDoc: (doc, fileName) => {
     const settings = useSettings.getState().autoApply;
     const blocks = mapParagraphs(doc.blocks, (p) => ({
@@ -93,9 +94,9 @@ export const useEditor = create<EditorState>((set, get) => ({
         sectionBreakBefore: p.sectionBreakBefore,
       }),
     }));
-    set({ doc: { ...doc, blocks }, fileName, selection: new Set() });
+    set({ doc: { ...doc, blocks }, fileName, selection: new Set(), preflightHistory: new Set() });
   },
-  reset: () => set({ doc: null, selection: new Set(), fileName: "document" }),
+  reset: () => set({ doc: null, selection: new Set(), fileName: "document", preflightHistory: new Set() }),
   updateParagraph: (id, patch) => {
     const doc = get().doc;
     if (!doc) return;
