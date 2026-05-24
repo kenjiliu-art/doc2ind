@@ -64,6 +64,10 @@ export interface ParagraphBlock {
   alignment?: "left" | "center" | "right" | "justify";
   /** True when the paragraph immediately follows a section break in the source. */
   sectionBreakBefore?: boolean;
+  /** Per-paragraph override for space before, in twips (1pt = 20 twips). */
+  spaceBefore?: number;
+  /** Per-paragraph override for space after, in twips. */
+  spaceAfter?: number;
   /** When set, paragraph is part of a normalized list. */
   listKind?: "bullet" | "number";
   rules: ParagraphRules;
