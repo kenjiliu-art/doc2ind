@@ -17,7 +17,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
 } from "@/lib/preflight";
-import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
+
 
 export type PreflightAction =
   | "stripUnusedStyles"
@@ -89,14 +89,7 @@ export const useEditor = create<EditorState>()(
   selection: new Set(),
   fileName: "document",
   setDoc: (doc, fileName) => {
-    const settings = useSettings.getState().autoApply;
-    const blocks = mapParagraphs(doc.blocks, (p) => ({
-      ...p,
-      rules: applyAutoSettingsToRules(p.rules, settings, {
-        sectionBreakBefore: p.sectionBreakBefore,
-      }),
-    }));
-    set({ doc: { ...doc, blocks }, fileName, selection: new Set() });
+    set({ doc, fileName, selection: new Set() });
   },
   reset: () => set({ doc: null, selection: new Set(), fileName: "document" }),
   updateParagraph: (id, patch) => {
