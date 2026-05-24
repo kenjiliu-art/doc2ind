@@ -237,7 +237,7 @@ function ParaView({
     groupsSrc.push(items);
   }
 
-  if (groups.length === 0) {
+  if (groupsSrc.length === 0) {
     return (
       <ParaShell
         p={p}
@@ -270,13 +270,22 @@ function ParaView({
       styles={styles}
       showMargins={showMargins}
     >
-      {groups.map((spans, idx) => {
+      {groupsSrc.map((spans, idx) => {
         let working = spans;
-        if (p.rules.tabsToMargin && idx === 0) {
-          working = [...spans];
-          if (working.length && working[0].text.startsWith("\t")) {
-            working[0] = { ...working[0], text: working[0].text.replace(/^\t+/, "") };
-            if (!working[0].text) working.shift();
+        if (p.rules.tabsToMargin && idx === 0 && working.length) {
+          const first = working[0];
+          const m = first.run.text.match(/^\t+/);
+          if (m) {
+            const strip = m[0].length;
+            const newRun = { ...first.run, text: first.run.text.slice(strip) };
+            const newItem: Item = {
+              run: newRun,
+              srcIdx: first.srcIdx,
+              srcStart: first.srcStart + strip,
+              stripLen: strip,
+            };
+            working = [newItem, ...working.slice(1)];
+            if (!newRun.text) working.shift();
           }
         }
         const isPageBreak = idx === 0 && p.rules.pageBreakBefore;
@@ -301,7 +310,8 @@ function ParaView({
               {p.listKind === "number" && idx === 0 && (
                 <span className="mr-2 inline-block">1.</span>
               )}
-              {working.map((r, i) => {
+              {working.map((it, i) => {
+                const r = it.run;
                 if (r.footnoteRef !== undefined) {
                   return (
                     <sup key={i} className="text-[9px] text-neutral-500">
@@ -331,6 +341,8 @@ function ParaView({
                   <span
                     key={i}
                     title={tip}
+                    data-src-start={it.srcStart}
+                    data-src-len={r.text.length}
                     className={cn(
                       cs?.bold && "font-bold",
                       cs?.italic && "italic",
