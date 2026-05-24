@@ -320,7 +320,9 @@ export const useEditor = create<EditorState>((set, get) => ({
       sectionBreaksToPageBreaks,
       sanitizeStyleNames,
     };
-    set({ doc: fns[action](doc) });
+    const nextHistory = new Set(get().preflightHistory);
+    nextHistory.add(action);
+    set({ doc: fns[action](doc), preflightHistory: nextHistory });
   },
 }));
 
