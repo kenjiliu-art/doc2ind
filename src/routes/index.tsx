@@ -534,6 +534,7 @@ function EditorView() {
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
     toastExportSummary(initialBreakdown, current, ".docx");
+    awardAchievements(initialBreakdown, current);
   };
   const onExportTagged = () => {
     const current = countIssuesDetailed(doc);
@@ -541,6 +542,7 @@ function EditorView() {
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
     toastExportSummary(initialBreakdown, current, ".txt");
+    awardAchievements(initialBreakdown, current);
   };
 
   const loadSample = async (name: string) => {
