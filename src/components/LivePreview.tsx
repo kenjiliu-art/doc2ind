@@ -29,6 +29,7 @@ interface LivePreviewProps {
 
 export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
+  const [showMargins, setShowMargins] = useState(false);
   if (!doc) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -38,8 +39,22 @@ export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
   }
   return (
     <div className="h-full overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
+      <div className="mx-auto mb-3 flex w-full max-w-[760px] items-center justify-end gap-2">
+        <button
+          onClick={() => setShowMargins((v) => !v)}
+          className={cn(
+            "rounded border px-2 py-1 text-[11px] font-medium transition",
+            showMargins
+              ? "border-fuchsia-500 bg-fuchsia-500 text-white"
+              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+          )}
+          title="Highlight paragraphs with left or first-line indents"
+        >
+          {showMargins ? "Hide margins" : "Show margins"}
+        </button>
+      </div>
       <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
-        <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} />
+        <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} showMargins={showMargins} />
       </div>
     </div>
   );
