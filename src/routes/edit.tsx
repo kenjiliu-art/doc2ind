@@ -18,6 +18,7 @@ import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
 import { BulkActionsBar } from "@/components/BulkActionsBar";
 import { CleanupBar } from "@/components/CleanupBar";
+import { LivePreview } from "@/components/LivePreview";
 import { FileText, Download, FileCode2, Minimize2, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
