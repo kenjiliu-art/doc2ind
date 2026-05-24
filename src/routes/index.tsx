@@ -219,8 +219,14 @@ function EditorView() {
   const setDoc = useEditor((s) => s.setDoc);
   const reset = useEditor((s) => s.reset);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleError, setSampleError] = useState<string | null>(null);
+
+  const jumpAndCloseSheet = (id: string) => {
+    setSelectedId(id);
+    setMobileSheetOpen(false);
+  };
 
   const stats = useMemo(() => {
     let paragraphs = 0;
