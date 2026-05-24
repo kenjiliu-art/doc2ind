@@ -438,8 +438,12 @@ function InlineEditor({
 }) {
   const setStyle = useEditor((s) => s.setStyle);
   const setText = useEditor((s) => s.setText);
+  const updateParagraph = useEditor((s) => s.updateParagraph);
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
   const revertAll = useEditor((s) => s.revertParagraph);
+
+  const spaceBeforePt = p.spaceBefore ? p.spaceBefore / 20 : 0;
+  const spaceAfterPt = p.spaceAfter ? p.spaceAfter / 20 : 0;
 
   const [draft, setDraft] = useState(runsText(p.runs));
 
