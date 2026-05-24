@@ -302,14 +302,31 @@ function ParaView({
                 const cs = r.charStyle ? csMap.get(r.charStyle) : undefined;
                 let text = applyCleanup(r.text, p);
                 text = text.replace(/\t/g, "    ");
+                const flags = cs
+                  ? [
+                      cs.bold && "Bold",
+                      cs.italic && "Italic",
+                      cs.underline && "Underline",
+                      cs.smallCaps && "Small caps",
+                      cs.superscript && "Superscript",
+                      cs.subscript && "Subscript",
+                    ].filter(Boolean)
+                  : [];
+                const tip = cs
+                  ? `${cs.name}${flags.length ? ` — ${flags.join(", ")}` : ""}`
+                  : r.charStyle
+                    ? r.charStyle
+                    : "Default";
                 return (
                   <span
                     key={i}
+                    title={tip}
                     className={cn(
                       cs?.bold && "font-bold",
                       cs?.italic && "italic",
                       cs?.underline && "underline",
                       cs?.smallCaps && "uppercase tracking-wide text-[0.85em]",
+                      cs && "hover:bg-amber-100/60 hover:outline hover:outline-1 hover:outline-amber-300 rounded-sm",
                     )}
                     style={
                       cs?.superscript
