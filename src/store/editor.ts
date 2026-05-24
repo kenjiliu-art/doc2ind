@@ -15,6 +15,7 @@ import {
   closeOrphanRuns,
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
+  trimRunBleed,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 
@@ -23,6 +24,7 @@ export type PreflightAction =
   | "collapseBlanksToSpacing"
   | "normalizeLists"
   | "closeOrphanRuns"
+  | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
   | "sanitizeStyleNames";
 
