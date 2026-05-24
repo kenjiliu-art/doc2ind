@@ -18,6 +18,7 @@ import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
 import { BulkActionsBar } from "@/components/BulkActionsBar";
 import { CleanupBar } from "@/components/CleanupBar";
+import { LivePreview } from "@/components/LivePreview";
 import { FileText, Download, FileCode2, Minimize2, Maximize2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -41,10 +42,17 @@ function EditPage() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("edit-compact-header") === "true";
   });
+  const [previewOpen, setPreviewOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("edit-live-preview") !== "false";
+  });
 
   useEffect(() => {
     localStorage.setItem("edit-compact-header", String(compact));
   }, [compact]);
+  useEffect(() => {
+    localStorage.setItem("edit-live-preview", String(previewOpen));
+  }, [previewOpen]);
 
   const stats = useMemo(() => {
     if (!doc) return { paragraphs: 0, words: 0 };
@@ -226,6 +234,7 @@ function EditPage() {
           </div>
         </div>
       </main>
+      <LivePreview open={previewOpen} onToggle={() => setPreviewOpen((v) => !v)} />
     </div>
   );
 }
