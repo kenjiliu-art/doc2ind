@@ -126,6 +126,7 @@ function TableView({
   selectedId,
   onSelect,
   styles,
+  showMargins,
 }: BlockViewProps & { t: TableBlock }) {
   return (
     <table className="my-3 w-full border-collapse text-[12px]">
@@ -144,6 +145,7 @@ function TableView({
                     selectedId={selectedId}
                     onSelect={onSelect}
                     styles={styles}
+                    showMargins={showMargins}
                   />
                 ))}
               </td>
