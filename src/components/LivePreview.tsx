@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type {
   Block,
@@ -10,8 +10,10 @@ import type {
   TableBlock,
 } from "@/lib/types";
 import { smartQuotes, trimTrailing, dashes, multiSpaces } from "@/lib/cleanup";
-import { Undo2 } from "lucide-react";
+import { Undo2, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { detectIssues, ISSUE_COLOR, type Issue, type IssueKey } from "@/lib/issues";
+import { ParagraphMinimap } from "./ParagraphMinimap";
 
 const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string }> = [
   { key: "smartQuotes", label: "Smart quotes" },
@@ -23,14 +25,40 @@ const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; la
   { key: "pageBreakAfter", label: "Break below" },
 ];
 
+export type PreviewFilter = "all" | "warnings" | "changed" | "selected" | "headings" | "unstyled";
+
+const FILTER_LABELS: Array<{ key: PreviewFilter; label: string }> = [
+  { key: "all", label: "All" },
+  { key: "warnings", label: "Warnings" },
+  { key: "changed", label: "Changed" },
+  { key: "selected", label: "Selected" },
+  { key: "headings", label: "Headings" },
+  { key: "unstyled", label: "Unstyled" },
+];
+
 interface LivePreviewProps {
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  onSelect: (id: string | null, opts?: { shift?: boolean }) => void;
 }
 
 export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
+  const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
+  const [showNumbers, setShowNumbers] = useState(true);
+  const [filter, setFilter] = useState<PreviewFilter>("all");
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+
+  const jump = (id: string) => {
+    requestAnimationFrame(() => {
+      const el = document.querySelector(`[data-para-id="${id}"]`) as HTMLElement | null;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("diag-flash");
+      window.setTimeout(() => el.classList.remove("diag-flash"), 1400);
+    });
+  };
+
   if (!doc) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -38,28 +66,87 @@ export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
       </div>
     );
   }
+
   return (
-    <div className="h-full overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
-      <div className="mx-auto mb-3 flex w-full max-w-[760px] items-center justify-end gap-2">
-        <button
-          onClick={() => setShowMargins((v) => !v)}
-          className={cn(
-            "rounded border px-2 py-1 text-[11px] font-medium transition",
-            showMargins
-              ? "border-fuchsia-500 bg-fuchsia-500 text-white"
-              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
-          )}
-          title="Highlight paragraphs with left or first-line indents"
-        >
-          {showMargins ? "Hide margins" : "Show margins"}
-        </button>
+    <div className="relative h-full">
+      <div
+        ref={scrollRef}
+        className="h-full overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8"
+      >
+        <div className="mx-auto mb-3 flex w-full max-w-[760px] flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-1">
+            {FILTER_LABELS.map((f) => (
+              <button
+                key={f.key}
+                onClick={() => setFilter(f.key)}
+                className={cn(
+                  "rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition",
+                  filter === f.key
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50",
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowNumbers((v) => !v)}
+              className={cn(
+                "rounded border px-2 py-1 text-[11px] font-medium transition",
+                showNumbers
+                  ? "border-blue-500 bg-blue-500 text-white"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+              )}
+              title="Toggle paragraph numbers in the left gutter"
+            >
+              # Numbers
+            </button>
+            <button
+              onClick={() => setShowMargins((v) => !v)}
+              className={cn(
+                "rounded border px-2 py-1 text-[11px] font-medium transition",
+                showMargins
+                  ? "border-fuchsia-500 bg-fuchsia-500 text-white"
+                  : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+              )}
+              title="Highlight paragraphs with left or first-line indents"
+            >
+              Margins
+            </button>
+          </div>
+        </div>
+        <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
+          <DocPreview
+            doc={doc}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            showMargins={showMargins}
+            showNumbers={showNumbers}
+            filter={filter}
+            selection={selection}
+            paragraphIndex={paragraphIndexFor(doc.blocks)}
+          />
+        </div>
+        <CharStyleFloatingToolbar doc={doc} />
       </div>
-      <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
-        <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} showMargins={showMargins} />
-      </div>
-      <CharStyleFloatingToolbar doc={doc} />
+      <ParagraphMinimap blocks={doc.blocks} scrollRef={scrollRef} onJump={jump} />
     </div>
   );
+}
+
+function paragraphIndexFor(blocks: Block[]): Map<string, number> {
+  const m = new Map<string, number>();
+  let i = 0;
+  for (const b of blocks) {
+    if (b.kind === "paragraph") m.set(b.id, ++i);
+    else
+      for (const row of b.rows)
+        for (const cell of row)
+          for (const p of cell.paragraphs) m.set(p.id, ++i);
+  }
+  return m;
 }
 
 interface FloatingSel {
@@ -71,7 +158,6 @@ interface FloatingSel {
 }
 
 function getSrcOffset(node: Node, offset: number): { paragraphId: string; pos: number } | null {
-  // Walk up to the span carrying data-src-start
   let span: HTMLElement | null = null;
   let n: Node | null = node;
   if (n.nodeType === Node.TEXT_NODE) n = n.parentElement;
@@ -87,14 +173,11 @@ function getSrcOffset(node: Node, offset: number): { paragraphId: string; pos: n
   if (!paraEl) return null;
   const srcStart = Number(span.dataset.srcStart);
   const srcLen = Number(span.dataset.srcLen);
-  // offset is the index within the text node (or child offset for element nodes)
   let localOffset = offset;
   if (node.nodeType !== Node.TEXT_NODE) {
-    // Element-relative offset — treat as offset chars into span text
     const text = span.textContent ?? "";
     localOffset = Math.min(offset, text.length);
   }
-  // Clamp to source length (cleanup transforms can change displayed length)
   const pos = srcStart + Math.max(0, Math.min(localOffset, srcLen));
   return { paragraphId: paraEl.dataset.paraId!, pos };
 }
@@ -199,17 +282,28 @@ function applyCleanup(text: string, p: ParagraphBlock): string {
   return s;
 }
 
+interface DocPreviewExtras {
+  showNumbers: boolean;
+  filter: PreviewFilter;
+  selection: Set<string>;
+  paragraphIndex: Map<string, number>;
+}
+
 function DocPreview({
   doc,
   selectedId,
   onSelect,
   showMargins,
+  showNumbers,
+  filter,
+  selection,
+  paragraphIndex,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  onSelect: LivePreviewProps["onSelect"];
   showMargins: boolean;
-}) {
+} & DocPreviewExtras) {
   const styleMap = useMemo(() => {
     const m = new Map<string, StyleDef>();
     for (const s of doc.paragraphStyles) m.set(s.name, s);
@@ -228,18 +322,22 @@ function DocPreview({
           onSelect={onSelect}
           styles={doc.paragraphStyles}
           showMargins={showMargins}
+          showNumbers={showNumbers}
+          filter={filter}
+          selection={selection}
+          paragraphIndex={paragraphIndex}
         />
       ))}
     </>
   );
 }
 
-interface BlockViewProps {
+interface BlockViewProps extends DocPreviewExtras {
   block: Block;
   styleMap: Map<string, StyleDef>;
   charStyles: ParsedDoc["charStyles"];
   selectedId: string | null;
-  onSelect: (id: string | null) => void;
+  onSelect: LivePreviewProps["onSelect"];
   styles: StyleDef[];
   showMargins: boolean;
 }
@@ -251,12 +349,7 @@ function BlockView(props: BlockViewProps) {
 
 function TableView({
   t,
-  styleMap,
-  charStyles,
-  selectedId,
-  onSelect,
-  styles,
-  showMargins,
+  ...rest
 }: BlockViewProps & { t: TableBlock }) {
   return (
     <table className="my-3 w-full border-collapse text-[12px]">
@@ -266,17 +359,7 @@ function TableView({
             {row.map((cell, ci) => (
               <td key={ci} className="border border-neutral-300 p-2 align-top">
                 {cell.paragraphs.map((p) => (
-                  <ParaView
-                    key={p.id}
-                    p={p}
-                    block={p}
-                    styleMap={styleMap}
-                    charStyles={charStyles}
-                    selectedId={selectedId}
-                    onSelect={onSelect}
-                    styles={styles}
-                    showMargins={showMargins}
-                  />
+                  <ParaView key={p.id} {...rest} block={p} p={p} />
                 ))}
               </td>
             ))}
@@ -332,8 +415,13 @@ function ParaView({
   onSelect,
   styles,
   showMargins,
+  showNumbers,
+  filter,
+  selection,
+  paragraphIndex,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
+  const isInSelection = selection.has(p.id);
   const hasChanges =
     !!p.original &&
     (p.style !== p.original.style ||
@@ -341,8 +429,24 @@ function ParaView({
       (Object.keys(p.rules) as Array<keyof ParagraphRules>).some(
         (k) => p.rules[k] !== p.original!.rules[k],
       ));
+  const issues = useMemo(() => detectIssues(p), [p]);
+  const matchesFilter = useMemo(() => {
+    switch (filter) {
+      case "all":
+        return true;
+      case "warnings":
+        return issues.length > 0;
+      case "changed":
+        return hasChanges;
+      case "selected":
+        return isInSelection;
+      case "headings":
+        return /^Heading/i.test(p.style);
+      case "unstyled":
+        return !p.sourceStyle;
+    }
+  }, [filter, issues.length, hasChanges, isInSelection, p.style, p.sourceStyle]);
 
-  // Build (srcIdx, srcStart) for each run, then split on '\n' if softToHard
   type Item = { run: RunSpan; srcIdx: number; srcStart: number; stripLen: number };
   const items: Item[] = [];
   {
@@ -367,16 +471,23 @@ function ParaView({
     groupsSrc.push(items);
   }
 
+  const shellProps = {
+    p,
+    isSelected,
+    isInSelection,
+    hasChanges,
+    onSelect,
+    styles,
+    showMargins,
+    showNumbers,
+    issues,
+    matchesFilter,
+    paragraphIndex,
+  };
+
   if (groupsSrc.length === 0) {
     return (
-      <ParaShell
-        p={p}
-        isSelected={isSelected}
-        hasChanges={hasChanges}
-        onSelect={onSelect}
-        styles={styles}
-        showMargins={showMargins}
-      >
+      <ParaShell {...shellProps}>
         <p className="h-3" />
       </ParaShell>
     );
@@ -392,14 +503,7 @@ function ParaView({
   const csMap = new Map(charStyles.map((c) => [c.name, c]));
 
   return (
-    <ParaShell
-      p={p}
-      isSelected={isSelected}
-      hasChanges={hasChanges}
-      onSelect={onSelect}
-      styles={styles}
-      showMargins={showMargins}
-    >
+    <ParaShell {...shellProps}>
       {groupsSrc.map((spans, idx) => {
         let working = spans;
         if (p.rules.tabsToMargin && idx === 0 && working.length) {
@@ -512,20 +616,33 @@ function ParaView({
 function ParaShell({
   p,
   isSelected,
+  isInSelection,
   hasChanges,
   onSelect,
   styles,
   showMargins,
+  showNumbers,
+  issues,
+  matchesFilter,
+  paragraphIndex,
   children,
 }: {
   p: ParagraphBlock;
   isSelected: boolean;
+  isInSelection: boolean;
   hasChanges: boolean;
-  onSelect: (id: string | null) => void;
+  onSelect: LivePreviewProps["onSelect"];
   styles: StyleDef[];
   showMargins: boolean;
+  showNumbers: boolean;
+  issues: Issue[];
+  matchesFilter: boolean;
+  paragraphIndex: Map<string, number>;
   children: React.ReactNode;
 }) {
+  const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
+  const toggleSelect = useEditor((s) => s.toggleSelect);
+  const rangeSelect = useEditor((s) => s.rangeSelect);
   const twipsToPx = (t: number) => (t / 1440) * 96;
   const leftIndent = p.leftIndent ?? 0;
   let firstLine = p.firstLineIndent ?? 0;
@@ -534,12 +651,21 @@ function ParaShell({
   }
   const hasMargin = showMargins && (leftIndent !== 0 || firstLine !== 0);
   const fmt = (t: number) => `${(t / 1440).toFixed(2)}″`;
+  const idx = paragraphIndex.get(p.id);
 
   return (
     <div
       data-para-id={p.id}
       onClick={(e) => {
         e.stopPropagation();
+        if (e.metaKey || e.ctrlKey) {
+          toggleSelect(p.id);
+          return;
+        }
+        if (e.shiftKey) {
+          rangeSelect(p.id);
+          return;
+        }
         onSelect(isSelected ? null : p.id);
       }}
       style={{
@@ -550,17 +676,41 @@ function ParaShell({
         "group relative -mx-3 cursor-pointer rounded px-3 transition",
         isSelected
           ? "bg-blue-50 ring-2 ring-blue-400"
-          : hasChanges
-            ? "bg-amber-50 hover:bg-amber-100/70"
-            : "hover:bg-neutral-100/70",
+          : isInSelection
+            ? "bg-blue-50/40 ring-1 ring-blue-300"
+            : hasChanges
+              ? "bg-amber-50 hover:bg-amber-100/70"
+              : "hover:bg-neutral-100/70",
         hasMargin && !isSelected && "bg-fuchsia-50/60",
+        !matchesFilter && "opacity-25",
       )}
     >
+      {showNumbers && idx !== undefined && (
+        <span
+          className="pointer-events-none absolute -left-9 top-1 select-none font-mono text-[10px] text-neutral-400"
+          aria-hidden
+        >
+          {idx}
+        </span>
+      )}
+      {issues.length > 0 && (
+        <div className="pointer-events-none absolute left-0 top-1 hidden -translate-x-full pr-1 group-hover:flex">
+          <div className="flex flex-col gap-0.5">
+            {issues.slice(0, 3).map((iss) => (
+              <span
+                key={iss.key}
+                className={cn("h-1.5 w-1.5 rounded-full", ISSUE_COLOR[iss.key as IssueKey])}
+                title={iss.label}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       {!p.rules.pageBreakBefore && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            useEditor.getState().updateParagraphRule(p.id, "pageBreakBefore", true);
+            updateParagraphRule(p.id, "pageBreakBefore", true);
           }}
           title="Insert page break before this paragraph"
           className="absolute -top-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
@@ -572,7 +722,7 @@ function ParaShell({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            useEditor.getState().updateParagraphRule(p.id, "pageBreakAfter", true);
+            updateParagraphRule(p.id, "pageBreakAfter", true);
           }}
           title="Insert page break after this paragraph"
           className="absolute -bottom-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
@@ -606,11 +756,36 @@ function ParaShell({
         </>
       )}
       {children}
+      {issues.length > 0 && !isSelected && (
+        <div className="mt-1 flex flex-wrap items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          {issues.map((iss) => (
+            <button
+              key={iss.key}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (iss.rule) updateParagraphRule(p.id, iss.rule.key, iss.rule.value);
+              }}
+              disabled={!iss.rule}
+              title={iss.rule ? `Fix: ${iss.fix}` : iss.label}
+              className={cn(
+                "inline-flex items-center gap-1 rounded-full border px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider",
+                iss.rule
+                  ? "cursor-pointer border-amber-400 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                  : "border-neutral-300 bg-neutral-50 text-neutral-500",
+              )}
+            >
+              <span className={cn("h-1.5 w-1.5 rounded-full", ISSUE_COLOR[iss.key as IssueKey])} />
+              {iss.label}
+              {iss.fix && <span className="opacity-70">· {iss.fix}</span>}
+            </button>
+          ))}
+        </div>
+      )}
       {p.rules.pageBreakAfter && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            useEditor.getState().updateParagraphRule(p.id, "pageBreakAfter", false);
+            updateParagraphRule(p.id, "pageBreakAfter", false);
           }}
           title="Click to remove page break"
           className="my-4 flex w-full items-center gap-2 border-b border-dashed border-neutral-400 pb-1 text-center text-[9px] uppercase tracking-widest text-neutral-500 hover:text-red-600 hover:border-red-400"
@@ -646,6 +821,12 @@ function InlineEditor({
   const spaceAfterPt = p.spaceAfter ? p.spaceAfter / 20 : 0;
 
   const [draft, setDraft] = useState(runsText(p.runs));
+  const [showDiff, setShowDiff] = useState(false);
+
+  const orig = p.original;
+  const origText = orig ? runsText(orig.runs) : null;
+  const currentText = runsText(p.runs);
+  const hasTextChange = origText !== null && origText !== currentText;
 
   return (
     <div
@@ -684,6 +865,20 @@ function InlineEditor({
           })}
         </div>
         <div className="ml-auto flex items-center gap-1">
+          {orig && (
+            <button
+              onClick={() => setShowDiff((v) => !v)}
+              title="Compare with original parsed text"
+              className={cn(
+                "inline-flex items-center gap-1 rounded border px-1.5 py-0.5 text-[10px]",
+                showDiff
+                  ? "border-blue-500 bg-blue-500 text-white"
+                  : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50",
+              )}
+            >
+              <GitCompare className="h-3 w-3" /> Compare
+            </button>
+          )}
           {p.original && (
             <button
               onClick={() => revertAll(p.id)}
@@ -741,6 +936,36 @@ function InlineEditor({
           </button>
         )}
       </div>
+      {showDiff && orig && (
+        <div className="grid grid-cols-2 gap-2 rounded border border-neutral-200 bg-neutral-50 p-2 text-[11px]">
+          <div>
+            <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+              Original ({orig.style})
+            </div>
+            <div
+              className={cn(
+                "whitespace-pre-wrap rounded bg-white px-2 py-1 leading-relaxed text-neutral-700",
+                hasTextChange && "border border-rose-200",
+              )}
+            >
+              {origText || <span className="italic text-neutral-400">(empty)</span>}
+            </div>
+          </div>
+          <div>
+            <div className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-neutral-500">
+              Current ({p.style})
+            </div>
+            <div
+              className={cn(
+                "whitespace-pre-wrap rounded bg-white px-2 py-1 leading-relaxed text-neutral-900",
+                hasTextChange && "border border-emerald-200",
+              )}
+            >
+              {currentText || <span className="italic text-neutral-400">(empty)</span>}
+            </div>
+          </div>
+        </div>
+      )}
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}

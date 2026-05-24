@@ -11,6 +11,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { StudioHeader } from "@/components/StudioHeader";
+import { Toaster } from "sonner";
 
 function NotFoundComponent() {
   return (
@@ -121,6 +122,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       {showHeader && <StudioHeader />}
       <Outlet />
+      <Toaster position="bottom-right" richColors closeButton />
     </QueryClientProvider>
   );
 }

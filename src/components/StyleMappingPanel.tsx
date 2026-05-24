@@ -69,6 +69,10 @@ export function StyleMappingPanel() {
       </p>
       {sources.length === 0 ? (
         <p className="px-1 italic text-muted-foreground">No paragraphs.</p>
+      ) : sources.length === 1 && sources[0].currentTargets.size === 1 ? (
+        <p className="rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
+          Tidy — only one source style and it's mapped consistently.
+        </p>
       ) : (
         <ul className="space-y-1.5">
           {sources.map((s) => {
