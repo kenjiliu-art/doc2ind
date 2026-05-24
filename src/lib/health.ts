@@ -42,7 +42,7 @@ export function countIssues(doc: ParsedDoc): number {
 export function countIssuesDetailed(doc: ParsedDoc): IssueBreakdown {
   const out: IssueBreakdown = {
     total: 0,
-    unmapped: 1,
+    unmapped: 0,
     softBreaks: 0,
     multiSpaces: 0,
     tabs: 0,
