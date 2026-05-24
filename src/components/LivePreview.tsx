@@ -398,6 +398,7 @@ function ParaShell({
 
   return (
     <div
+      data-para-id={p.id}
       onClick={(e) => {
         e.stopPropagation();
         onSelect(isSelected ? null : p.id);
