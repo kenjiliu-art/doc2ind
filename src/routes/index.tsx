@@ -483,7 +483,6 @@ function EditorView() {
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
     toastExportSummary(initialBreakdown, current, ".docx");
-    awardAchievements(initialBreakdown, current);
   };
   const onExportTagged = () => {
     const current = countIssuesDetailed(doc);
