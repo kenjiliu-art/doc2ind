@@ -122,7 +122,9 @@ function paragraphToTagged(p: ParagraphBlock, footnoteMap: Map<number, Paragraph
   }
 
   const prefix = p.rules.pageBreakBefore ? "<pBreakBefore:Page>" : "";
-  return `<ParaStyle:${p.style}>${prefix}${listPrefix}${runsToTagged(spans, p, footnoteMap)}\r\n`;
+  const sb = p.spaceBefore ? `<pSpaceBefore:${(p.spaceBefore / 1440).toFixed(3)}>` : "";
+  const sa = p.spaceAfter ? `<pSpaceAfter:${(p.spaceAfter / 1440).toFixed(3)}>` : "";
+  return `<ParaStyle:${p.style}>${sb}${sa}${prefix}${listPrefix}${runsToTagged(spans, p, footnoteMap)}\r\n`;
 }
 
 export function buildTaggedText(doc: ParsedDoc): string {
