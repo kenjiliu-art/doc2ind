@@ -218,6 +218,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       }
     } else if (t === "w:r") {
       const info = parseRun(child);
+      if (info.hasBreak) runPageBreak = true;
       if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
       anyRun = true;
       // Count leading tabs while we're still in pure tab territory
