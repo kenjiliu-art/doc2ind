@@ -206,6 +206,10 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let allItalic = true;
   let leadingTabPhase = true;
   let hasSectPr = false;
+  let pPrPageBreakBefore = false;
+  let pageBreakBefore = false;
+  let pageBreakAfter = false;
+  let anyTextSeen = false;
 
   for (const child of kids) {
     const t = tagOf(child);
@@ -225,12 +229,17 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           }
         } else if (kt === "w:sectPr") {
           hasSectPr = true;
+        } else if (kt === "w:pageBreakBefore") {
+          const v = getAttr(k)["@_w:val"];
+          // Default is true when element is present; only false if explicitly "0"/"false"
+          if (v === undefined || (v !== "0" && v !== "false")) pPrPageBreakBefore = true;
         }
       }
     } else if (t === "w:r") {
       const info = parseRun(child);
       if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
       anyRun = true;
+      if (info.breakBefore && !anyTextSeen) pageBreakBefore = true;
       // Count leading tabs while we're still in pure tab territory
       let text = info.text;
       if (leadingTabPhase) {
@@ -240,12 +249,15 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
         }
         if (text.length > 0) leadingTabPhase = false;
       }
+      if (text.length > 0) anyTextSeen = true;
       if (text.includes("\n")) hasSoftBreaks = true;
       if (info.fontSize && (!maxSize || info.fontSize > maxSize)) maxSize = info.fontSize;
       if (!info.bold) allBold = false;
       if (!info.italic) allItalic = false;
       if (info.footnoteRef !== undefined && !text) {
         runs.push({ text: "", footnoteRef: info.footnoteRef });
+        if (info.breakAfter) pageBreakAfter = true;
+        else if (info.hasBreak && !info.breakBefore) pageBreakAfter = true;
         continue;
       }
       // Split on soft breaks into multiple spans (still same paragraph for now)
@@ -261,11 +273,15 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       if (info.footnoteRef !== undefined) {
         runs.push({ text: "", footnoteRef: info.footnoteRef });
       }
+      if (info.breakAfter) pageBreakAfter = true;
+      // A break in a run with no text and no breakBefore detection still acts as a trailing break
+      if (info.hasBreak && !info.breakBefore && !info.breakAfter) pageBreakAfter = true;
     }
   }
 
   // Stash section break flag on a separate marker — handled by caller via a side-channel
   if (hasSectPr) sectionBreakSeen = true;
+
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
