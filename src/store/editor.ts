@@ -51,6 +51,7 @@ interface EditorState {
   normalizeFonts: (to: string) => void;
   revertParagraphField: (id: string, field: "style" | "runs" | keyof ParagraphRules) => void;
   revertParagraph: (id: string) => void;
+  applyCharStyleRange: (id: string, start: number, end: number, charStyle: string | null) => void;
   runPreflight: (action: PreflightAction) => void;
 }
 
