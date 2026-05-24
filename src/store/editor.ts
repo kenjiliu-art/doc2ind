@@ -120,12 +120,22 @@ function flatParaIds(blocks: Block[]): string[] {
 }
 
 export const useEditor = create<EditorState>((set, get) => {
-  /** Snapshot current doc into past[] before a mutation. */
+  /** Snapshot current doc into past[] before a mutation; also extend combo counter. */
   const snap = () => {
     const cur = get().doc;
     if (!cur) return;
     const past = get().past.concat(cur).slice(-HISTORY_LIMIT);
-    set({ past, future: [] });
+    const now = Date.now();
+    const { lastEditAt, comboCount, comboTick } = get();
+    const withinWindow = now - lastEditAt <= COMBO_WINDOW_MS;
+    const nextCombo = withinWindow ? comboCount + 1 : 1;
+    set({
+      past,
+      future: [],
+      lastEditAt: now,
+      comboCount: nextCombo,
+      comboTick: comboTick + 1,
+    });
   };
 
   return {
@@ -136,6 +146,10 @@ export const useEditor = create<EditorState>((set, get) => {
     preflightHistory: new Set(),
     past: [],
     future: [],
+    initialIssues: 0,
+    comboCount: 0,
+    lastEditAt: 0,
+    comboTick: 0,
     setDoc: (doc, fileName) => {
       const settings = useSettings.getState().autoApply;
       const blocks = mapParagraphs(doc.blocks, (p) => ({
@@ -144,14 +158,19 @@ export const useEditor = create<EditorState>((set, get) => {
           sectionBreakBefore: p.sectionBreakBefore,
         }),
       }));
+      const nextDoc = { ...doc, blocks };
       set({
-        doc: { ...doc, blocks },
+        doc: nextDoc,
         fileName,
         selection: new Set(),
         selectionAnchor: null,
         preflightHistory: new Set(),
         past: [],
         future: [],
+        initialIssues: countIssues(nextDoc),
+        comboCount: 0,
+        lastEditAt: 0,
+        comboTick: 0,
       });
     },
     reset: () => {
@@ -164,6 +183,10 @@ export const useEditor = create<EditorState>((set, get) => {
         preflightHistory: new Set(),
         past: [],
         future: [],
+        initialIssues: 0,
+        comboCount: 0,
+        lastEditAt: 0,
+        comboTick: 0,
       });
     },
     undo: () => {
