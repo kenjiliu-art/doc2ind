@@ -234,6 +234,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           const v = getAttr(k)["@_w:val"];
           // Default is true when element is present; only false if explicitly "0"/"false"
           if (v === undefined || (v !== "0" && v !== "false")) pPrPageBreakBefore = true;
+        } else if (kt === "w:pStyle") {
+          sourceStyleId = getAttr(k)["@_w:val"];
         }
       }
     } else if (t === "w:r") {
