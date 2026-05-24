@@ -337,6 +337,7 @@ function ParaShell({
   hasChanges,
   onSelect,
   styles,
+  showMargins,
   children,
 }: {
   p: ParagraphBlock;
@@ -344,8 +345,18 @@ function ParaShell({
   hasChanges: boolean;
   onSelect: (id: string | null) => void;
   styles: StyleDef[];
+  showMargins: boolean;
   children: React.ReactNode;
 }) {
+  const twipsToPx = (t: number) => (t / 1440) * 96;
+  const leftIndent = p.leftIndent ?? 0;
+  let firstLine = p.firstLineIndent ?? 0;
+  if (p.rules.tabsToMargin && p.leadingTabs > 0) {
+    firstLine = Math.max(firstLine, p.leadingTabs * 720);
+  }
+  const hasMargin = showMargins && (leftIndent !== 0 || firstLine !== 0);
+  const fmt = (t: number) => `${(t / 1440).toFixed(2)}″`;
+
   return (
     <div
       onClick={(e) => {
@@ -359,8 +370,34 @@ function ParaShell({
           : hasChanges
             ? "bg-amber-50 hover:bg-amber-100/70"
             : "hover:bg-neutral-100/70",
+        hasMargin && !isSelected && "bg-fuchsia-50/60",
       )}
     >
+      {hasMargin && (
+        <>
+          {leftIndent !== 0 && (
+            <div
+              className="pointer-events-none absolute top-0 bottom-0 border-l-2 border-dashed border-fuchsia-400"
+              style={{ left: `calc(0.75rem + ${twipsToPx(leftIndent)}px)` }}
+              title={`Left indent: ${fmt(leftIndent)}`}
+            />
+          )}
+          {firstLine !== 0 && (
+            <div
+              className="pointer-events-none absolute top-0 h-3 border-l-2 border-dotted border-fuchsia-500"
+              style={{
+                left: `calc(0.75rem + ${twipsToPx(leftIndent + firstLine)}px)`,
+              }}
+              title={`First-line indent: ${fmt(firstLine)}`}
+            />
+          )}
+          <span className="pointer-events-none absolute -top-0.5 right-1 rounded bg-fuchsia-500 px-1 py-px text-[9px] font-medium text-white">
+            {leftIndent !== 0 && `L ${fmt(leftIndent)}`}
+            {leftIndent !== 0 && firstLine !== 0 && " · "}
+            {firstLine !== 0 && `1st ${fmt(firstLine)}`}
+          </span>
+        </>
+      )}
       {children}
       {isSelected && (
         <InlineEditor p={p} styles={styles} onClose={() => onSelect(null)} />
