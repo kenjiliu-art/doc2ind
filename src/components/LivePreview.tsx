@@ -73,10 +73,12 @@ function DocPreview({
   doc,
   selectedId,
   onSelect,
+  showMargins,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  showMargins: boolean;
 }) {
   const styleMap = useMemo(() => {
     const m = new Map<string, StyleDef>();
@@ -95,6 +97,7 @@ function DocPreview({
           selectedId={selectedId}
           onSelect={onSelect}
           styles={doc.paragraphStyles}
+          showMargins={showMargins}
         />
       ))}
     </>
@@ -108,6 +111,7 @@ interface BlockViewProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   styles: StyleDef[];
+  showMargins: boolean;
 }
 
 function BlockView(props: BlockViewProps) {
