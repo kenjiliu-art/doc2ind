@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type {
   Block,
@@ -56,6 +56,135 @@ export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
       <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
         <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} showMargins={showMargins} />
       </div>
+      <CharStyleFloatingToolbar doc={doc} />
+    </div>
+  );
+}
+
+interface FloatingSel {
+  x: number;
+  y: number;
+  paragraphId: string;
+  start: number;
+  end: number;
+}
+
+function getSrcOffset(node: Node, offset: number): { paragraphId: string; pos: number } | null {
+  // Walk up to the span carrying data-src-start
+  let span: HTMLElement | null = null;
+  let n: Node | null = node;
+  if (n.nodeType === Node.TEXT_NODE) n = n.parentElement;
+  while (n && n instanceof HTMLElement) {
+    if (n.dataset && n.dataset.srcStart !== undefined) {
+      span = n;
+      break;
+    }
+    n = n.parentElement;
+  }
+  if (!span) return null;
+  const paraEl = span.closest("[data-para-id]") as HTMLElement | null;
+  if (!paraEl) return null;
+  const srcStart = Number(span.dataset.srcStart);
+  const srcLen = Number(span.dataset.srcLen);
+  // offset is the index within the text node (or child offset for element nodes)
+  let localOffset = offset;
+  if (node.nodeType !== Node.TEXT_NODE) {
+    // Element-relative offset — treat as offset chars into span text
+    const text = span.textContent ?? "";
+    localOffset = Math.min(offset, text.length);
+  }
+  // Clamp to source length (cleanup transforms can change displayed length)
+  const pos = srcStart + Math.max(0, Math.min(localOffset, srcLen));
+  return { paragraphId: paraEl.dataset.paraId!, pos };
+}
+
+function CharStyleFloatingToolbar({ doc }: { doc: ParsedDoc }) {
+  const applyCharStyleRange = useEditor((s) => s.applyCharStyleRange);
+  const [sel, setSel] = useState<FloatingSel | null>(null);
+
+  useEffect(() => {
+    const onSelChange = () => {
+      const s = window.getSelection();
+      if (!s || s.isCollapsed || s.rangeCount === 0) {
+        setSel(null);
+        return;
+      }
+      const range = s.getRangeAt(0);
+      const a = getSrcOffset(range.startContainer, range.startOffset);
+      const b = getSrcOffset(range.endContainer, range.endOffset);
+      if (!a || !b || a.paragraphId !== b.paragraphId) {
+        setSel(null);
+        return;
+      }
+      const start = Math.min(a.pos, b.pos);
+      const end = Math.max(a.pos, b.pos);
+      if (end <= start) {
+        setSel(null);
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        setSel(null);
+        return;
+      }
+      setSel({
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+        paragraphId: a.paragraphId,
+        start,
+        end,
+      });
+    };
+    document.addEventListener("selectionchange", onSelChange);
+    return () => document.removeEventListener("selectionchange", onSelChange);
+  }, []);
+
+  if (!sel) return null;
+
+  const apply = (name: string | null) => {
+    applyCharStyleRange(sel.paragraphId, sel.start, sel.end, name);
+    window.getSelection()?.removeAllRanges();
+    setSel(null);
+  };
+
+  return (
+    <div
+      onMouseDown={(e) => e.preventDefault()}
+      style={{
+        position: "fixed",
+        left: Math.max(8, Math.min(window.innerWidth - 8, sel.x)),
+        top: Math.max(8, sel.y - 8),
+        transform: "translate(-50%, -100%)",
+        zIndex: 60,
+      }}
+      className="flex max-w-[90vw] flex-wrap items-center gap-1 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-[11px] shadow-lg"
+    >
+      <span className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">Apply</span>
+      {doc.charStyles.length === 0 && (
+        <span className="px-1 text-neutral-400 italic">No styles defined</span>
+      )}
+      {doc.charStyles.map((c) => (
+        <button
+          key={c.name}
+          onClick={() => apply(c.name)}
+          title={c.name}
+          className={cn(
+            "rounded border border-neutral-200 bg-white px-1.5 py-0.5 hover:bg-neutral-100",
+            c.bold && "font-bold",
+            c.italic && "italic",
+            c.underline && "underline",
+          )}
+        >
+          {c.name}
+        </button>
+      ))}
+      <button
+        onClick={() => apply(null)}
+        className="ml-1 rounded border border-neutral-300 bg-neutral-50 px-1.5 py-0.5 text-neutral-600 hover:bg-neutral-100"
+        title="Remove character style"
+      >
+        Clear
+      </button>
     </div>
   );
 }
@@ -212,22 +341,32 @@ function ParaView({
         (k) => p.rules[k] !== p.original!.rules[k],
       ));
 
-  // Soft → hard splits into multiple paragraphs
-  const groups: RunSpan[][] = [];
-  if (p.rules.softToHard) {
-    let cur: RunSpan[] = [];
-    for (const r of p.runs) {
-      if (r.text === "\n") {
-        if (cur.length) groups.push(cur);
-        cur = [];
-      } else cur.push(r);
+  // Build (srcIdx, srcStart) for each run, then split on '\n' if softToHard
+  type Item = { run: RunSpan; srcIdx: number; srcStart: number; stripLen: number };
+  const items: Item[] = [];
+  {
+    let off = 0;
+    for (let i = 0; i < p.runs.length; i++) {
+      const r = p.runs[i];
+      items.push({ run: r, srcIdx: i, srcStart: off, stripLen: 0 });
+      off += r.text.length;
     }
-    if (cur.length) groups.push(cur);
+  }
+  const groupsSrc: Item[][] = [];
+  if (p.rules.softToHard) {
+    let cur: Item[] = [];
+    for (const it of items) {
+      if (it.run.text === "\n") {
+        if (cur.length) groupsSrc.push(cur);
+        cur = [];
+      } else cur.push(it);
+    }
+    if (cur.length) groupsSrc.push(cur);
   } else {
-    groups.push(p.runs);
+    groupsSrc.push(items);
   }
 
-  if (groups.length === 0) {
+  if (groupsSrc.length === 0) {
     return (
       <ParaShell
         p={p}
@@ -260,13 +399,22 @@ function ParaView({
       styles={styles}
       showMargins={showMargins}
     >
-      {groups.map((spans, idx) => {
+      {groupsSrc.map((spans, idx) => {
         let working = spans;
-        if (p.rules.tabsToMargin && idx === 0) {
-          working = [...spans];
-          if (working.length && working[0].text.startsWith("\t")) {
-            working[0] = { ...working[0], text: working[0].text.replace(/^\t+/, "") };
-            if (!working[0].text) working.shift();
+        if (p.rules.tabsToMargin && idx === 0 && working.length) {
+          const first = working[0];
+          const m = first.run.text.match(/^\t+/);
+          if (m) {
+            const strip = m[0].length;
+            const newRun = { ...first.run, text: first.run.text.slice(strip) };
+            const newItem: Item = {
+              run: newRun,
+              srcIdx: first.srcIdx,
+              srcStart: first.srcStart + strip,
+              stripLen: strip,
+            };
+            working = [newItem, ...working.slice(1)];
+            if (!newRun.text) working.shift();
           }
         }
         const isPageBreak = idx === 0 && p.rules.pageBreakBefore;
@@ -291,7 +439,8 @@ function ParaView({
               {p.listKind === "number" && idx === 0 && (
                 <span className="mr-2 inline-block">1.</span>
               )}
-              {working.map((r, i) => {
+              {working.map((it, i) => {
+                const r = it.run;
                 if (r.footnoteRef !== undefined) {
                   return (
                     <sup key={i} className="text-[9px] text-neutral-500">
@@ -321,6 +470,8 @@ function ParaView({
                   <span
                     key={i}
                     title={tip}
+                    data-src-start={it.srcStart}
+                    data-src-len={r.text.length}
                     className={cn(
                       cs?.bold && "font-bold",
                       cs?.italic && "italic",
@@ -376,6 +527,7 @@ function ParaShell({
 
   return (
     <div
+      data-para-id={p.id}
       onClick={(e) => {
         e.stopPropagation();
         onSelect(isSelected ? null : p.id);
