@@ -19,6 +19,9 @@ import {
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
+import { countIssues } from "@/lib/health";
+
+const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
   | "stripUnusedStyles"
