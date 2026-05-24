@@ -1,5 +1,4 @@
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   Block,
   CharStyleDef,
@@ -17,7 +16,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
 } from "@/lib/preflight";
-
+import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 
 export type PreflightAction =
   | "stripUnusedStyles"
@@ -43,7 +42,6 @@ interface EditorState {
   bulkSetStyle: (style: ParagraphStyle) => void;
   bulkToggleRule: (key: keyof ParagraphRules, value: boolean) => void;
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
-  updateCharStyleDef: (name: string, patch: Partial<CharStyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
   applyDocCleanup: (keys: Array<Exclude<keyof ParagraphRules, "multiSpaces">>, value: boolean) => void;
   bulkSetMultiSpaces: (value: "none" | "en" | "em") => void;
@@ -82,14 +80,19 @@ function findParagraph(blocks: Block[], id: string): ParagraphBlock | undefined 
   return undefined;
 }
 
-export const useEditor = create<EditorState>()(
-  persist(
-    (set, get) => ({
+export const useEditor = create<EditorState>((set, get) => ({
   doc: null,
   selection: new Set(),
   fileName: "document",
   setDoc: (doc, fileName) => {
-    set({ doc, fileName, selection: new Set() });
+    const settings = useSettings.getState().autoApply;
+    const blocks = mapParagraphs(doc.blocks, (p) => ({
+      ...p,
+      rules: applyAutoSettingsToRules(p.rules, settings, {
+        sectionBreakBefore: p.sectionBreakBefore,
+      }),
+    }));
+    set({ doc: { ...doc, blocks }, fileName, selection: new Set() });
   },
   reset: () => set({ doc: null, selection: new Set(), fileName: "document" }),
   updateParagraph: (id, patch) => {
@@ -180,16 +183,6 @@ export const useEditor = create<EditorState>()(
         paragraphStyles: doc.paragraphStyles.map((s) =>
           s.name === name ? { ...s, ...patch } : s,
         ),
-      },
-    });
-  },
-  updateCharStyleDef: (name, patch) => {
-    const doc = get().doc;
-    if (!doc) return;
-    set({
-      doc: {
-        ...doc,
-        charStyles: doc.charStyles.map((c) => (c.name === name ? { ...c, ...patch } : c)),
       },
     });
   },
@@ -327,15 +320,6 @@ export const useEditor = create<EditorState>()(
     };
     set({ doc: fns[action](doc) });
   },
-    }),
-    {
-      name: "msw-editor-doc",
-      storage: createJSONStorage(() =>
-        typeof window !== "undefined" ? sessionStorage : (undefined as unknown as Storage),
-      ),
-      partialize: (s) => ({ doc: s.doc, fileName: s.fileName }),
-    },
-  ),
-);
+}));
 
 export { findParagraph };

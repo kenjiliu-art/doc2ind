@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { Upload, FileText } from "lucide-react";
 import kenjiLogo from "@/assets/kenji-logo.png";
 import { cn } from "@/lib/utils";
-import { useEditor } from "@/store/editor";
 
 export function StudioHeader() {
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
-  const hasDoc = useEditor((s) => !!s.doc);
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -28,8 +29,8 @@ export function StudioHeader() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Hide global header while the editor workspace is active — it owns the chrome.
-  if (hasDoc) return null;
+  const isEdit = pathname.startsWith("/edit");
+  const isUpload = !isEdit;
 
   return (
     <nav
@@ -55,10 +56,45 @@ export function StudioHeader() {
             />
           </a>
           <span className="text-[10px] uppercase tracking-[0.3em] text-[#8f2419]">
-            Word to InDesign
+            Painter&apos;s Studio
           </span>
+        </div>
+        <div role="tablist" className="flex items-center gap-1 border border-border bg-background/80 p-1">
+          <TabLink to="/" active={isUpload} icon={<Upload className="h-3.5 w-3.5" />}>
+            Upload
+          </TabLink>
+          <TabLink to="/edit" active={isEdit} icon={<FileText className="h-3.5 w-3.5" />}>
+            Editor
+          </TabLink>
         </div>
       </div>
     </nav>
+  );
+}
+
+function TabLink({
+  to,
+  active,
+  icon,
+  children,
+}: {
+  to: "/" | "/edit";
+  active: boolean;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      to={to}
+      role="tab"
+      aria-selected={active}
+      className={cn(
+        "inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] uppercase tracking-widest transition",
+        active ? "bg-[#8f2419] text-white" : "text-foreground/60 hover:text-foreground",
+      )}
+    >
+      {icon}
+      {children}
+    </Link>
   );
 }
