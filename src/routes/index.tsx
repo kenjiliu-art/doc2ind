@@ -13,6 +13,7 @@ import { LivePreview } from "@/components/LivePreview";
 import { HealthRing } from "@/components/HealthRing";
 import { HealthBadge } from "@/components/HealthBadge";
 import { ComboToast } from "@/components/ComboToast";
+import { CleanSweepRing } from "@/components/CleanSweepRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { loadSession, clearSession } from "@/lib/storage";
