@@ -305,10 +305,12 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   const fullText = runs.map((r) => r.text).join("");
   const hasMultiSpaces = /  +/.test(fullText);
 
+  const resolvedSource = sourceStyleId ? (styleIdToName.get(sourceStyleId) ?? sourceStyleId) : undefined;
   const block: ParagraphBlock = {
     id: nextId(),
     kind: "paragraph",
     style: "Body",
+    sourceStyle: resolvedSource,
     runs,
     blanksBefore: 0,
     leadingTabs,
