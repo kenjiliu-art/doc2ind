@@ -360,7 +360,7 @@ function EditorView() {
         </div>
 
         {/* Mobile-only tools FAB + bottom sheet */}
-        <Sheet>
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
           <SheetTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
