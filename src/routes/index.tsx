@@ -48,14 +48,23 @@ function IndexPage() {
 function UploadView() {
   const setDoc = useEditor((s) => s.setDoc);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
     setLoading(true);
     setError(null);
+    setProgress(0);
+    setProgressLabel("Reading file…");
     try {
       const buf = await file.arrayBuffer();
-      const parsed = await parseDocx(buf);
+      const parsed = await parseDocx(buf, (p, l) => {
+        setProgress(p);
+        setProgressLabel(l);
+      });
+      setProgress(1);
+      setProgressLabel("Done");
       setDoc(parsed, file.name.replace(/\.docx$/i, ""));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to parse file.");
@@ -102,6 +111,20 @@ function UploadView() {
           <div className="mt-2 text-xs text-muted-foreground">
             Everything runs locally in your browser — nothing is uploaded.
           </div>
+          {loading && (
+            <div className="mx-auto mt-5 max-w-sm">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-150 ease-out"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+                <span>{progressLabel}</span>
+                <span>{Math.round(progress * 100)}%</span>
+              </div>
+            </div>
+          )}
         </label>
 
         {error && (

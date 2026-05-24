@@ -322,14 +322,26 @@ function parseTable(tblNode: unknown): TableBlock {
   return { id: nextId(), kind: "table", rows };
 }
 
-export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
+export async function parseDocx(
+  file: ArrayBuffer,
+  onProgress?: (progress: number, label: string) => void,
+): Promise<ParsedDoc> {
+  const yieldTick = () => new Promise<void>((r) => setTimeout(r, 0));
+  const report = async (p: number, l: string) => {
+    onProgress?.(p, l);
+    await yieldTick();
+  };
+
   idCounter = 0;
   fontCounts.clear();
   sectionBreakSeen = false;
+  await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
+  await report(0.15, "Extracting document…");
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
 
+  await report(0.25, "Parsing XML…");
   const parsed = parser.parse(docXml) as unknown[];
   // Find w:document -> w:body
   let body: unknown = null;
@@ -349,6 +361,8 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
 
   const rawBlocks: Block[] = [];
   const sectionAfterIdx = new Set<number>();
+  const total = bodyChildren.length || 1;
+  let processed = 0;
   for (const child of bodyChildren) {
     const t = tagOf(child);
     if (t === "w:p") {
@@ -361,7 +375,13 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
     } else if (t === "w:tbl") {
       rawBlocks.push(parseTable(child));
     }
+    processed++;
+    if (processed % 50 === 0) {
+      await report(0.3 + 0.55 * (processed / total), `Parsing paragraphs… (${processed}/${total})`);
+    }
   }
+  await report(0.88, "Finalizing…");
+
 
   // Compute blanksBefore for paragraph blocks; promote section breaks to page break
   const blocks: Block[] = [];
