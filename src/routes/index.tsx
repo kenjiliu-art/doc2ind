@@ -567,7 +567,6 @@ function EditorView() {
             <h1 className="font-display text-sm font-bold tracking-tight">
               Document preview
             </h1>
-            <HealthBadge />
             <p className="hidden text-xs text-muted-foreground sm:block">
               Click to edit · Shift-click to range-select · ⌘Z to undo
             </p>
