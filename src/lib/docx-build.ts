@@ -142,6 +142,9 @@ function paragraphToDocx(
       keepNext: p.rules.keepWithNext,
       alignment: p.alignment ? alignmentMap[p.alignment] : undefined,
       ...(numbering ? { numbering } : {}),
+      ...(p.spaceBefore || p.spaceAfter
+        ? { spacing: { before: p.spaceBefore, after: p.spaceAfter } }
+        : {}),
       ...(leftIndent || firstLine
         ? {
             indent: {
