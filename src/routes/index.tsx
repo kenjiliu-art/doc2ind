@@ -214,8 +214,11 @@ function Feature({ title, children }: { title: string; children: React.ReactNode
 function EditorView() {
   const doc = useEditor((s) => s.doc)!;
   const fileName = useEditor((s) => s.fileName);
+  const setDoc = useEditor((s) => s.setDoc);
   const reset = useEditor((s) => s.reset);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sampleLoading, setSampleLoading] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     let paragraphs = 0;
