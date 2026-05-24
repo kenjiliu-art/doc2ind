@@ -1,18 +1,11 @@
 import { useEditor } from "@/store/editor";
 import type { ParagraphBlock, ParagraphRules, StyleDef } from "@/lib/types";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { MoreHorizontal } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const EMPTY_STYLES: StyleDef[] = [];
-
-const BOOL_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string; title: string }> = [
-  { key: "tabsToMargin", label: "Tabs→indent", title: "Convert leading tabs and first-line indent to paragraph margin" },
-  { key: "softToHard", label: "Soft→hard", title: "Split soft line breaks into separate paragraphs" },
-  { key: "pageBreakBefore", label: "Page break", title: "Insert page break before this paragraph" },
-  { key: "keepWithNext", label: "Keep next", title: "Keep with next paragraph" },
-  { key: "smartQuotes", label: "Smart quotes", title: "Standardize straight quotes to curly" },
-  { key: "dashes", label: "Em dashes", title: "Convert -- and --- to em dash" },
-  { key: "trimTrailing", label: "Trim spaces", title: "Remove trailing whitespace" },
-];
 
 interface Props {
   paragraph: ParagraphBlock;
@@ -22,8 +15,8 @@ interface Props {
 const RULE_LABELS: Record<keyof ParagraphRules, string> = {
   tabsToMargin: "Tabs→indent",
   softToHard: "Soft→hard",
-  pageBreakBefore: "Page break",
-  keepWithNext: "Keep next",
+  pageBreakBefore: "Page break before",
+  keepWithNext: "Keep with next",
   smartQuotes: "Smart quotes",
   dashes: "Em dashes",
   trimTrailing: "Trim spaces",
@@ -35,9 +28,6 @@ function runsText(runs: ParagraphBlock["runs"]) {
 }
 
 export function ParagraphRow({ paragraph: p, compact }: Props) {
-  // Narrow selectors: only the slices this row actually uses.
-  // Subscribing to the whole `doc` made every paragraph re-render on
-  // every keystroke or rule toggle (O(N²) for N paragraphs).
   const styles = useEditor((s) => s.doc?.paragraphStyles) ?? EMPTY_STYLES;
   const selected = useEditor((s) => s.selection.has(p.id));
   const toggleSelect = useEditor((s) => s.toggleSelect);
@@ -50,7 +40,6 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
   const text = runsText(p.runs);
   const isEmpty = p.runs.length === 0;
 
-  // Compute diffs vs original
   const orig = p.original;
   const changes: Array<{ key: "style" | "runs" | keyof ParagraphRules; label: string; detail: string }> = [];
   if (orig) {
@@ -69,17 +58,24 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
     });
   }
 
+  // Overrides = local toggles that differ from doc default behavior
+  const overrideBadges: string[] = [];
+  if (p.rules.pageBreakBefore) overrideBadges.push("page break");
+  if (p.rules.keepWithNext) overrideBadges.push("keep next");
+
   const hasChanges = changes.length > 0;
 
   return (
     <div
-      className={`group flex gap-3 rounded-md border p-2 ${
+      className={cn(
+        "group flex gap-3 rounded-md border p-2",
         selected
           ? "border-primary bg-accent/40"
           : hasChanges
             ? "border-amber-500/60 bg-amber-500/5"
-            : "border-transparent hover:border-border hover:bg-accent/20"
-      } ${compact ? "text-xs" : ""}`}
+            : "border-transparent hover:border-border hover:bg-accent/20",
+        compact && "text-xs",
+      )}
     >
       <div className="flex flex-col items-center gap-1 pt-1">
         <Checkbox
@@ -104,60 +100,71 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
             ))}
           </select>
 
-          {p.blanksBefore > 0 && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              {p.blanksBefore} blank{p.blanksBefore > 1 ? "s" : ""} before
-            </span>
-          )}
-          {p.leadingTabs > 0 && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              {p.leadingTabs} tab{p.leadingTabs > 1 ? "s" : ""}
-            </span>
-          )}
-          {p.hasSoftBreaks && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              soft breaks
-            </span>
-          )}
-          {p.hasMultiSpaces && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              multi spaces
-            </span>
-          )}
-          {p.fontSize && (
-            <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
-              {p.fontSize / 2}pt
-            </span>
-          )}
+          {p.blanksBefore > 0 && <SrcBadge>{p.blanksBefore} blank{p.blanksBefore > 1 ? "s" : ""} before</SrcBadge>}
+          {p.leadingTabs > 0 && <SrcBadge>{p.leadingTabs} tab{p.leadingTabs > 1 ? "s" : ""}</SrcBadge>}
+          {p.hasSoftBreaks && <SrcBadge>soft breaks</SrcBadge>}
+          {p.fontSize && <SrcBadge>{p.fontSize / 2}pt</SrcBadge>}
 
-          <div className="ml-auto flex flex-wrap items-center gap-x-3 gap-y-1">
-            {BOOL_RULES.map(({ key, label, title }) => (
-              <label
-                key={key}
-                title={title}
-                className="flex items-center gap-1 text-[11px] text-muted-foreground"
+          {overrideBadges.map((b) => (
+            <span
+              key={b}
+              className="rounded bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            >
+              {b}
+            </span>
+          ))}
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                title="Per-paragraph overrides"
+                className="ml-auto rounded border border-transparent p-1 text-muted-foreground hover:border-border hover:bg-background hover:text-foreground"
               >
-                <Checkbox
-                  checked={p.rules[key]}
-                  onCheckedChange={(v) => updateParagraphRule(p.id, key, !!v)}
-                  className="h-3.5 w-3.5"
+                <MoreHorizontal className="h-3.5 w-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-3 text-xs">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Overrides
+              </p>
+              <OverrideRow
+                label="Page break before"
+                hint="Force a page break before this paragraph."
+                checked={p.rules.pageBreakBefore}
+                onChange={(v) => updateParagraphRule(p.id, "pageBreakBefore", v)}
+              />
+              <OverrideRow
+                label="Keep with next"
+                hint="Prevent a break between this paragraph and the next."
+                checked={p.rules.keepWithNext}
+                onChange={(v) => updateParagraphRule(p.id, "keepWithNext", v)}
+              />
+              <div className="mt-3 border-t border-border pt-2">
+                <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                  Skip cleanups here
+                </p>
+                <OverrideRow
+                  label="Smart quotes"
+                  hint="Leave straight quotes in this paragraph alone."
+                  checked={!p.rules.smartQuotes}
+                  onChange={(v) => updateParagraphRule(p.id, "smartQuotes", !v)}
                 />
-                {label}
-              </label>
-            ))}
-            <label className="flex items-center gap-1 text-[11px] text-muted-foreground" title="Replace multiple spaces with en or em spaces">
-              <span>multi space</span>
-              <select
-                value={p.rules.multiSpaces}
-                onChange={(e) => updateParagraphRule(p.id, "multiSpaces", e.target.value as "none" | "en" | "em")}
-                className="rounded border border-border bg-background px-1 py-0.5 text-[11px]"
-              >
-                <option value="none">—</option>
-                <option value="en">en</option>
-                <option value="em">em</option>
-              </select>
-            </label>
-          </div>
+                <OverrideRow
+                  label="Em dashes"
+                  hint="Leave -- in this paragraph alone."
+                  checked={!p.rules.dashes}
+                  onChange={(v) => updateParagraphRule(p.id, "dashes", !v)}
+                />
+                <OverrideRow
+                  label="Trim trailing"
+                  hint="Keep trailing spaces in this paragraph."
+                  checked={!p.rules.trimTrailing}
+                  onChange={(v) => updateParagraphRule(p.id, "trimTrailing", !v)}
+                />
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
 
         {isEmpty ? (
@@ -206,5 +213,39 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
         )}
       </div>
     </div>
+  );
+}
+
+function SrcBadge({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+      {children}
+    </span>
+  );
+}
+
+function OverrideRow({
+  label,
+  hint,
+  checked,
+  onChange,
+}: {
+  label: string;
+  hint: string;
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="flex cursor-pointer items-start gap-2 rounded-md px-1.5 py-1 hover:bg-accent">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(v) => onChange(!!v)}
+        className="mt-0.5 h-3.5 w-3.5"
+      />
+      <span className="flex-1">
+        <span className="block text-[11px] font-semibold text-foreground">{label}</span>
+        <span className="block text-[10px] text-muted-foreground">{hint}</span>
+      </span>
+    </label>
   );
 }
