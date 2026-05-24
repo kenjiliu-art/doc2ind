@@ -150,26 +150,26 @@ function UploadView() {
           )}
         </label>
 
-        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-          <span>No file handy?</span>
-          <button
-            type="button"
-            onClick={() => loadSample("sample")}
-            disabled={loading}
-            className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
-          >
-            Try a prose sample
-          </button>
-          <span>or</span>
-          <button
-            type="button"
-            onClick={() => loadSample("sample-poems")}
-            disabled={loading}
-            className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
-          >
-            three poems by Langston Hughes
-          </button>
-          <span>— you can replace it any time.</span>
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          <p>No file handy? Try a sample — you can replace it any time.</p>
+          <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+            <button
+              type="button"
+              onClick={() => loadSample("sample")}
+              disabled={loading}
+              className="rounded-md border border-accent bg-background px-3 py-1.5 font-semibold text-primary transition hover:bg-sidebar disabled:opacity-50"
+            >
+              Prose sample
+            </button>
+            <button
+              type="button"
+              onClick={() => loadSample("sample-poems")}
+              disabled={loading}
+              className="rounded-md border border-accent bg-background px-3 py-1.5 font-semibold text-primary transition hover:bg-sidebar disabled:opacity-50"
+            >
+              Three poems by Langston Hughes
+            </button>
+          </div>
         </div>
 
         {error && (
