@@ -7,6 +7,7 @@ import { buildTaggedText } from "@/lib/tagged-text";
 import { CleanupBar } from "@/components/CleanupBar";
 import { CharStylesPanel } from "@/components/CharStylesPanel";
 import { StyleMappingPanel } from "@/components/StyleMappingPanel";
+import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -473,6 +474,7 @@ function EditorView() {
           <DiagnosticsPanel onJump={setSelectedId} />
           <CleanupBar />
           <StyleMappingPanel />
+          <RenameStylesPanel />
           <CharStylesPanel />
         </div>
 
@@ -619,6 +621,7 @@ function EditorView() {
               <DiagnosticsPanel onJump={jumpAndCloseSheet} />
               <CleanupBar />
               <StyleMappingPanel />
+              <RenameStylesPanel />
               <CharStylesPanel />
             </div>
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
