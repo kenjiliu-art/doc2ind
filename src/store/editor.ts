@@ -43,6 +43,7 @@ interface EditorState {
   bulkSetStyle: (style: ParagraphStyle) => void;
   bulkToggleRule: (key: keyof ParagraphRules, value: boolean) => void;
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
+  updateCharStyleDef: (name: string, patch: Partial<CharStyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
   applyDocCleanup: (keys: Array<Exclude<keyof ParagraphRules, "multiSpaces">>, value: boolean) => void;
   bulkSetMultiSpaces: (value: "none" | "en" | "em") => void;
