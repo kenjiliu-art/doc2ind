@@ -289,10 +289,12 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
+    const resolvedSource = sourceStyleId ? (styleIdToName.get(sourceStyleId) ?? sourceStyleId) : undefined;
     return {
       id: nextId(),
       kind: "paragraph",
       style: "Body",
+      sourceStyle: resolvedSource,
       runs: [],
       blanksBefore: 0,
       leadingTabs: 0,
