@@ -73,13 +73,13 @@ function UploadView() {
     }
   };
 
-  const loadSample = async () => {
+  const loadSample = async (name: string) => {
     setLoading(true);
     setError(null);
     setProgress(0);
     setProgressLabel("Loading sample…");
     try {
-      const res = await fetch("/sample.docx");
+      const res = await fetch(`/${name}.docx`);
       if (!res.ok) throw new Error("Could not load sample document.");
       const buf = await res.arrayBuffer();
       const parsed = await parseDocx(buf, (p, l) => {
@@ -88,7 +88,7 @@ function UploadView() {
       });
       setProgress(1);
       setProgressLabel("Done");
-      setDoc(parsed, "sample");
+      setDoc(parsed, name);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load sample.");
     } finally {
