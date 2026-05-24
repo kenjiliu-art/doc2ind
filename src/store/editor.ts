@@ -367,6 +367,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       },
     });
   },
+  runPreflight: (action) => {
     const doc = get().doc;
     if (!doc) return;
     const fns: Record<PreflightAction, (d: ParsedDoc) => ParsedDoc> = {
