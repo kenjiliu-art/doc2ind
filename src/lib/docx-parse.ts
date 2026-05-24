@@ -191,6 +191,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let allItalic = true;
   let leadingTabPhase = true;
   let hasSectPr = false;
+  let pPrPageBreak = false;
+  let runPageBreak = false;
 
   for (const child of kids) {
     const t = tagOf(child);
@@ -210,6 +212,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           }
         } else if (kt === "w:sectPr") {
           hasSectPr = true;
+        } else if (kt === "w:pageBreakBefore") {
+          pPrPageBreak = true;
         }
       }
     } else if (t === "w:r") {
