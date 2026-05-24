@@ -424,9 +424,22 @@ function EditorView() {
     return { paragraphs, words };
   }, [doc]);
 
+  const initialIssues = useEditor((s) => s.initialIssues);
+
   const onExportDocx = async () => {
+    const remaining = countIssues(doc);
+    const fixed = Math.max(0, initialIssues - remaining);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
+    if (initialIssues > 0) {
+      toast.success(
+        `Exported — ${fixed.toLocaleString()} of ${initialIssues.toLocaleString()} issues cleaned${
+          remaining > 0 ? ` · ${remaining} remaining` : " · zero warnings 🎉"
+        }`,
+      );
+    } else {
+      toast.success("Exported clean .docx");
+    }
   };
   const onExportTagged = () => {
     const txt = buildTaggedText(doc);
