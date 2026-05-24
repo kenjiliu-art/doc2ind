@@ -254,6 +254,22 @@ function EditorView() {
     saveAs(blob, `${fileName}-tagged.txt`);
   };
 
+  const loadSample = async (name: string) => {
+    setSampleLoading(true);
+    setSampleError(null);
+    try {
+      const res = await fetch(`/${name}.docx`);
+      if (!res.ok) throw new Error("Could not load sample document.");
+      const buf = await res.arrayBuffer();
+      const parsed = await parseDocx(buf, () => {});
+      setDoc(parsed, name);
+    } catch (e) {
+      setSampleError(e instanceof Error ? e.message : "Failed to load sample.");
+    } finally {
+      setSampleLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
