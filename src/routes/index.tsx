@@ -123,11 +123,19 @@ function UploadView() {
             }}
           />
           <div className="font-display text-lg font-semibold text-primary">
-            {loading ? "Parsing…" : "Drop a .docx file here, or click to choose"}
+            {loading ? phase || "Parsing…" : "Drop a .docx file here, or click to choose"}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
             Everything runs locally in your browser — nothing is uploaded.
           </div>
+          {loading && (
+            <div className="mx-auto mt-5 max-w-sm">
+              <Progress value={progress} />
+              <div className="mt-2 text-xs font-medium text-muted-foreground">
+                {Math.round(progress)}%
+              </div>
+            </div>
+          )}
         </label>
 
         {error && (
