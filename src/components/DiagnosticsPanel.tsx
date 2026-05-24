@@ -195,12 +195,22 @@ export function DiagnosticsPanel({ onJump }: Props) {
     <div className="px-3 py-3 text-xs">
       <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
         Pre-import diagnostics
-        {warnings.length > 0 && (
+        {warnings.length > 0 ? (
           <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">
             {warnings.length} to review
           </span>
+        ) : (
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+            <CheckCircle2 className="h-2.5 w-2.5" /> All clear
+          </span>
         )}
       </p>
+      {warnings.length === 0 && (
+        <p className="mb-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
+          No structural issues detected. You can safely export — or skim the
+          counts below for context.
+        </p>
+      )}
       <ul className="space-y-0.5">
         {findings.map((f) => {
           const dim = f.count === 0 && f.severity !== "info";
