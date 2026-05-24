@@ -45,6 +45,8 @@ interface EditorState {
   future: ParsedDoc[];
   /** Issue count captured immediately after parsing — baseline for health score & before/after. */
   initialIssues: number;
+  /** Per-category issue breakdown captured immediately after parsing. */
+  initialIssueBreakdown: IssueBreakdown | null;
   /** Number of mutations performed in rapid succession (combo). */
   comboCount: number;
   /** Timestamp of last mutation, used for combo window. */
