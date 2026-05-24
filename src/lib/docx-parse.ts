@@ -211,6 +211,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let pageBreakBefore = false;
   let pageBreakAfter = false;
   let anyTextSeen = false;
+  let sourceStyleId: string | undefined;
 
   for (const child of kids) {
     const t = tagOf(child);
