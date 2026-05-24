@@ -207,6 +207,38 @@ export const useEditor = create<EditorState>((set, get) => ({
       },
     });
   },
+  mapSourceStyle: (sourceStyle, target) => {
+    const doc = get().doc;
+    if (!doc) return;
+    if (target === "__discard") {
+      const filtered: Block[] = [];
+      for (const b of doc.blocks) {
+        if (b.kind === "paragraph") {
+          if (b.sourceStyle !== sourceStyle) filtered.push(b);
+        } else {
+          filtered.push({
+            ...b,
+            rows: b.rows.map((row) =>
+              row.map((cell) => ({
+                ...cell,
+                paragraphs: cell.paragraphs.filter((p) => p.sourceStyle !== sourceStyle),
+              })),
+            ),
+          });
+        }
+      }
+      set({ doc: { ...doc, blocks: filtered } });
+      return;
+    }
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) =>
+          p.sourceStyle === sourceStyle ? { ...p, style: target } : p,
+        ),
+      },
+    });
+  },
   applyDocCleanup: (keys, value) => {
     const doc = get().doc;
     if (!doc) return;
