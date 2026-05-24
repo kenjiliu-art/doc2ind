@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type { Block, ParagraphBlock } from "@/lib/types";
-import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2 } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 type Severity = "info" | "warn" | "ok";
