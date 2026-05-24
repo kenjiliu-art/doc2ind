@@ -422,9 +422,18 @@ function ParaView({
         return (
           <div key={idx}>
             {isPageBreak && (
-              <div className="my-4 border-t border-dashed border-neutral-400 pt-1 text-center text-[9px] uppercase tracking-widest text-neutral-400">
-                Page break
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  useEditor.getState().updateParagraphRule(p.id, "pageBreakBefore", false);
+                }}
+                title="Click to remove page break"
+                className="my-4 flex w-full items-center gap-2 border-t border-dashed border-neutral-400 pt-1 text-center text-[9px] uppercase tracking-widest text-neutral-500 hover:text-red-600 hover:border-red-400"
+              >
+                <span className="flex-1 border-t border-dashed border-neutral-300" />
+                <span>Page break ✕</span>
+                <span className="flex-1 border-t border-dashed border-neutral-300" />
+              </button>
             )}
             <p
               className={cls}
