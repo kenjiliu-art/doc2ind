@@ -81,7 +81,9 @@ function findParagraph(blocks: Block[], id: string): ParagraphBlock | undefined 
   return undefined;
 }
 
-export const useEditor = create<EditorState>((set, get) => ({
+export const useEditor = create<EditorState>()(
+  persist(
+    (set, get) => ({
   doc: null,
   selection: new Set(),
   fileName: "document",
