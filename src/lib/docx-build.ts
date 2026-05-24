@@ -156,6 +156,9 @@ function paragraphToDocx(
     };
     out.push(new Paragraph(opts));
   });
+  if (p.rules.pageBreakAfter) {
+    out.push(new Paragraph({ children: [], pageBreakBefore: true }));
+  }
   return out;
 }
 
