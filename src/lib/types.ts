@@ -44,6 +44,8 @@ export interface ParagraphBlock {
   id: string;
   kind: "paragraph";
   style: ParagraphStyle;
+  /** Original Word paragraph style name (or styleId if no display name) — preserved through edits for remapping. */
+  sourceStyle?: string;
   runs: RunSpan[];
   /** Number of blank paragraphs preceding this one in the source. */
   blanksBefore: number;

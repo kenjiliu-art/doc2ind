@@ -26,6 +26,7 @@ let idCounter = 0;
 const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
 let sectionBreakSeen = false;
+let styleIdToName = new Map<string, string>();
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
@@ -210,6 +211,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let pageBreakBefore = false;
   let pageBreakAfter = false;
   let anyTextSeen = false;
+  let sourceStyleId: string | undefined;
 
   for (const child of kids) {
     const t = tagOf(child);
@@ -233,6 +235,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           const v = getAttr(k)["@_w:val"];
           // Default is true when element is present; only false if explicitly "0"/"false"
           if (v === undefined || (v !== "0" && v !== "false")) pPrPageBreakBefore = true;
+        } else if (kt === "w:pStyle") {
+          sourceStyleId = getAttr(k)["@_w:val"];
         }
       }
     } else if (t === "w:r") {
@@ -285,10 +289,12 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
+    const resolvedSource = sourceStyleId ? (styleIdToName.get(sourceStyleId) ?? sourceStyleId) : undefined;
     return {
       id: nextId(),
       kind: "paragraph",
       style: "Body",
+      sourceStyle: resolvedSource,
       runs: [],
       blanksBefore: 0,
       leadingTabs: 0,
@@ -301,10 +307,12 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   const fullText = runs.map((r) => r.text).join("");
   const hasMultiSpaces = /  +/.test(fullText);
 
+  const resolvedSource = sourceStyleId ? (styleIdToName.get(sourceStyleId) ?? sourceStyleId) : undefined;
   const block: ParagraphBlock = {
     id: nextId(),
     kind: "paragraph",
     style: "Body",
+    sourceStyle: resolvedSource,
     runs,
     blanksBefore: 0,
     leadingTabs,
@@ -363,9 +371,36 @@ export async function parseDocx(
   idCounter = 0;
   fontCounts.clear();
   sectionBreakSeen = false;
+  styleIdToName = new Map();
   await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
-  await report(0.15, "Extracting document…");
+  await report(0.12, "Reading styles…");
+  const stylesXml = await zip.file("word/styles.xml")?.async("string");
+  if (stylesXml) {
+    const stylesParsed = parser.parse(stylesXml) as unknown[];
+    for (const item of stylesParsed) {
+      if (!item || typeof item !== "object") continue;
+      const root = (item as Record<string, unknown>)["w:styles"];
+      if (!Array.isArray(root)) continue;
+      for (const styleNode of root) {
+        if (!styleNode || typeof styleNode !== "object") continue;
+        if (tagOf(styleNode) !== "w:style") continue;
+        const attrs = getAttr(styleNode);
+        const type = attrs["@_w:type"];
+        if (type !== "paragraph") continue;
+        const styleId = attrs["@_w:styleId"];
+        if (!styleId) continue;
+        const sKids = findTagChildren(styleNode, "w:style");
+        for (const k of sKids) {
+          if (tagOf(k) === "w:name") {
+            const name = getAttr(k)["@_w:val"];
+            if (name) styleIdToName.set(styleId, name);
+          }
+        }
+      }
+    }
+  }
+  await report(0.18, "Extracting document…");
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
 

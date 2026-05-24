@@ -6,6 +6,8 @@ import { buildDocx } from "@/lib/docx-build";
 import { buildTaggedText } from "@/lib/tagged-text";
 import { CleanupBar } from "@/components/CleanupBar";
 import { CharStylesPanel } from "@/components/CharStylesPanel";
+import { StyleMappingPanel } from "@/components/StyleMappingPanel";
+import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2 } from "lucide-react";
@@ -294,7 +296,9 @@ function EditorView() {
         </div>
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
+          <DiagnosticsPanel />
           <CleanupBar />
+          <StyleMappingPanel />
           <CharStylesPanel />
         </div>
 
@@ -407,7 +411,9 @@ function EditorView() {
               </div>
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
+              <DiagnosticsPanel />
               <CleanupBar />
+              <StyleMappingPanel />
               <CharStylesPanel />
             </div>
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">

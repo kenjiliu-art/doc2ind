@@ -15,6 +15,7 @@ import {
   closeOrphanRuns,
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
+  trimRunBleed,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 
@@ -23,6 +24,7 @@ export type PreflightAction =
   | "collapseBlanksToSpacing"
   | "normalizeLists"
   | "closeOrphanRuns"
+  | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
   | "sanitizeStyleNames";
 
@@ -44,6 +46,7 @@ interface EditorState {
   bulkToggleRule: (key: keyof ParagraphRules, value: boolean) => void;
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
+  mapSourceStyle: (sourceStyle: string, target: ParagraphStyle | "__discard") => void;
   applyDocCleanup: (keys: Array<Exclude<keyof ParagraphRules, "multiSpaces">>, value: boolean) => void;
   bulkSetMultiSpaces: (value: "none" | "en" | "em") => void;
   applyDocMultiSpaces: (value: "none" | "en" | "em") => void;
@@ -200,6 +203,38 @@ export const useEditor = create<EditorState>((set, get) => ({
         ),
         blocks: mapParagraphs(doc.blocks, (p) =>
           p.style === oldName ? { ...p, style: newName } : p,
+        ),
+      },
+    });
+  },
+  mapSourceStyle: (sourceStyle, target) => {
+    const doc = get().doc;
+    if (!doc) return;
+    if (target === "__discard") {
+      const filtered: Block[] = [];
+      for (const b of doc.blocks) {
+        if (b.kind === "paragraph") {
+          if (b.sourceStyle !== sourceStyle) filtered.push(b);
+        } else {
+          filtered.push({
+            ...b,
+            rows: b.rows.map((row) =>
+              row.map((cell) => ({
+                ...cell,
+                paragraphs: cell.paragraphs.filter((p) => p.sourceStyle !== sourceStyle),
+              })),
+            ),
+          });
+        }
+      }
+      set({ doc: { ...doc, blocks: filtered } });
+      return;
+    }
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) =>
+          p.sourceStyle === sourceStyle ? { ...p, style: target } : p,
         ),
       },
     });
@@ -375,6 +410,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       collapseBlanksToSpacing,
       normalizeLists,
       closeOrphanRuns,
+      trimRunBleed,
       sectionBreaksToPageBreaks,
       sanitizeStyleNames,
     };

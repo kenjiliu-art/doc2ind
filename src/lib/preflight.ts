@@ -132,6 +132,36 @@ export function closeOrphanRuns(doc: ParsedDoc): ParsedDoc {
   return { ...doc, blocks };
 }
 
+/** Strip trailing whitespace AND punctuation out of styled runs so italic/bold don't bleed past the styled phrase. */
+const BLEED_TAIL = /[\s.,;:!?\)\]\}\u2019\u201D\u2026"'`]+$/;
+export function trimRunBleed(doc: ParsedDoc): ParsedDoc {
+  const fix = (runs: RunSpan[]): RunSpan[] => {
+    const out: RunSpan[] = [];
+    for (const r of runs) {
+      if (!r.charStyle || !r.text || r.footnoteRef !== undefined) {
+        out.push(r);
+        continue;
+      }
+      if (BLEED_TAIL.test(r.text) && /^[\s.,;:!?\)\]\}\u2019\u201D\u2026"'`]+$/.test(r.text)) {
+        // Run is entirely tail chars → drop the charStyle
+        out.push({ text: r.text });
+        continue;
+      }
+      const m = r.text.match(BLEED_TAIL);
+      if (m) {
+        const head = r.text.slice(0, r.text.length - m[0].length);
+        out.push({ text: head, charStyle: r.charStyle });
+        out.push({ text: m[0] });
+      } else {
+        out.push(r);
+      }
+    }
+    return out;
+  };
+  const blocks = mapParagraphs(doc.blocks, (p) => ({ ...p, runs: fix(p.runs) }));
+  return { ...doc, blocks };
+}
+
 /** 8. Promote section breaks (already marked by the parser) to clean page-break-before. */
 export function sectionBreaksToPageBreaks(doc: ParsedDoc): ParsedDoc {
   const blocks = mapParagraphs(doc.blocks, (p) =>

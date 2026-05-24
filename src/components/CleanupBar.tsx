@@ -47,6 +47,12 @@ const PREFLIGHT: Array<{
       "Moves trailing whitespace out of styled character runs so bold or italic formatting does not bleed into surrounding text.",
   },
   {
+    action: "trimRunBleed",
+    label: "Trim italic/bold bleed",
+    description:
+      "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug.",
+  },
+  {
     action: "sanitizeStyleNames",
     label: "Sanitize style names",
     description:
