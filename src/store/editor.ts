@@ -310,7 +310,63 @@ export const useEditor = create<EditorState>((set, get) => ({
       },
     });
   },
-  runPreflight: (action) => {
+  applyCharStyleRange: (id, start, end, charStyle) => {
+    const doc = get().doc;
+    if (!doc || end <= start) return;
+    set({
+      doc: {
+        ...doc,
+        blocks: mapParagraphs(doc.blocks, (p) => {
+          if (p.id !== id) return p;
+          let pos = 0;
+          const next: typeof p.runs = [];
+          for (const r of p.runs) {
+            if (r.footnoteRef !== undefined || r.text.length === 0) {
+              next.push(r);
+              continue;
+            }
+            const len = r.text.length;
+            const rs = pos;
+            const re = pos + len;
+            pos = re;
+            const a = Math.max(start, rs);
+            const b = Math.min(end, re);
+            if (a >= b) {
+              next.push(r);
+              continue;
+            }
+            const before = r.text.slice(0, a - rs);
+            const middle = r.text.slice(a - rs, b - rs);
+            const after = r.text.slice(b - rs);
+            if (before) next.push({ ...r, text: before });
+            if (middle) {
+              const nr = { ...r, text: middle };
+              if (charStyle) nr.charStyle = charStyle;
+              else delete (nr as { charStyle?: string }).charStyle;
+              next.push(nr);
+            }
+            if (after) next.push({ ...r, text: after });
+          }
+          // Merge adjacent runs with identical charStyle (and no footnoteRef)
+          const merged: typeof next = [];
+          for (const r of next) {
+            const last = merged[merged.length - 1];
+            if (
+              last &&
+              r.footnoteRef === undefined &&
+              last.footnoteRef === undefined &&
+              last.charStyle === r.charStyle
+            ) {
+              last.text += r.text;
+            } else {
+              merged.push({ ...r });
+            }
+          }
+          return { ...p, runs: merged };
+        }),
+      },
+    });
+  },
     const doc = get().doc;
     if (!doc) return;
     const fns: Record<PreflightAction, (d: ParsedDoc) => ParsedDoc> = {
