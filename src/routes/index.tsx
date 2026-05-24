@@ -15,7 +15,7 @@ import { ComboToast } from "@/components/ComboToast";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { loadSession, clearSession } from "@/lib/storage";
-import { countIssues } from "@/lib/health";
+import { countIssues, countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
