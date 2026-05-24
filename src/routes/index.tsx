@@ -1,18 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
 import { buildTaggedText } from "@/lib/tagged-text";
 import { Progress } from "@/components/ui/progress";
-import { ParagraphRow } from "@/components/ParagraphRow";
-import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
 import { BulkActionsBar } from "@/components/BulkActionsBar";
 import { CleanupBar } from "@/components/CleanupBar";
 import { LivePreview } from "@/components/LivePreview";
-import { FileText, Download, FileCode2, Minimize2, Maximize2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { FileText, Download, FileCode2 } from "lucide-react";
 
 function saveAs(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
