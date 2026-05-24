@@ -149,6 +149,7 @@ export const useEditor = create<EditorState>((set, get) => {
     past: [],
     future: [],
     initialIssues: 0,
+    initialIssueBreakdown: null,
     comboCount: 0,
     lastEditAt: 0,
     comboTick: 0,
@@ -161,6 +162,7 @@ export const useEditor = create<EditorState>((set, get) => {
         }),
       }));
       const nextDoc = { ...doc, blocks };
+      const breakdown = countIssuesDetailed(nextDoc);
       set({
         doc: nextDoc,
         fileName,
@@ -169,7 +171,8 @@ export const useEditor = create<EditorState>((set, get) => {
         preflightHistory: new Set(),
         past: [],
         future: [],
-        initialIssues: countIssues(nextDoc),
+        initialIssues: breakdown.total,
+        initialIssueBreakdown: breakdown,
         comboCount: 0,
         lastEditAt: 0,
         comboTick: 0,
