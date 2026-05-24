@@ -235,6 +235,7 @@ function ParaView({
         hasChanges={hasChanges}
         onSelect={onSelect}
         styles={styles}
+        showMargins={showMargins}
       >
         <p className="h-3" />
       </ParaShell>
