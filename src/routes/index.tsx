@@ -219,8 +219,14 @@ function EditorView() {
   const setDoc = useEditor((s) => s.setDoc);
   const reset = useEditor((s) => s.reset);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleError, setSampleError] = useState<string | null>(null);
+
+  const jumpAndCloseSheet = (id: string) => {
+    setSelectedId(id);
+    setMobileSheetOpen(false);
+  };
 
   const stats = useMemo(() => {
     let paragraphs = 0;
@@ -296,7 +302,7 @@ function EditorView() {
         </div>
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
-          <DiagnosticsPanel />
+          <DiagnosticsPanel onJump={setSelectedId} />
           <CleanupBar />
           <StyleMappingPanel />
           <CharStylesPanel />
@@ -354,7 +360,7 @@ function EditorView() {
         </div>
 
         {/* Mobile-only tools FAB + bottom sheet */}
-        <Sheet>
+        <Sheet open={mobileSheetOpen} onOpenChange={setMobileSheetOpen}>
           <SheetTrigger asChild>
             <button
               onClick={(e) => e.stopPropagation()}
@@ -411,7 +417,7 @@ function EditorView() {
               </div>
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
-              <DiagnosticsPanel />
+              <DiagnosticsPanel onJump={jumpAndCloseSheet} />
               <CleanupBar />
               <StyleMappingPanel />
               <CharStylesPanel />

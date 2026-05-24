@@ -149,3 +149,14 @@
     color: var(--color-foreground);
   }
 }
+
+@keyframes diag-flash {
+  0% { background-color: rgba(251, 191, 36, 0); box-shadow: inset 0 0 0 0 rgba(251, 191, 36, 0); }
+  20% { background-color: rgba(251, 191, 36, 0.35); box-shadow: inset 0 0 0 2px rgba(245, 158, 11, 0.55); }
+  100% { background-color: rgba(251, 191, 36, 0); box-shadow: inset 0 0 0 0 rgba(251, 191, 36, 0); }
+}
+
+.diag-flash {
+  animation: diag-flash 1.4s ease-out;
+  border-radius: 4px;
+}

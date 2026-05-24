@@ -1,91 +1,195 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type { Block, ParagraphBlock } from "@/lib/types";
-import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Crosshair } from "lucide-react";
+
+type Severity = "info" | "warn" | "ok";
 
 interface Finding {
   key: string;
   label: string;
   count: number;
-  severity: "info" | "warn" | "ok";
+  severity: Severity;
   hint?: string;
+  /** Ordered paragraph ids that match this finding (for jump-to-paragraph). */
+  ids: string[];
 }
 
-function walk(blocks: Block[], fn: (p: ParagraphBlock) => void) {
-  for (const b of blocks) {
-    if (b.kind === "paragraph") fn(b);
-    else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(fn)));
-  }
+interface Props {
+  onJump?: (id: string) => void;
 }
 
-export function DiagnosticsPanel() {
+function paraText(p: ParagraphBlock) {
+  return p.runs.map((r) => r.text).join("");
+}
+
+export function DiagnosticsPanel({ onJump }: Props) {
   const doc = useEditor((s) => s.doc);
+  const [cursors, setCursors] = useState<Record<string, number>>({});
 
   const findings = useMemo<Finding[]>(() => {
     if (!doc) return [];
+
+    const ids = {
+      unstyled: [] as string[],
+      soft: [] as string[],
+      spaces: [] as string[],
+      tabs: [] as string[],
+      empty: [] as string[],
+      pb: [] as string[],
+      dash: [] as string[],
+      qq: [] as string[],
+      bleed: [] as string[],
+    };
     let paragraphs = 0;
     let tables = 0;
-    let emptyPara = 0;
-    let softReturns = 0;
-    let multiSpacePara = 0;
-    let leadingTabPara = 0;
-    let pageBreaks = 0;
-    let doubleHyphens = 0;
-    let straightQuotes = 0;
-    let styledTrailingWs = 0; // bleed candidates
     const sourceStyles = new Set<string>();
-    let unstyledPara = 0;
 
-    for (const b of doc.blocks) {
-      if (b.kind === "table") {
-        tables++;
-        b.rows.forEach((r) =>
-          r.forEach((c) =>
-            c.paragraphs.forEach((p) => inspectPara(p)),
-          ),
-        );
-      } else inspectPara(b);
-    }
-
-    function inspectPara(p: ParagraphBlock) {
+    const inspectPara = (p: ParagraphBlock) => {
       paragraphs++;
       if (p.sourceStyle) sourceStyles.add(p.sourceStyle);
-      else unstyledPara++;
-      const text = p.runs.map((r) => r.text).join("");
-      if (!text.trim()) emptyPara++;
-      if (p.hasSoftBreaks) softReturns++;
-      if (p.hasMultiSpaces) multiSpacePara++;
-      if (p.leadingTabs > 0) leadingTabPara++;
-      if (p.rules.pageBreakBefore || p.rules.pageBreakAfter) pageBreaks++;
-      if (text.includes("--")) doubleHyphens++;
-      if (/['"]/.test(text)) straightQuotes++;
+      else ids.unstyled.push(p.id);
+      const text = paraText(p);
+      if (!text.trim()) ids.empty.push(p.id);
+      if (p.hasSoftBreaks) ids.soft.push(p.id);
+      if (p.hasMultiSpaces) ids.spaces.push(p.id);
+      if (p.leadingTabs > 0) ids.tabs.push(p.id);
+      if (p.rules.pageBreakBefore || p.rules.pageBreakAfter) ids.pb.push(p.id);
+      if (text.includes("--")) ids.dash.push(p.id);
+      if (/['"]/.test(text)) ids.qq.push(p.id);
       for (const r of p.runs) {
-        if (r.charStyle && r.text && /\s$/.test(r.text)) styledTrailingWs++;
+        if (r.charStyle && r.text && /\s$/.test(r.text)) {
+          ids.bleed.push(p.id);
+          break;
+        }
       }
-    }
+    };
 
-    const result: Finding[] = [
-      { key: "para", label: "Paragraphs", count: paragraphs, severity: "info" },
-      { key: "src", label: "Unique source styles", count: sourceStyles.size, severity: "info" },
-      { key: "unstyled", label: "Unstyled paragraphs", count: unstyledPara, severity: unstyledPara > 0 ? "warn" : "ok", hint: "No w:pStyle in source — will fall back to default Body." },
-      { key: "tables", label: "Tables", count: tables, severity: "info" },
-      { key: "fn", label: "Footnotes", count: doc.footnotes.length, severity: "info" },
-      { key: "fonts", label: "Fonts detected", count: doc.detectedFonts.length, severity: doc.detectedFonts.length > 3 ? "warn" : "ok", hint: doc.detectedFonts.length > 3 ? "Consider normalizing to fewer fonts before import." : undefined },
-      { key: "soft", label: "Paragraphs with soft returns", count: softReturns, severity: softReturns > 0 ? "warn" : "ok", hint: "Use 'Soft → hard breaks' to convert." },
-      { key: "spaces", label: "Paragraphs with multi-spaces", count: multiSpacePara, severity: multiSpacePara > 0 ? "warn" : "ok" },
-      { key: "tabs", label: "Paragraphs with leading tabs", count: leadingTabPara, severity: leadingTabPara > 0 ? "warn" : "ok", hint: "Convert to first-line indent via 'Tabs → indent'." },
-      { key: "empty", label: "Empty paragraphs", count: emptyPara, severity: emptyPara > 5 ? "warn" : "ok" },
-      { key: "pb", label: "Page breaks", count: pageBreaks, severity: "info" },
-      { key: "dash", label: "Double-hyphen ' -- ' instances", count: doubleHyphens, severity: doubleHyphens > 0 ? "warn" : "ok", hint: "Enable 'Em dashes' cleanup." },
-      { key: "qq", label: "Paragraphs with straight quotes", count: straightQuotes, severity: straightQuotes > 0 ? "warn" : "ok", hint: "Enable 'Smart quotes'." },
-      { key: "bleed", label: "Bleed-candidate runs (styled trailing space)", count: styledTrailingWs, severity: styledTrailingWs > 0 ? "warn" : "ok", hint: "Run 'Trim italic/bold bleed' or 'Close orphan runs'." },
+    const walk = (blocks: Block[]) => {
+      for (const b of blocks) {
+        if (b.kind === "table") {
+          tables++;
+          b.rows.forEach((r) =>
+            r.forEach((c) => c.paragraphs.forEach(inspectPara)),
+          );
+        } else inspectPara(b);
+      }
+    };
+    walk(doc.blocks);
+
+    const f = (
+      key: string,
+      label: string,
+      count: number,
+      severity: Severity,
+      hint?: string,
+      paraIds: string[] = [],
+    ): Finding => ({ key, label, count, severity, hint, ids: paraIds });
+
+    return [
+      f("para", "Paragraphs", paragraphs, "info"),
+      f("src", "Unique source styles", sourceStyles.size, "info"),
+      f(
+        "unstyled",
+        "Unstyled paragraphs",
+        ids.unstyled.length,
+        ids.unstyled.length > 0 ? "warn" : "ok",
+        "No w:pStyle in source — will fall back to default Body.",
+        ids.unstyled,
+      ),
+      f("tables", "Tables", tables, "info"),
+      f("fn", "Footnotes", doc.footnotes.length, "info"),
+      f(
+        "fonts",
+        "Fonts detected",
+        doc.detectedFonts.length,
+        doc.detectedFonts.length > 3 ? "warn" : "ok",
+        doc.detectedFonts.length > 3
+          ? "Consider normalizing to fewer fonts before import."
+          : undefined,
+      ),
+      f(
+        "soft",
+        "Paragraphs with soft returns",
+        ids.soft.length,
+        ids.soft.length > 0 ? "warn" : "ok",
+        "Use 'Soft → hard breaks' to convert.",
+        ids.soft,
+      ),
+      f(
+        "spaces",
+        "Paragraphs with multi-spaces",
+        ids.spaces.length,
+        ids.spaces.length > 0 ? "warn" : "ok",
+        undefined,
+        ids.spaces,
+      ),
+      f(
+        "tabs",
+        "Paragraphs with leading tabs",
+        ids.tabs.length,
+        ids.tabs.length > 0 ? "warn" : "ok",
+        "Convert to first-line indent via 'Tabs → indent'.",
+        ids.tabs,
+      ),
+      f(
+        "empty",
+        "Empty paragraphs",
+        ids.empty.length,
+        ids.empty.length > 5 ? "warn" : "ok",
+        undefined,
+        ids.empty,
+      ),
+      f("pb", "Page breaks", ids.pb.length, "info", undefined, ids.pb),
+      f(
+        "dash",
+        "Double-hyphen ' -- ' instances",
+        ids.dash.length,
+        ids.dash.length > 0 ? "warn" : "ok",
+        "Enable 'Em dashes' cleanup.",
+        ids.dash,
+      ),
+      f(
+        "qq",
+        "Paragraphs with straight quotes",
+        ids.qq.length,
+        ids.qq.length > 0 ? "warn" : "ok",
+        "Enable 'Smart quotes'.",
+        ids.qq,
+      ),
+      f(
+        "bleed",
+        "Bleed-candidate runs (styled trailing space)",
+        ids.bleed.length,
+        ids.bleed.length > 0 ? "warn" : "ok",
+        "Run 'Trim italic/bold bleed' or 'Close orphan runs'.",
+        ids.bleed,
+      ),
     ];
-    return result;
   }, [doc]);
 
   if (!doc) return null;
 
   const warnings = findings.filter((f) => f.severity === "warn" && f.count > 0);
+
+  const handleJump = (finding: Finding) => {
+    if (!onJump || finding.ids.length === 0) return;
+    const i = cursors[finding.key] ?? -1;
+    const next = (i + 1) % finding.ids.length;
+    setCursors((c) => ({ ...c, [finding.key]: next }));
+    const id = finding.ids[next];
+    onJump(id);
+    // Scroll + flash the matching paragraph in the preview.
+    requestAnimationFrame(() => {
+      const el = document.querySelector(
+        `[data-para-id="${id}"]`,
+      ) as HTMLElement | null;
+      if (!el) return;
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("diag-flash");
+      window.setTimeout(() => el.classList.remove("diag-flash"), 1400);
+    });
+  };
 
   return (
     <div className="px-3 py-3 text-xs">
@@ -100,13 +204,36 @@ export function DiagnosticsPanel() {
       <ul className="space-y-0.5">
         {findings.map((f) => {
           const dim = f.count === 0 && f.severity !== "info";
+          const jumpable = !!onJump && f.ids.length > 0;
+          const cursor = cursors[f.key];
+          const position =
+            jumpable && cursor !== undefined
+              ? `${cursor + 1}/${f.ids.length}`
+              : null;
           return (
             <li
               key={f.key}
-              className={`flex items-start justify-between gap-2 rounded px-1.5 py-1 ${
+              className={`group flex items-start justify-between gap-2 rounded px-1.5 py-1 ${
                 dim ? "opacity-50" : ""
-              }`}
-              title={f.hint}
+              } ${jumpable ? "cursor-pointer hover:bg-sidebar-accent/70" : ""}`}
+              title={
+                jumpable
+                  ? `${f.hint ? f.hint + " — " : ""}Click to jump to the next match`
+                  : f.hint
+              }
+              onClick={jumpable ? () => handleJump(f) : undefined}
+              role={jumpable ? "button" : undefined}
+              tabIndex={jumpable ? 0 : undefined}
+              onKeyDown={
+                jumpable
+                  ? (e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        handleJump(f);
+                      }
+                    }
+                  : undefined
+              }
             >
               <span className="flex min-w-0 items-start gap-1.5">
                 <SeverityIcon severity={f.severity} count={f.count} />
@@ -119,14 +246,24 @@ export function DiagnosticsPanel() {
                   )}
                 </span>
               </span>
-              <span
-                className={`shrink-0 tabular-nums text-[11px] font-semibold ${
-                  f.severity === "warn" && f.count > 0
-                    ? "text-amber-600"
-                    : "text-muted-foreground"
-                }`}
-              >
-                {f.count.toLocaleString()}
+              <span className="flex shrink-0 items-center gap-1">
+                {position && (
+                  <span className="text-[9px] tabular-nums text-muted-foreground">
+                    {position}
+                  </span>
+                )}
+                {jumpable && (
+                  <Crosshair className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                )}
+                <span
+                  className={`tabular-nums text-[11px] font-semibold ${
+                    f.severity === "warn" && f.count > 0
+                      ? "text-amber-600"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {f.count.toLocaleString()}
+                </span>
               </span>
             </li>
           );
@@ -136,7 +273,7 @@ export function DiagnosticsPanel() {
   );
 }
 
-function SeverityIcon({ severity, count }: { severity: Finding["severity"]; count: number }) {
+function SeverityIcon({ severity, count }: { severity: Severity; count: number }) {
   if (severity === "info") return <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />;
   if (severity === "warn" && count > 0)
     return <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />;
