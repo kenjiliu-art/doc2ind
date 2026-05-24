@@ -212,19 +212,29 @@ function ParaView({
         (k) => p.rules[k] !== p.original!.rules[k],
       ));
 
-  // Soft → hard splits into multiple paragraphs
-  const groups: RunSpan[][] = [];
-  if (p.rules.softToHard) {
-    let cur: RunSpan[] = [];
-    for (const r of p.runs) {
-      if (r.text === "\n") {
-        if (cur.length) groups.push(cur);
-        cur = [];
-      } else cur.push(r);
+  // Build (srcIdx, srcStart) for each run, then split on '\n' if softToHard
+  type Item = { run: RunSpan; srcIdx: number; srcStart: number; stripLen: number };
+  const items: Item[] = [];
+  {
+    let off = 0;
+    for (let i = 0; i < p.runs.length; i++) {
+      const r = p.runs[i];
+      items.push({ run: r, srcIdx: i, srcStart: off, stripLen: 0 });
+      off += r.text.length;
     }
-    if (cur.length) groups.push(cur);
+  }
+  const groupsSrc: Item[][] = [];
+  if (p.rules.softToHard) {
+    let cur: Item[] = [];
+    for (const it of items) {
+      if (it.run.text === "\n") {
+        if (cur.length) groupsSrc.push(cur);
+        cur = [];
+      } else cur.push(it);
+    }
+    if (cur.length) groupsSrc.push(cur);
   } else {
-    groups.push(p.runs);
+    groupsSrc.push(items);
   }
 
   if (groups.length === 0) {
