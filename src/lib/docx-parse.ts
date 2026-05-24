@@ -370,11 +370,15 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
   const blocks: Block[] = [];
   let blankCount = 0;
   let pendingSectionBreak = false;
+  let pendingPageBreak = false;
+  type PBExtras = ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean };
   for (let i = 0; i < rawBlocks.length; i++) {
     const b = rawBlocks[i];
     if (b.kind === "paragraph" && b.runs.length === 0) {
       blankCount++;
       if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
+      const eb = b as PBExtras;
+      if (eb.__pPrPageBreak || eb.__runPageBreak) pendingPageBreak = true;
       continue;
     }
     if (b.kind === "paragraph") {
@@ -384,9 +388,16 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
       if (pendingSectionBreak) {
         b.sectionBreakBefore = true;
       }
+      const eb = b as PBExtras;
+      if (pendingPageBreak || eb.__pPrPageBreak || eb.__runPageBreak) {
+        b.rules.pageBreakBefore = true;
+      }
+      delete eb.__pPrPageBreak;
+      delete eb.__runPageBreak;
     }
     if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
     else pendingSectionBreak = false;
+    pendingPageBreak = false;
     blankCount = 0;
     blocks.push(b);
   }
