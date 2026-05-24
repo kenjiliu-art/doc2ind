@@ -7,6 +7,7 @@ import { buildTaggedText } from "@/lib/tagged-text";
 import { CleanupBar } from "@/components/CleanupBar";
 import { CharStylesPanel } from "@/components/CharStylesPanel";
 import { StyleMappingPanel } from "@/components/StyleMappingPanel";
+import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
