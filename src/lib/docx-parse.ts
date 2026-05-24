@@ -128,7 +128,10 @@ function parseRun(rNode: unknown): RunInfo {
         const kt = tagOf(k);
         if (kt === "w:b") info.bold = true;
         else if (kt === "w:i") info.italic = true;
-        else if (kt === "w:u") info.underline = true;
+        else if (kt === "w:u") {
+          const uVal = getAttr(k)["@_w:val"];
+          if (uVal !== "none" && uVal !== "0" && uVal !== "false") info.underline = true;
+        }
         else if (kt === "w:smallCaps") info.smallCaps = true;
         else if (kt === "w:vertAlign") {
           const val = getAttr(k)["@_w:val"];
