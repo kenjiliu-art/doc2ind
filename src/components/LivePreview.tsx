@@ -422,9 +422,18 @@ function ParaView({
         return (
           <div key={idx}>
             {isPageBreak && (
-              <div className="my-4 border-t border-dashed border-neutral-400 pt-1 text-center text-[9px] uppercase tracking-widest text-neutral-400">
-                Page break
-              </div>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  useEditor.getState().updateParagraphRule(p.id, "pageBreakBefore", false);
+                }}
+                title="Click to remove page break"
+                className="my-4 flex w-full items-center gap-2 border-t border-dashed border-neutral-400 pt-1 text-center text-[9px] uppercase tracking-widest text-neutral-500 hover:text-red-600 hover:border-red-400"
+              >
+                <span className="flex-1 border-t border-dashed border-neutral-300" />
+                <span>Page break ✕</span>
+                <span className="flex-1 border-t border-dashed border-neutral-300" />
+              </button>
             )}
             <p
               className={cls}
@@ -546,6 +555,18 @@ function ParaShell({
         hasMargin && !isSelected && "bg-fuchsia-50/60",
       )}
     >
+      {!p.rules.pageBreakBefore && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            useEditor.getState().updateParagraphRule(p.id, "pageBreakBefore", true);
+          }}
+          title="Insert page break before this paragraph"
+          className="absolute -top-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
+        >
+          + Page break
+        </button>
+      )}
       {hasMargin && (
         <>
           {leftIndent !== 0 && (
