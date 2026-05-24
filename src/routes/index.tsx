@@ -495,6 +495,7 @@ function EditorView() {
         </div>
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
+          <HealthRing />
           <button
             onClick={onExportDocx}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -641,6 +642,7 @@ function EditorView() {
               <CharStylesPanel />
             </div>
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
+              <HealthRing compact />
               <button
                 onClick={onExportDocx}
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
