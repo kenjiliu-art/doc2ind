@@ -541,14 +541,11 @@ function EditorView() {
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
           <HealthRing />
-          <AchievementsRow />
           <button
             onClick={onExportDocx}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            <CleanSweepRing>
-              <Download className="h-4 w-4" />
-            </CleanSweepRing>
+            <Download className="h-4 w-4" />
             Export for InDesign
           </button>
           <button
