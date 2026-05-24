@@ -48,14 +48,23 @@ function IndexPage() {
 function UploadView() {
   const setDoc = useEditor((s) => s.setDoc);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
     setLoading(true);
     setError(null);
+    setProgress(0);
+    setProgressLabel("Reading file…");
     try {
       const buf = await file.arrayBuffer();
-      const parsed = await parseDocx(buf);
+      const parsed = await parseDocx(buf, (p, l) => {
+        setProgress(p);
+        setProgressLabel(l);
+      });
+      setProgress(1);
+      setProgressLabel("Done");
       setDoc(parsed, file.name.replace(/\.docx$/i, ""));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to parse file.");
