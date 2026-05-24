@@ -28,13 +28,13 @@ function saveAs(blob: Blob, filename: string) {
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Word → InDesign Reformatter" },
+      { title: "Word to InDesign" },
       {
         name: "description",
         content:
           "Clean up Word documents for InDesign: convert formatting to styles, tabs to margins, soft to hard returns, and blank lines to page breaks — with per-line control.",
       },
-      { property: "og:title", content: "Word → InDesign Reformatter" },
+      { property: "og:title", content: "Word to InDesign" },
       {
         property: "og:description",
         content:
