@@ -380,6 +380,10 @@ function ParaShell({
         e.stopPropagation();
         onSelect(isSelected ? null : p.id);
       }}
+      style={{
+        marginTop: p.spaceBefore ? twipsToPx(p.spaceBefore) : undefined,
+        marginBottom: p.spaceAfter ? twipsToPx(p.spaceAfter) : undefined,
+      }}
       className={cn(
         "group relative -mx-3 cursor-pointer rounded px-3 transition",
         isSelected
@@ -434,8 +438,12 @@ function InlineEditor({
 }) {
   const setStyle = useEditor((s) => s.setStyle);
   const setText = useEditor((s) => s.setText);
+  const updateParagraph = useEditor((s) => s.updateParagraph);
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
   const revertAll = useEditor((s) => s.revertParagraph);
+
+  const spaceBeforePt = p.spaceBefore ? p.spaceBefore / 20 : 0;
+  const spaceAfterPt = p.spaceAfter ? p.spaceAfter / 20 : 0;
 
   const [draft, setDraft] = useState(runsText(p.runs));
 
@@ -492,6 +500,46 @@ function InlineEditor({
             Done
           </button>
         </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-3 text-[11px] text-neutral-600">
+        <label className="flex items-center gap-1.5" title="Extra space above this paragraph, in points (default 0)">
+          <span>Space before</span>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={spaceBeforePt}
+            onChange={(e) => {
+              const pt = Math.max(0, Number(e.target.value) || 0);
+              updateParagraph(p.id, { spaceBefore: pt ? pt * 20 : undefined });
+            }}
+            className="w-14 rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-right text-[11px] outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-300"
+          />
+          <span className="text-neutral-400">pt</span>
+        </label>
+        <label className="flex items-center gap-1.5" title="Extra space below this paragraph, in points (default 0)">
+          <span>Space after</span>
+          <input
+            type="number"
+            min={0}
+            step={1}
+            value={spaceAfterPt}
+            onChange={(e) => {
+              const pt = Math.max(0, Number(e.target.value) || 0);
+              updateParagraph(p.id, { spaceAfter: pt ? pt * 20 : undefined });
+            }}
+            className="w-14 rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-right text-[11px] outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-300"
+          />
+          <span className="text-neutral-400">pt</span>
+        </label>
+        {(p.spaceBefore || p.spaceAfter) && (
+          <button
+            onClick={() => updateParagraph(p.id, { spaceBefore: undefined, spaceAfter: undefined })}
+            className="ml-auto rounded border border-neutral-300 bg-white px-1.5 py-0.5 text-[10px] text-neutral-600 hover:bg-neutral-50"
+          >
+            Reset spacing
+          </button>
+        )}
       </div>
       <textarea
         value={draft}

@@ -115,14 +115,18 @@ function paragraphToTagged(p: ParagraphBlock, footnoteMap: Map<number, Paragraph
     return filtered
       .map((g, i) => {
         const prefix = i === 0 && p.rules.pageBreakBefore ? "<pBreakBefore:Page>" : "";
+        const sb = i === 0 && p.spaceBefore ? `<pSpaceBefore:${(p.spaceBefore / 1440).toFixed(3)}>` : "";
+        const sa = i === filtered.length - 1 && p.spaceAfter ? `<pSpaceAfter:${(p.spaceAfter / 1440).toFixed(3)}>` : "";
         const list = i === 0 ? listPrefix : "";
-        return `<ParaStyle:${p.style}>${prefix}${list}${runsToTagged(g, p, footnoteMap)}\r\n`;
+        return `<ParaStyle:${p.style}>${sb}${sa}${prefix}${list}${runsToTagged(g, p, footnoteMap)}\r\n`;
       })
       .join("");
   }
 
   const prefix = p.rules.pageBreakBefore ? "<pBreakBefore:Page>" : "";
-  return `<ParaStyle:${p.style}>${prefix}${listPrefix}${runsToTagged(spans, p, footnoteMap)}\r\n`;
+  const sb = p.spaceBefore ? `<pSpaceBefore:${(p.spaceBefore / 1440).toFixed(3)}>` : "";
+  const sa = p.spaceAfter ? `<pSpaceAfter:${(p.spaceAfter / 1440).toFixed(3)}>` : "";
+  return `<ParaStyle:${p.style}>${sb}${sa}${prefix}${listPrefix}${runsToTagged(spans, p, footnoteMap)}\r\n`;
 }
 
 export function buildTaggedText(doc: ParsedDoc): string {
