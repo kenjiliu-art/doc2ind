@@ -661,6 +661,7 @@ function EditorView() {
           </SheetContent>
         </Sheet>
       </main>
+      <ComboToast />
     </div>
   );
 }
