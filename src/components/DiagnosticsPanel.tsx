@@ -194,92 +194,97 @@ export function DiagnosticsPanel({ onJump }: Props) {
 
   return (
     <div className="px-3 py-3 text-xs">
-      <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        Pre-import diagnostics
-        {warnings.length > 0 ? (
-          <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">
-            {warnings.length} to review
-          </span>
-        ) : (
-          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
-            <CheckCircle2 className="h-2.5 w-2.5" /> All clear
-          </span>
-        )}
-      </p>
-      {warnings.length === 0 && (
-        <p className="mb-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
-          No structural issues detected. You can safely export — or skim the
-          counts below for context.
-        </p>
-      )}
-      <ul className="space-y-0.5">
-        {findings.map((f) => {
-          const dim = f.count === 0 && f.severity !== "info";
-          const jumpable = !!onJump && f.ids.length > 0;
-          const cursor = cursors[f.key];
-          const position =
-            jumpable && cursor !== undefined
-              ? `${cursor + 1}/${f.ids.length}`
-              : null;
-          return (
-            <li
-              key={f.key}
-              className={`group flex items-start justify-between gap-2 rounded px-1.5 py-1 ${
-                dim ? "opacity-50" : ""
-              } ${jumpable ? "cursor-pointer hover:bg-sidebar-accent/70" : ""}`}
-              title={
-                jumpable
-                  ? `${f.hint ? f.hint + " — " : ""}Click to jump to the next match`
-                  : f.hint
-              }
-              onClick={jumpable ? () => handleJump(f) : undefined}
-              role={jumpable ? "button" : undefined}
-              tabIndex={jumpable ? 0 : undefined}
-              onKeyDown={
-                jumpable
-                  ? (e) => {
-                      if (e.key === "Enter" || e.key === " ") {
-                        e.preventDefault();
-                        handleJump(f);
-                      }
-                    }
-                  : undefined
-              }
-            >
-              <span className="flex min-w-0 items-start gap-1.5">
-                <SeverityIcon severity={f.severity} count={f.count} />
-                <span className="min-w-0 flex-1 leading-tight text-foreground">
-                  <span className="block truncate text-[11px]">{f.label}</span>
-                  {f.hint && f.count > 0 && f.severity === "warn" && (
-                    <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
-                      {f.hint}
-                    </span>
-                  )}
-                </span>
-              </span>
-              <span className="flex shrink-0 items-center gap-1">
-                {position && (
-                  <span className="text-[9px] tabular-nums text-muted-foreground">
-                    {position}
-                  </span>
-                )}
-                {jumpable && (
-                  <Crosshair className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                )}
-                <span
-                  className={`tabular-nums text-[11px] font-semibold ${
-                    f.severity === "warn" && f.count > 0
-                      ? "text-amber-600"
-                      : "text-muted-foreground"
-                  }`}
+      <Collapsible defaultOpen={false}>
+        <CollapsibleTrigger className="mb-1.5 flex w-full items-center gap-1.5 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground [&[data-state=open]>svg]:rotate-180">
+          Pre-import diagnostics
+          {warnings.length > 0 ? (
+            <span className="rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[9px] font-bold text-amber-600">
+              {warnings.length} to review
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600">
+              <CheckCircle2 className="h-2.5 w-2.5" /> All clear
+            </span>
+          )}
+          <ChevronDown className="ml-auto h-3.5 w-3.5 shrink-0 transition-transform" />
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {warnings.length === 0 && (
+            <p className="mb-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
+              No structural issues detected. You can safely export — or skim the
+              counts below for context.
+            </p>
+          )}
+          <ul className="space-y-0.5">
+            {findings.map((f) => {
+              const dim = f.count === 0 && f.severity !== "info";
+              const jumpable = !!onJump && f.ids.length > 0;
+              const cursor = cursors[f.key];
+              const position =
+                jumpable && cursor !== undefined
+                  ? `${cursor + 1}/${f.ids.length}`
+                  : null;
+              return (
+                <li
+                  key={f.key}
+                  className={`group flex items-start justify-between gap-2 rounded px-1.5 py-1 ${
+                    dim ? "opacity-50" : ""
+                  } ${jumpable ? "cursor-pointer hover:bg-sidebar-accent/70" : ""}`}
+                  title={
+                    jumpable
+                      ? `${f.hint ? f.hint + " — " : ""}Click to jump to the next match`
+                      : f.hint
+                  }
+                  onClick={jumpable ? () => handleJump(f) : undefined}
+                  role={jumpable ? "button" : undefined}
+                  tabIndex={jumpable ? 0 : undefined}
+                  onKeyDown={
+                    jumpable
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleJump(f);
+                          }
+                        }
+                      : undefined
+                  }
                 >
-                  {f.count.toLocaleString()}
-                </span>
-              </span>
-            </li>
-          );
-        })}
-      </ul>
+                  <span className="flex min-w-0 items-start gap-1.5">
+                    <SeverityIcon severity={f.severity} count={f.count} />
+                    <span className="min-w-0 flex-1 leading-tight text-foreground">
+                      <span className="block truncate text-[11px]">{f.label}</span>
+                      {f.hint && f.count > 0 && f.severity === "warn" && (
+                        <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
+                          {f.hint}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1">
+                    {position && (
+                      <span className="text-[9px] tabular-nums text-muted-foreground">
+                        {position}
+                      </span>
+                    )}
+                    {jumpable && (
+                      <Crosshair className="h-3 w-3 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                    )}
+                    <span
+                      className={`tabular-nums text-[11px] font-semibold ${
+                        f.severity === "warn" && f.count > 0
+                          ? "text-amber-600"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {f.count.toLocaleString()}
+                    </span>
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
