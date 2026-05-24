@@ -201,6 +201,7 @@ function ParaView({
   selectedId,
   onSelect,
   styles,
+  showMargins,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
   const hasChanges =
