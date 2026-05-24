@@ -55,7 +55,7 @@ export function StudioHeader() {
             />
           </a>
           <span className="text-[10px] uppercase tracking-[0.3em] text-[#8f2419]">
-            Painter&apos;s Studio
+            Word to InDesign
           </span>
         </div>
       </div>
