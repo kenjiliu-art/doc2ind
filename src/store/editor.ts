@@ -154,6 +154,9 @@ export const useEditor = create<EditorState>((set, get) => {
     lastEditAt: 0,
     comboTick: 0,
     setDoc: (doc, fileName) => {
+      // Capture pre-import diagnostics on the raw doc BEFORE auto-rules run,
+      // so the health score reflects the document's true starting state.
+      const rawBreakdown = countIssuesDetailed(doc);
       const settings = useSettings.getState().autoApply;
       const blocks = mapParagraphs(doc.blocks, (p) => ({
         ...p,
@@ -162,7 +165,6 @@ export const useEditor = create<EditorState>((set, get) => {
         }),
       }));
       const nextDoc = { ...doc, blocks };
-      const breakdown = countIssuesDetailed(nextDoc);
       set({
         doc: nextDoc,
         fileName,
@@ -171,8 +173,8 @@ export const useEditor = create<EditorState>((set, get) => {
         preflightHistory: new Set(),
         past: [],
         future: [],
-        initialIssues: breakdown.total,
-        initialIssueBreakdown: breakdown,
+        initialIssues: rawBreakdown.total,
+        initialIssueBreakdown: rawBreakdown,
         comboCount: 0,
         lastEditAt: 0,
         comboTick: 0,

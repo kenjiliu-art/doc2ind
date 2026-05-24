@@ -11,6 +11,7 @@ import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { HealthRing } from "@/components/HealthRing";
+import { HealthBadge } from "@/components/HealthBadge";
 import { ComboToast } from "@/components/ComboToast";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
@@ -567,6 +568,7 @@ function EditorView() {
             <h1 className="font-display text-sm font-bold tracking-tight">
               Document preview
             </h1>
+            <HealthBadge />
             <p className="hidden text-xs text-muted-foreground sm:block">
               Click to edit · Shift-click to range-select · ⌘Z to undo
             </p>
