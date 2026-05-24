@@ -316,7 +316,11 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
     isBold: anyRun ? allBold : false,
     isItalic: anyRun ? allItalic : false,
     alignment,
-    rules: defaultRulesFor(),
+    rules: {
+      ...defaultRulesFor(),
+      pageBreakBefore: pageBreakBefore || pPrPageBreakBefore,
+      pageBreakAfter,
+    },
   };
   block.style = detectParagraphStyle(block);
   return block;
