@@ -4,6 +4,7 @@ import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
 import { buildTaggedText } from "@/lib/tagged-text";
+import { Progress } from "@/components/ui/progress";
 import { ParagraphRow } from "@/components/ParagraphRow";
 import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
