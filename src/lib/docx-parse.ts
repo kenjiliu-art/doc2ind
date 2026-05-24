@@ -110,6 +110,10 @@ interface RunInfo {
   subscript: boolean;
   smallCaps: boolean;
   hasBreak: boolean;
+  /** Page break appeared before any text in this run. */
+  breakBefore: boolean;
+  /** Page break appeared after text in this run. */
+  breakAfter: boolean;
   fontSize?: number;
   font?: string;
   footnoteRef?: number;
@@ -125,6 +129,8 @@ function parseRun(rNode: unknown): RunInfo {
     subscript: false,
     smallCaps: false,
     hasBreak: false,
+    breakBefore: false,
+    breakAfter: false,
   };
   const children = findTagChildren(rNode, "w:r");
   for (const child of children) {
@@ -162,6 +168,8 @@ function parseRun(rNode: unknown): RunInfo {
       const type = getAttr(child)["@_w:type"];
       if (type === "page") {
         info.hasBreak = true;
+        if (info.text.length === 0) info.breakBefore = true;
+        else info.breakAfter = true;
       } else {
         info.text += "\n"; // soft break marker
       }
