@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type {
   Block,
@@ -9,7 +9,7 @@ import type {
   TableBlock,
 } from "@/lib/types";
 import { smartQuotes, trimTrailing, dashes, multiSpaces } from "@/lib/cleanup";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Tag, TagIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface LivePreviewProps {
@@ -17,8 +17,18 @@ interface LivePreviewProps {
   onToggle: () => void;
 }
 
+/** Stable, distinguishable color per style name. */
+function styleColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
+  return `hsl(${h % 360} 70% 45%)`;
+}
+
+const BODY_STYLES = new Set(["Body", "Normal", "Default Paragraph Font"]);
+
 export function LivePreview({ open, onToggle }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
+  const [showMarkers, setShowMarkers] = useState(true);
 
   return (
     <aside
@@ -46,15 +56,33 @@ export function LivePreview({ open, onToggle }: LivePreviewProps) {
       </button>
 
       {open && (
-        <div className="flex-1 overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
-          {doc ? (
-            <div className="mx-auto w-full max-w-[640px] rounded-sm bg-white px-12 py-14 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
-              <DocPreview doc={doc} />
-            </div>
-          ) : (
-            <p className="text-center text-xs text-muted-foreground">No document</p>
-          )}
-        </div>
+        <>
+          <div className="flex h-9 shrink-0 items-center justify-between gap-2 border-b border-border bg-background/40 px-3 text-[11px]">
+            <span className="flex items-center gap-1.5 text-muted-foreground">
+              <Tag className="h-3 w-3" />
+              Style markers
+            </span>
+            <label className="flex cursor-pointer items-center gap-1.5 text-muted-foreground hover:text-foreground">
+              <input
+                type="checkbox"
+                checked={showMarkers}
+                onChange={(e) => setShowMarkers(e.target.checked)}
+                className="h-3 w-3 accent-primary"
+              />
+              {showMarkers ? "Visible" : "Hidden"}
+            </label>
+          </div>
+
+          <div className="flex-1 overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
+            {doc ? (
+              <div className="mx-auto w-full max-w-[640px] rounded-sm bg-white px-12 py-14 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
+                <DocPreview doc={doc} showMarkers={showMarkers} />
+              </div>
+            ) : (
+              <p className="text-center text-xs text-muted-foreground">No document</p>
+            )}
+          </div>
+        </>
       )}
     </aside>
   );
@@ -69,7 +97,7 @@ function applyCleanup(text: string, p: ParagraphBlock): string {
   return s;
 }
 
-function DocPreview({ doc }: { doc: ParsedDoc }) {
+function DocPreview({ doc, showMarkers }: { doc: ParsedDoc; showMarkers: boolean }) {
   const styleMap = useMemo(() => {
     const m = new Map<string, StyleDef>();
     for (const s of doc.paragraphStyles) m.set(s.name, s);
@@ -79,7 +107,13 @@ function DocPreview({ doc }: { doc: ParsedDoc }) {
   return (
     <>
       {doc.blocks.map((b) => (
-        <BlockView key={(b as { id: string }).id} block={b} styleMap={styleMap} charStyles={doc.charStyles} />
+        <BlockView
+          key={(b as { id: string }).id}
+          block={b}
+          styleMap={styleMap}
+          charStyles={doc.charStyles}
+          showMarkers={showMarkers}
+        />
       ))}
     </>
   );
@@ -89,25 +123,29 @@ function BlockView({
   block,
   styleMap,
   charStyles,
+  showMarkers,
 }: {
   block: Block;
   styleMap: Map<string, StyleDef>;
   charStyles: ParsedDoc["charStyles"];
+  showMarkers: boolean;
 }) {
   if (block.kind === "paragraph") {
-    return <ParaView p={block} styleMap={styleMap} charStyles={charStyles} />;
+    return <ParaView p={block} styleMap={styleMap} charStyles={charStyles} showMarkers={showMarkers} />;
   }
-  return <TableView t={block} styleMap={styleMap} charStyles={charStyles} />;
+  return <TableView t={block} styleMap={styleMap} charStyles={charStyles} showMarkers={showMarkers} />;
 }
 
 function TableView({
   t,
   styleMap,
   charStyles,
+  showMarkers,
 }: {
   t: TableBlock;
   styleMap: Map<string, StyleDef>;
   charStyles: ParsedDoc["charStyles"];
+  showMarkers: boolean;
 }) {
   return (
     <table className="my-3 w-full border-collapse text-[12px]">
@@ -117,7 +155,7 @@ function TableView({
             {row.map((cell, ci) => (
               <td key={ci} className="border border-neutral-300 p-2 align-top">
                 {cell.paragraphs.map((p) => (
-                  <ParaView key={p.id} p={p} styleMap={styleMap} charStyles={charStyles} />
+                  <ParaView key={p.id} p={p} styleMap={styleMap} charStyles={charStyles} showMarkers={showMarkers} />
                 ))}
               </td>
             ))}
@@ -165,10 +203,12 @@ function alignmentClass(a?: ParagraphBlock["alignment"]): string {
 function ParaView({
   p,
   charStyles,
+  showMarkers,
 }: {
   p: ParagraphBlock;
   styleMap: Map<string, StyleDef>;
   charStyles: ParsedDoc["charStyles"];
+  showMarkers: boolean;
 }) {
   // Soft → hard splits into multiple paragraphs
   const groups: RunSpan[][] = [];
@@ -189,10 +229,9 @@ function ParaView({
 
   const cls = cn(paragraphClasses(p), alignmentClass(p.alignment));
 
-  // Indent in pixels: 96dpi, 1440 twips = 1in = 96px
   const twipsToPx = (t: number) => (t / 1440) * 96;
 
-  let leftIndent = p.leftIndent ?? 0;
+  const leftIndent = p.leftIndent ?? 0;
   let firstLine = p.firstLineIndent ?? 0;
   if (p.rules.tabsToMargin && p.leadingTabs > 0) {
     firstLine = Math.max(firstLine, p.leadingTabs * 720);
@@ -200,10 +239,12 @@ function ParaView({
 
   const csMap = new Map(charStyles.map((c) => [c.name, c]));
 
+  const paraIsStyled = showMarkers && !BODY_STYLES.has(p.style);
+  const paraColor = paraIsStyled ? styleColor(p.style) : undefined;
+
   return (
     <>
       {groups.map((spans, idx) => {
-        // Strip leading tabs when tabsToMargin and first group
         let working = spans;
         if (p.rules.tabsToMargin && idx === 0) {
           working = [...spans];
@@ -232,18 +273,33 @@ function ParaView({
               }
               const cs = r.charStyle ? csMap.get(r.charStyle) : undefined;
               let text = applyCleanup(r.text, p);
-              // visually expand remaining tabs as 4 spaces
               text = text.replace(/\t/g, "    ");
+              const csColor = r.charStyle && showMarkers ? styleColor(r.charStyle) : undefined;
               return (
                 <span
                   key={i}
+                  title={r.charStyle ? `Character style: ${r.charStyle}` : undefined}
                   className={cn(
+                    "transition-colors",
                     cs?.bold && "font-bold",
                     cs?.italic && "italic",
                     cs?.underline && "underline",
                     cs?.smallCaps && "uppercase tracking-wide text-[0.85em]",
+                    csColor && "cursor-help rounded-[2px] hover:bg-opacity-30",
                   )}
-                  style={cs?.superscript ? { verticalAlign: "super", fontSize: "0.75em" } : cs?.subscript ? { verticalAlign: "sub", fontSize: "0.75em" } : undefined}
+                  style={{
+                    ...(cs?.superscript
+                      ? { verticalAlign: "super", fontSize: "0.75em" }
+                      : cs?.subscript
+                        ? { verticalAlign: "sub", fontSize: "0.75em" }
+                        : {}),
+                    ...(csColor
+                      ? {
+                          boxShadow: `inset 0 -2px 0 0 ${csColor}`,
+                          backgroundColor: `color-mix(in oklab, ${csColor} 8%, transparent)`,
+                        }
+                      : {}),
+                  }}
                 >
                   {text}
                 </span>
@@ -253,7 +309,28 @@ function ParaView({
         );
 
         return (
-          <div key={idx}>
+          <div
+            key={idx}
+            className={cn("group/para relative", paraIsStyled && "pl-3")}
+            style={paraColor ? ({ "--style-color": paraColor } as React.CSSProperties) : undefined}
+            title={paraIsStyled ? `Paragraph style: ${p.style}` : undefined}
+          >
+            {paraIsStyled && (
+              <>
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute left-0 top-1 bottom-1 w-[3px] rounded-full"
+                  style={{ backgroundColor: paraColor }}
+                />
+                <span
+                  className="pointer-events-none absolute -left-1 top-0 -translate-x-full whitespace-nowrap rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wide text-white opacity-0 shadow-sm transition-opacity group-hover/para:opacity-100"
+                  style={{ backgroundColor: paraColor }}
+                >
+                  <TagIcon className="mr-0.5 inline h-2.5 w-2.5" />
+                  {p.style}
+                </span>
+              </>
+            )}
             {isPageBreak && (
               <div className="my-4 border-t border-dashed border-neutral-400 pt-1 text-center text-[9px] uppercase tracking-widest text-neutral-400">
                 Page break
