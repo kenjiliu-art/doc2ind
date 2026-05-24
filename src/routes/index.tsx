@@ -296,7 +296,9 @@ function EditorView() {
         </div>
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
+          <DiagnosticsPanel />
           <CleanupBar />
+          <StyleMappingPanel />
           <CharStylesPanel />
         </div>
 
