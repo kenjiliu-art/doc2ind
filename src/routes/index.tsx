@@ -111,6 +111,20 @@ function UploadView() {
           <div className="mt-2 text-xs text-muted-foreground">
             Everything runs locally in your browser — nothing is uploaded.
           </div>
+          {loading && (
+            <div className="mx-auto mt-5 max-w-sm">
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-primary transition-all duration-150 ease-out"
+                  style={{ width: `${Math.round(progress * 100)}%` }}
+                />
+              </div>
+              <div className="mt-2 flex justify-between text-[11px] text-muted-foreground">
+                <span>{progressLabel}</span>
+                <span>{Math.round(progress * 100)}%</span>
+              </div>
+            </div>
+          )}
         </label>
 
         {error && (
