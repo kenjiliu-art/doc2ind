@@ -16,6 +16,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
 } from "@/lib/preflight";
+import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 
 export type PreflightAction =
   | "stripUnusedStyles"
