@@ -73,6 +73,29 @@ function UploadView() {
     }
   };
 
+  const loadSample = async () => {
+    setLoading(true);
+    setError(null);
+    setProgress(0);
+    setProgressLabel("Loading sample…");
+    try {
+      const res = await fetch("/sample.docx");
+      if (!res.ok) throw new Error("Could not load sample document.");
+      const buf = await res.arrayBuffer();
+      const parsed = await parseDocx(buf, (p, l) => {
+        setProgress(p);
+        setProgressLabel(l);
+      });
+      setProgress(1);
+      setProgressLabel("Done");
+      setDoc(parsed, "sample");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load sample.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
@@ -126,6 +149,19 @@ function UploadView() {
             </div>
           )}
         </label>
+
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>No file handy?</span>
+          <button
+            type="button"
+            onClick={loadSample}
+            disabled={loading}
+            className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
+          >
+            Try with a sample document
+          </button>
+          <span>— you can replace it any time.</span>
+        </div>
 
         {error && (
           <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
