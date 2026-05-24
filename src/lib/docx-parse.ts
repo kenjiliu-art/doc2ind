@@ -369,12 +369,10 @@ export async function parseDocx(file: ArrayBuffer): Promise<ParsedDoc> {
     }
     if (b.kind === "paragraph") {
       b.blanksBefore = blankCount;
-      if (blankCount >= 2) b.rules.pageBreakBefore = true;
       if (b.hasSoftBreaks) b.rules.softToHard = true;
       if (b.leadingTabs > 0 || (b.firstLineIndent ?? 0) > 0) b.rules.tabsToMargin = true;
       if (pendingSectionBreak) {
         b.sectionBreakBefore = true;
-        b.rules.pageBreakBefore = true;
       }
     }
     if (sectionAfterIdx.has(i)) pendingSectionBreak = true;
