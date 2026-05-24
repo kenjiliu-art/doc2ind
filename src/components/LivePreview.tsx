@@ -56,6 +56,135 @@ export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
       <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
         <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} showMargins={showMargins} />
       </div>
+      <CharStyleFloatingToolbar doc={doc} />
+    </div>
+  );
+}
+
+interface FloatingSel {
+  x: number;
+  y: number;
+  paragraphId: string;
+  start: number;
+  end: number;
+}
+
+function getSrcOffset(node: Node, offset: number): { paragraphId: string; pos: number } | null {
+  // Walk up to the span carrying data-src-start
+  let span: HTMLElement | null = null;
+  let n: Node | null = node;
+  if (n.nodeType === Node.TEXT_NODE) n = n.parentElement;
+  while (n && n instanceof HTMLElement) {
+    if (n.dataset && n.dataset.srcStart !== undefined) {
+      span = n;
+      break;
+    }
+    n = n.parentElement;
+  }
+  if (!span) return null;
+  const paraEl = span.closest("[data-para-id]") as HTMLElement | null;
+  if (!paraEl) return null;
+  const srcStart = Number(span.dataset.srcStart);
+  const srcLen = Number(span.dataset.srcLen);
+  // offset is the index within the text node (or child offset for element nodes)
+  let localOffset = offset;
+  if (node.nodeType !== Node.TEXT_NODE) {
+    // Element-relative offset — treat as offset chars into span text
+    const text = span.textContent ?? "";
+    localOffset = Math.min(offset, text.length);
+  }
+  // Clamp to source length (cleanup transforms can change displayed length)
+  const pos = srcStart + Math.max(0, Math.min(localOffset, srcLen));
+  return { paragraphId: paraEl.dataset.paraId!, pos };
+}
+
+function CharStyleFloatingToolbar({ doc }: { doc: ParsedDoc }) {
+  const applyCharStyleRange = useEditor((s) => s.applyCharStyleRange);
+  const [sel, setSel] = useState<FloatingSel | null>(null);
+
+  useEffect(() => {
+    const onSelChange = () => {
+      const s = window.getSelection();
+      if (!s || s.isCollapsed || s.rangeCount === 0) {
+        setSel(null);
+        return;
+      }
+      const range = s.getRangeAt(0);
+      const a = getSrcOffset(range.startContainer, range.startOffset);
+      const b = getSrcOffset(range.endContainer, range.endOffset);
+      if (!a || !b || a.paragraphId !== b.paragraphId) {
+        setSel(null);
+        return;
+      }
+      const start = Math.min(a.pos, b.pos);
+      const end = Math.max(a.pos, b.pos);
+      if (end <= start) {
+        setSel(null);
+        return;
+      }
+      const rect = range.getBoundingClientRect();
+      if (rect.width === 0 && rect.height === 0) {
+        setSel(null);
+        return;
+      }
+      setSel({
+        x: rect.left + rect.width / 2,
+        y: rect.top,
+        paragraphId: a.paragraphId,
+        start,
+        end,
+      });
+    };
+    document.addEventListener("selectionchange", onSelChange);
+    return () => document.removeEventListener("selectionchange", onSelChange);
+  }, []);
+
+  if (!sel) return null;
+
+  const apply = (name: string | null) => {
+    applyCharStyleRange(sel.paragraphId, sel.start, sel.end, name);
+    window.getSelection()?.removeAllRanges();
+    setSel(null);
+  };
+
+  return (
+    <div
+      onMouseDown={(e) => e.preventDefault()}
+      style={{
+        position: "fixed",
+        left: Math.max(8, Math.min(window.innerWidth - 8, sel.x)),
+        top: Math.max(8, sel.y - 8),
+        transform: "translate(-50%, -100%)",
+        zIndex: 60,
+      }}
+      className="flex max-w-[90vw] flex-wrap items-center gap-1 rounded-md border border-neutral-300 bg-white px-1.5 py-1 text-[11px] shadow-lg"
+    >
+      <span className="px-1 text-[10px] uppercase tracking-wide text-neutral-500">Apply</span>
+      {doc.charStyles.length === 0 && (
+        <span className="px-1 text-neutral-400 italic">No styles defined</span>
+      )}
+      {doc.charStyles.map((c) => (
+        <button
+          key={c.name}
+          onClick={() => apply(c.name)}
+          title={c.name}
+          className={cn(
+            "rounded border border-neutral-200 bg-white px-1.5 py-0.5 hover:bg-neutral-100",
+            c.bold && "font-bold",
+            c.italic && "italic",
+            c.underline && "underline",
+          )}
+        >
+          {c.name}
+        </button>
+      ))}
+      <button
+        onClick={() => apply(null)}
+        className="ml-1 rounded border border-neutral-300 bg-neutral-50 px-1.5 py-0.5 text-neutral-600 hover:bg-neutral-100"
+        title="Remove character style"
+      >
+        Clear
+      </button>
     </div>
   );
 }
