@@ -150,6 +150,19 @@ function UploadView() {
           )}
         </label>
 
+        <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+          <span>No file handy?</span>
+          <button
+            type="button"
+            onClick={loadSample}
+            disabled={loading}
+            className="font-semibold text-primary underline-offset-4 hover:underline disabled:opacity-50"
+          >
+            Try with a sample document
+          </button>
+          <span>— you can replace it any time.</span>
+        </div>
+
         {error && (
           <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
             {error}
