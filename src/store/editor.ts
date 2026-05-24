@@ -189,6 +189,7 @@ export const useEditor = create<EditorState>((set, get) => {
         past: [],
         future: [],
         initialIssues: 0,
+        initialIssueBreakdown: null,
         comboCount: 0,
         lastEditAt: 0,
         comboTick: 0,
