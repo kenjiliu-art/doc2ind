@@ -474,6 +474,7 @@ function EditorView() {
           <DiagnosticsPanel onJump={setSelectedId} />
           <CleanupBar />
           <StyleMappingPanel />
+          <RenameStylesPanel />
           <CharStylesPanel />
         </div>
 
