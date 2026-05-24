@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type {
   Block,
   CharStyleDef,
@@ -80,7 +81,9 @@ function findParagraph(blocks: Block[], id: string): ParagraphBlock | undefined 
   return undefined;
 }
 
-export const useEditor = create<EditorState>((set, get) => ({
+export const useEditor = create<EditorState>()(
+  persist(
+    (set, get) => ({
   doc: null,
   selection: new Set(),
   fileName: "document",
@@ -320,6 +323,15 @@ export const useEditor = create<EditorState>((set, get) => ({
     };
     set({ doc: fns[action](doc) });
   },
-}));
+    }),
+    {
+      name: "msw-editor-doc",
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? sessionStorage : (undefined as unknown as Storage),
+      ),
+      partialize: (s) => ({ doc: s.doc, fileName: s.fileName }),
+    },
+  ),
+);
 
 export { findParagraph };
