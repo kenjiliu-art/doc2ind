@@ -565,7 +565,19 @@ function ParaShell({
           title="Insert page break before this paragraph"
           className="absolute -top-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
         >
-          + Page break
+          + Break above
+        </button>
+      )}
+      {!p.rules.pageBreakAfter && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            useEditor.getState().updateParagraphRule(p.id, "pageBreakAfter", true);
+          }}
+          title="Insert page break after this paragraph"
+          className="absolute -bottom-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
+        >
+          + Break below
         </button>
       )}
       {hasMargin && (
