@@ -380,6 +380,10 @@ function ParaShell({
         e.stopPropagation();
         onSelect(isSelected ? null : p.id);
       }}
+      style={{
+        marginTop: p.spaceBefore ? twipsToPx(p.spaceBefore) : undefined,
+        marginBottom: p.spaceAfter ? twipsToPx(p.spaceAfter) : undefined,
+      }}
       className={cn(
         "group relative -mx-3 cursor-pointer rounded px-3 transition",
         isSelected
