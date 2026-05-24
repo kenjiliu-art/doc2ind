@@ -425,26 +425,20 @@ function EditorView() {
   }, [doc]);
 
   const initialIssues = useEditor((s) => s.initialIssues);
+  const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
   const onExportDocx = async () => {
-    const remaining = countIssues(doc);
-    const fixed = Math.max(0, initialIssues - remaining);
+    const current = countIssuesDetailed(doc);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
-    if (initialIssues > 0) {
-      toast.success(
-        `Exported — ${fixed.toLocaleString()} of ${initialIssues.toLocaleString()} issues cleaned${
-          remaining > 0 ? ` · ${remaining} remaining` : " · zero warnings 🎉"
-        }`,
-      );
-    } else {
-      toast.success("Exported clean .docx");
-    }
+    toastExportSummary(initialBreakdown, current, ".docx");
   };
   const onExportTagged = () => {
+    const current = countIssuesDetailed(doc);
     const txt = buildTaggedText(doc);
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
+    toastExportSummary(initialBreakdown, current, ".txt");
   };
 
   const loadSample = async (name: string) => {
