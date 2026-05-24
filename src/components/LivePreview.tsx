@@ -19,7 +19,8 @@ const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; la
   { key: "trimTrailing", label: "Trim" },
   { key: "tabsToMargin", label: "Tabs→indent" },
   { key: "softToHard", label: "Soft→hard" },
-  { key: "pageBreakBefore", label: "Page break" },
+  { key: "pageBreakBefore", label: "Break above" },
+  { key: "pageBreakAfter", label: "Break below" },
 ];
 
 interface LivePreviewProps {
