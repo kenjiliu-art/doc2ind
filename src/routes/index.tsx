@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
@@ -10,7 +10,9 @@ import { StyleMappingPanel } from "@/components/StyleMappingPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { FileText, Download, FileCode2, Settings2 } from "lucide-react";
+import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
+import { loadSession, clearSession } from "@/lib/storage";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -54,6 +56,24 @@ function UploadView() {
   const [progress, setProgress] = useState(0);
   const [progressLabel, setProgressLabel] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [restorable, setRestorable] = useState<{ fileName: string; savedAt: number } | null>(null);
+
+  useEffect(() => {
+    const snap = loadSession();
+    if (snap) setRestorable({ fileName: snap.fileName, savedAt: snap.savedAt });
+  }, []);
+
+  const handleRestore = () => {
+    const snap = loadSession();
+    if (!snap) return;
+    setDoc(snap.doc, snap.fileName);
+    toast.success(`Restored "${snap.fileName}.docx"`);
+  };
+
+  const handleDiscardSaved = () => {
+    clearSession();
+    setRestorable(null);
+  };
 
   const handleFile = async (file: File) => {
     setLoading(true);
@@ -112,6 +132,37 @@ function UploadView() {
           smart quotes, and more. Review or override every line, then export a
           clean Word file plus InDesign Tagged Text.
         </p>
+
+        {restorable && (
+          <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
+            <div className="flex items-center gap-3 text-sm">
+              <RotateCcw className="h-4 w-4 text-primary" />
+              <div>
+                <div className="font-semibold text-foreground">
+                  Restore last session?
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  {restorable.fileName}.docx · saved{" "}
+                  {timeAgo(restorable.savedAt)}
+                </div>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={handleDiscardSaved}
+                className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted"
+              >
+                Discard
+              </button>
+              <button
+                onClick={handleRestore}
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Restore
+              </button>
+            </div>
+          </div>
+        )}
 
         <label
           className="mt-10 block cursor-pointer rounded-2xl border-2 border-dashed border-accent bg-sidebar/40 p-12 text-center transition-colors hover:border-primary hover:bg-sidebar"
@@ -204,6 +255,14 @@ function UploadView() {
   );
 }
 
+function timeAgo(ts: number) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return "just now";
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
+  return `${Math.floor(s / 86400)}d ago`;
+}
+
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -218,6 +277,12 @@ function EditorView() {
   const fileName = useEditor((s) => s.fileName);
   const setDoc = useEditor((s) => s.setDoc);
   const reset = useEditor((s) => s.reset);
+  const undo = useEditor((s) => s.undo);
+  const redo = useEditor((s) => s.redo);
+  const canUndo = useEditor((s) => s.past.length > 0);
+  const canRedo = useEditor((s) => s.future.length > 0);
+  const selectionSize = useEditor((s) => s.selection.size);
+  const clearSelection = useEditor((s) => s.clearSelection);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
@@ -227,6 +292,39 @@ function EditorView() {
     setSelectedId(id);
     setMobileSheetOpen(false);
   };
+
+  // Global keyboard shortcuts: Cmd/Ctrl+Z = undo, Shift+Cmd/Ctrl+Z or Ctrl+Y = redo, Esc = clear
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const inEditable =
+        !!target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          (target as HTMLElement).isContentEditable);
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === "z") {
+        if (inEditable) return;
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+        return;
+      }
+      if (mod && e.key.toLowerCase() === "y") {
+        if (inEditable) return;
+        e.preventDefault();
+        redo();
+        return;
+      }
+      if (e.key === "Escape") {
+        if (selectionSize > 0) clearSelection();
+        if (selectedId) setSelectedId(null);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [undo, redo, clearSelection, selectionSize, selectedId]);
 
   const stats = useMemo(() => {
     let paragraphs = 0;
@@ -336,22 +434,53 @@ function EditorView() {
               Document preview
             </h1>
             <p className="hidden text-xs text-muted-foreground sm:block">
-              Click any paragraph to edit it inline.
+              Click to edit · Shift-click to range-select · ⌘Z to undo
             </p>
           </div>
-          <div className="flex items-center gap-2 lg:hidden">
-            <button
-              onClick={onExportTagged}
-              className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted"
-            >
-              Tagged Text
-            </button>
-            <button
-              onClick={onExportDocx}
-              className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
-            >
-              Export
-            </button>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  undo();
+                }}
+                disabled={!canUndo}
+                title="Undo (⌘Z)"
+                className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  redo();
+                }}
+                disabled={!canRedo}
+                title="Redo (⇧⌘Z)"
+                className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
+              >
+                <Redo2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {selectionSize > 0 && (
+              <span className="hidden rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary sm:inline-flex">
+                {selectionSize} selected
+              </span>
+            )}
+            <div className="flex items-center gap-2 lg:hidden">
+              <button
+                onClick={onExportTagged}
+                className="rounded-md border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted"
+              >
+                Tagged
+              </button>
+              <button
+                onClick={onExportDocx}
+                className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              >
+                Export
+              </button>
+            </div>
           </div>
         </header>
 
