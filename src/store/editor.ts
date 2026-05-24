@@ -19,7 +19,7 @@ import {
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
-import { countIssues } from "@/lib/health";
+import { countIssues, countIssuesDetailed, type IssueBreakdown } from "@/lib/health";
 
 const COMBO_WINDOW_MS = 2500;
 
@@ -45,6 +45,8 @@ interface EditorState {
   future: ParsedDoc[];
   /** Issue count captured immediately after parsing — baseline for health score & before/after. */
   initialIssues: number;
+  /** Per-category issue breakdown captured immediately after parsing. */
+  initialIssueBreakdown: IssueBreakdown | null;
   /** Number of mutations performed in rapid succession (combo). */
   comboCount: number;
   /** Timestamp of last mutation, used for combo window. */
@@ -147,6 +149,7 @@ export const useEditor = create<EditorState>((set, get) => {
     past: [],
     future: [],
     initialIssues: 0,
+    initialIssueBreakdown: null,
     comboCount: 0,
     lastEditAt: 0,
     comboTick: 0,
@@ -159,6 +162,7 @@ export const useEditor = create<EditorState>((set, get) => {
         }),
       }));
       const nextDoc = { ...doc, blocks };
+      const breakdown = countIssuesDetailed(nextDoc);
       set({
         doc: nextDoc,
         fileName,
@@ -167,7 +171,8 @@ export const useEditor = create<EditorState>((set, get) => {
         preflightHistory: new Set(),
         past: [],
         future: [],
-        initialIssues: countIssues(nextDoc),
+        initialIssues: breakdown.total,
+        initialIssueBreakdown: breakdown,
         comboCount: 0,
         lastEditAt: 0,
         comboTick: 0,
@@ -184,6 +189,7 @@ export const useEditor = create<EditorState>((set, get) => {
         past: [],
         future: [],
         initialIssues: 0,
+        initialIssueBreakdown: null,
         comboCount: 0,
         lastEditAt: 0,
         comboTick: 0,

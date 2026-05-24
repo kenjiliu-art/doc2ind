@@ -15,7 +15,7 @@ import { ComboToast } from "@/components/ComboToast";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { loadSession, clearSession } from "@/lib/storage";
-import { countIssues } from "@/lib/health";
+import { countIssues, countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -117,6 +117,57 @@ function saveAs(blob: Blob, filename: string) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+function toastExportSummary(
+  initial: IssueBreakdown | null,
+  current: IssueBreakdown,
+  ext: string,
+) {
+  if (!initial || initial.total === 0) {
+    toast.success(`Exported clean ${ext}`);
+    return;
+  }
+  const d = diffBreakdown(initial, current);
+  if (d.total === 0) {
+    toast.success(`Exported ${ext} — no issues cleaned`);
+    return;
+  }
+
+  const items: { label: string; count: number }[] = [
+    { label: "soft breaks removed", count: d.softBreaks },
+    { label: "tabs cleaned", count: d.tabs },
+    { label: "straight quotes fixed", count: d.quotes },
+    { label: "double hyphens fixed", count: d.dashes },
+    { label: "extra spaces collapsed", count: d.multiSpaces },
+    { label: "style bleed trimmed", count: d.bleed },
+    { label: "styles mapped", count: d.unmapped },
+  ].filter((i) => i.count > 0);
+
+  toast.success(
+    <div className="space-y-2">
+      <div className="flex items-center gap-2 font-semibold text-emerald-900 dark:text-emerald-100">
+        <span className="text-lg">🎉</span>
+        <span>
+          Exported {ext} — {d.total.toLocaleString()} issue{d.total === 1 ? "" : "s"} cleaned
+        </span>
+      </div>
+      <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px] text-emerald-800 dark:text-emerald-200">
+        {items.map((i) => (
+          <div key={i.label} className="flex items-center gap-1.5">
+            <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" />
+            <span className="tabular-nums font-medium">{i.count.toLocaleString()}</span>
+            <span className="opacity-80">{i.label}</span>
+          </div>
+        ))}
+      </div>
+      {current.total > 0 && (
+        <div className="text-[11px] text-emerald-700/70 dark:text-emerald-300/70">
+          {current.total.toLocaleString()} remaining — health score {Math.round((1 - current.total / initial.total) * 100)}
+        </div>
+      )}
+    </div>,
+  );
 }
 
 function IndexPage() {
@@ -425,26 +476,20 @@ function EditorView() {
   }, [doc]);
 
   const initialIssues = useEditor((s) => s.initialIssues);
+  const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
   const onExportDocx = async () => {
-    const remaining = countIssues(doc);
-    const fixed = Math.max(0, initialIssues - remaining);
+    const current = countIssuesDetailed(doc);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
-    if (initialIssues > 0) {
-      toast.success(
-        `Exported — ${fixed.toLocaleString()} of ${initialIssues.toLocaleString()} issues cleaned${
-          remaining > 0 ? ` · ${remaining} remaining` : " · zero warnings 🎉"
-        }`,
-      );
-    } else {
-      toast.success("Exported clean .docx");
-    }
+    toastExportSummary(initialBreakdown, current, ".docx");
   };
   const onExportTagged = () => {
+    const current = countIssuesDetailed(doc);
     const txt = buildTaggedText(doc);
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
+    toastExportSummary(initialBreakdown, current, ".txt");
   };
 
   const loadSample = async (name: string) => {
