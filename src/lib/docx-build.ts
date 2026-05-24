@@ -157,12 +157,10 @@ function paragraphToDocx(
     };
     out.push(new Paragraph(opts));
   });
-  if (p.rules.pageBreakAfter && out.length > 0) {
-    const last = out[out.length - 1];
-    // Append a PageBreak run to the last emitted paragraph
-    (last as unknown as { root: unknown[] }).root.push(
-      new TextRun({ children: [new PageBreak()] }),
-    );
+  if (p.rules.pageBreakAfter) {
+    // Trailing empty paragraph that forces a page break, so the next real
+    // paragraph starts at the top of a new page.
+    out.push(new Paragraph({ children: [new TextRun({ children: [new PageBreak()] })] }));
   }
   return out;
 }
