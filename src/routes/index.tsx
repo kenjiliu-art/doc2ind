@@ -7,7 +7,8 @@ import { buildTaggedText } from "@/lib/tagged-text";
 import { CleanupBar } from "@/components/CleanupBar";
 import { CharStylesPanel } from "@/components/CharStylesPanel";
 import { LivePreview } from "@/components/LivePreview";
-import { FileText, Download, FileCode2 } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { FileText, Download, FileCode2, Settings2 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
