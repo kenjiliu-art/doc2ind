@@ -13,6 +13,7 @@ import { LivePreview } from "@/components/LivePreview";
 import { HealthRing } from "@/components/HealthRing";
 import { HealthBadge } from "@/components/HealthBadge";
 import { ComboToast } from "@/components/ComboToast";
+import { CleanSweepRing } from "@/components/CleanSweepRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { loadSession, clearSession } from "@/lib/storage";
@@ -546,7 +547,9 @@ function EditorView() {
             onClick={onExportDocx}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            <Download className="h-4 w-4" />
+            <CleanSweepRing>
+              <Download className="h-4 w-4" />
+            </CleanSweepRing>
             Export for InDesign
           </button>
           <button
@@ -694,7 +697,9 @@ function EditorView() {
                 onClick={onExportDocx}
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
               >
-                <Download className="h-4 w-4" />
+                <CleanSweepRing>
+                  <Download className="h-4 w-4" />
+                </CleanSweepRing>
                 Export for InDesign
               </button>
               <button
