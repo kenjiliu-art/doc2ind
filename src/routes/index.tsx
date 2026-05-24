@@ -370,40 +370,40 @@ function EditorView() {
                 <div className="rounded-md bg-accent/70 p-2 text-primary-foreground">
                   <FileText className="h-5 w-5" />
                 </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold">{fileName}.docx</p>
-                <p className="text-xs text-muted-foreground">
-                  {stats.words.toLocaleString()} words · {stats.paragraphs} paragraphs
-                </p>
-                <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <button
-                    className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-                    onClick={reset}
-                  >
-                    ← New file
-                  </button>
-                  <span className="text-[10px] text-muted-foreground">or load sample:</span>
-                  <button
-                    type="button"
-                    disabled={sampleLoading}
-                    onClick={() => loadSample("sample")}
-                    className="text-[10px] font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
-                  >
-                    Prose
-                  </button>
-                  <button
-                    type="button"
-                    disabled={sampleLoading}
-                    onClick={() => loadSample("sample-poems")}
-                    className="text-[10px] font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
-                  >
-                    Poems
-                  </button>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{fileName}.docx</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.words.toLocaleString()} words · {stats.paragraphs} paragraphs
+                  </p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button
+                      className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                      onClick={reset}
+                    >
+                      ← New file
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">or load sample:</span>
+                    <button
+                      type="button"
+                      disabled={sampleLoading}
+                      onClick={() => loadSample("sample")}
+                      className="text-[10px] font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                    >
+                      Prose
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sampleLoading}
+                      onClick={() => loadSample("sample-poems")}
+                      className="text-[10px] font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                    >
+                      Poems
+                    </button>
+                  </div>
+                  {sampleError && (
+                    <p className="mt-1 text-[10px] text-destructive">{sampleError}</p>
+                  )}
                 </div>
-                {sampleError && (
-                  <p className="mt-1 text-[10px] text-destructive">{sampleError}</p>
-                )}
-              </div>
               </div>
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
