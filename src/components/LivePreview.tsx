@@ -29,6 +29,7 @@ interface LivePreviewProps {
 
 export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
+  const [showMargins, setShowMargins] = useState(false);
   if (!doc) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
@@ -38,8 +39,22 @@ export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
   }
   return (
     <div className="h-full overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8">
+      <div className="mx-auto mb-3 flex w-full max-w-[760px] items-center justify-end gap-2">
+        <button
+          onClick={() => setShowMargins((v) => !v)}
+          className={cn(
+            "rounded border px-2 py-1 text-[11px] font-medium transition",
+            showMargins
+              ? "border-fuchsia-500 bg-fuchsia-500 text-white"
+              : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+          )}
+          title="Highlight paragraphs with left or first-line indents"
+        >
+          {showMargins ? "Hide margins" : "Show margins"}
+        </button>
+      </div>
       <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
-        <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} />
+        <DocPreview doc={doc} selectedId={selectedId} onSelect={onSelect} showMargins={showMargins} />
       </div>
     </div>
   );
@@ -58,10 +73,12 @@ function DocPreview({
   doc,
   selectedId,
   onSelect,
+  showMargins,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
   onSelect: (id: string | null) => void;
+  showMargins: boolean;
 }) {
   const styleMap = useMemo(() => {
     const m = new Map<string, StyleDef>();
@@ -80,6 +97,7 @@ function DocPreview({
           selectedId={selectedId}
           onSelect={onSelect}
           styles={doc.paragraphStyles}
+          showMargins={showMargins}
         />
       ))}
     </>
@@ -93,6 +111,7 @@ interface BlockViewProps {
   selectedId: string | null;
   onSelect: (id: string | null) => void;
   styles: StyleDef[];
+  showMargins: boolean;
 }
 
 function BlockView(props: BlockViewProps) {
@@ -107,6 +126,7 @@ function TableView({
   selectedId,
   onSelect,
   styles,
+  showMargins,
 }: BlockViewProps & { t: TableBlock }) {
   return (
     <table className="my-3 w-full border-collapse text-[12px]">
@@ -125,6 +145,7 @@ function TableView({
                     selectedId={selectedId}
                     onSelect={onSelect}
                     styles={styles}
+                    showMargins={showMargins}
                   />
                 ))}
               </td>
@@ -180,6 +201,7 @@ function ParaView({
   selectedId,
   onSelect,
   styles,
+  showMargins,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
   const hasChanges =
@@ -213,6 +235,7 @@ function ParaView({
         hasChanges={hasChanges}
         onSelect={onSelect}
         styles={styles}
+        showMargins={showMargins}
       >
         <p className="h-3" />
       </ParaShell>
@@ -235,6 +258,7 @@ function ParaView({
       hasChanges={hasChanges}
       onSelect={onSelect}
       styles={styles}
+      showMargins={showMargins}
     >
       {groups.map((spans, idx) => {
         let working = spans;
@@ -313,6 +337,7 @@ function ParaShell({
   hasChanges,
   onSelect,
   styles,
+  showMargins,
   children,
 }: {
   p: ParagraphBlock;
@@ -320,8 +345,18 @@ function ParaShell({
   hasChanges: boolean;
   onSelect: (id: string | null) => void;
   styles: StyleDef[];
+  showMargins: boolean;
   children: React.ReactNode;
 }) {
+  const twipsToPx = (t: number) => (t / 1440) * 96;
+  const leftIndent = p.leftIndent ?? 0;
+  let firstLine = p.firstLineIndent ?? 0;
+  if (p.rules.tabsToMargin && p.leadingTabs > 0) {
+    firstLine = Math.max(firstLine, p.leadingTabs * 720);
+  }
+  const hasMargin = showMargins && (leftIndent !== 0 || firstLine !== 0);
+  const fmt = (t: number) => `${(t / 1440).toFixed(2)}″`;
+
   return (
     <div
       onClick={(e) => {
@@ -335,8 +370,34 @@ function ParaShell({
           : hasChanges
             ? "bg-amber-50 hover:bg-amber-100/70"
             : "hover:bg-neutral-100/70",
+        hasMargin && !isSelected && "bg-fuchsia-50/60",
       )}
     >
+      {hasMargin && (
+        <>
+          {leftIndent !== 0 && (
+            <div
+              className="pointer-events-none absolute top-0 bottom-0 border-l-2 border-dashed border-fuchsia-400"
+              style={{ left: `calc(0.75rem + ${twipsToPx(leftIndent)}px)` }}
+              title={`Left indent: ${fmt(leftIndent)}`}
+            />
+          )}
+          {firstLine !== 0 && (
+            <div
+              className="pointer-events-none absolute top-0 h-3 border-l-2 border-dotted border-fuchsia-500"
+              style={{
+                left: `calc(0.75rem + ${twipsToPx(leftIndent + firstLine)}px)`,
+              }}
+              title={`First-line indent: ${fmt(firstLine)}`}
+            />
+          )}
+          <span className="pointer-events-none absolute -top-0.5 right-1 rounded bg-fuchsia-500 px-1 py-px text-[9px] font-medium text-white">
+            {leftIndent !== 0 && `L ${fmt(leftIndent)}`}
+            {leftIndent !== 0 && firstLine !== 0 && " · "}
+            {firstLine !== 0 && `1st ${fmt(firstLine)}`}
+          </span>
+        </>
+      )}
       {children}
       {isSelected && (
         <InlineEditor p={p} styles={styles} onClose={() => onSelect(null)} />
