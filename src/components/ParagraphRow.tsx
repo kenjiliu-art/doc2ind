@@ -22,7 +22,8 @@ interface Props {
 const RULE_LABELS: Record<keyof ParagraphRules, string> = {
   tabsToMargin: "Tabs→indent",
   softToHard: "Soft→hard",
-  pageBreakBefore: "Page break",
+  pageBreakBefore: "Page break above",
+  pageBreakAfter: "Page break below",
   keepWithNext: "Keep next",
   smartQuotes: "Smart quotes",
   dashes: "Em dashes",

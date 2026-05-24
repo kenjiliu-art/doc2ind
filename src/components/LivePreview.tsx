@@ -19,7 +19,8 @@ const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; la
   { key: "trimTrailing", label: "Trim" },
   { key: "tabsToMargin", label: "Tabs→indent" },
   { key: "softToHard", label: "Soft→hard" },
-  { key: "pageBreakBefore", label: "Page break" },
+  { key: "pageBreakBefore", label: "Break above" },
+  { key: "pageBreakAfter", label: "Break below" },
 ];
 
 interface LivePreviewProps {
@@ -564,7 +565,19 @@ function ParaShell({
           title="Insert page break before this paragraph"
           className="absolute -top-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
         >
-          + Page break
+          + Break above
+        </button>
+      )}
+      {!p.rules.pageBreakAfter && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            useEditor.getState().updateParagraphRule(p.id, "pageBreakAfter", true);
+          }}
+          title="Insert page break after this paragraph"
+          className="absolute -bottom-2 left-1/2 z-10 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-neutral-300 bg-white px-2 py-0.5 text-[9px] font-medium uppercase tracking-wider text-neutral-600 shadow-sm hover:border-blue-400 hover:text-blue-600 group-hover:inline-flex"
+        >
+          + Break below
         </button>
       )}
       {hasMargin && (
@@ -593,6 +606,20 @@ function ParaShell({
         </>
       )}
       {children}
+      {p.rules.pageBreakAfter && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            useEditor.getState().updateParagraphRule(p.id, "pageBreakAfter", false);
+          }}
+          title="Click to remove page break"
+          className="my-4 flex w-full items-center gap-2 border-b border-dashed border-neutral-400 pb-1 text-center text-[9px] uppercase tracking-widest text-neutral-500 hover:text-red-600 hover:border-red-400"
+        >
+          <span className="flex-1 border-t border-dashed border-neutral-300" />
+          <span>Page break ✕</span>
+          <span className="flex-1 border-t border-dashed border-neutral-300" />
+        </button>
+      )}
       {isSelected && (
         <InlineEditor p={p} styles={styles} onClose={() => onSelect(null)} />
       )}

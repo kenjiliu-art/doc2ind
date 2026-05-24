@@ -3,6 +3,7 @@ import {
   Packer,
   Paragraph,
   TextRun,
+  PageBreak,
   HeadingLevel,
   AlignmentType,
   Table,
@@ -156,6 +157,11 @@ function paragraphToDocx(
     };
     out.push(new Paragraph(opts));
   });
+  if (p.rules.pageBreakAfter) {
+    // Trailing empty paragraph that forces a page break, so the next real
+    // paragraph starts at the top of a new page.
+    out.push(new Paragraph({ children: [new TextRun({ children: [new PageBreak()] })] }));
+  }
   return out;
 }
 

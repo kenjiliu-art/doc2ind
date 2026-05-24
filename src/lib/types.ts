@@ -30,6 +30,7 @@ export interface ParagraphRules {
   tabsToMargin: boolean;
   softToHard: boolean;
   pageBreakBefore: boolean;
+  pageBreakAfter: boolean;
   keepWithNext: boolean;
   smartQuotes: boolean;
   dashes: boolean;
