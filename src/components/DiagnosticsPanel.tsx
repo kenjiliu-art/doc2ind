@@ -249,7 +249,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
               </span>
             </p>
           )}
-          {warnings.length === 1 && (
+          {warnings.length === 0 && autoFixed.length === 0 && (
             <p className="mb-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
               No structural issues detected. You can safely export — or skim the
               counts below for context.
