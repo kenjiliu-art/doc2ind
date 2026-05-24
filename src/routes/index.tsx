@@ -4,6 +4,7 @@ import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
 import { buildTaggedText } from "@/lib/tagged-text";
+import { Progress } from "@/components/ui/progress";
 import { ParagraphRow } from "@/components/ParagraphRow";
 import { TableRow as TableRowView } from "@/components/TableRow";
 import { StylePanel } from "@/components/StylePanel";
@@ -52,18 +53,39 @@ function HomePage() {
 function UploadView() {
   const setDoc = useEditor((s) => s.setDoc);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
     setLoading(true);
     setError(null);
+    setProgress(2);
+    setPhase("Reading file…");
+    let cancelled = false;
+    // Simulated progress ramp — parseDocx is synchronous-ish so we animate.
+    const tick = (target: number, label: string) => {
+      setPhase(label);
+      setProgress((p) => Math.max(p, target));
+    };
+    const ramp = setInterval(() => {
+      if (cancelled) return;
+      setProgress((p) => (p < 90 ? p + Math.max(1, (90 - p) * 0.08) : p));
+    }, 120);
     try {
       const buf = await file.arrayBuffer();
+      tick(25, "Unzipping document…");
+      await new Promise((r) => setTimeout(r, 0));
+      tick(45, "Parsing paragraphs…");
       const parsed = await parseDocx(buf);
+      tick(95, "Finalizing…");
       setDoc(parsed, file.name.replace(/\.docx$/i, ""));
+      setProgress(100);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to parse file.");
     } finally {
+      cancelled = true;
+      clearInterval(ramp);
       setLoading(false);
     }
   };
@@ -101,11 +123,19 @@ function UploadView() {
             }}
           />
           <div className="font-display text-lg font-semibold text-primary">
-            {loading ? "Parsing…" : "Drop a .docx file here, or click to choose"}
+            {loading ? phase || "Parsing…" : "Drop a .docx file here, or click to choose"}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
             Everything runs locally in your browser — nothing is uploaded.
           </div>
+          {loading && (
+            <div className="mx-auto mt-5 max-w-sm">
+              <Progress value={progress} />
+              <div className="mt-2 text-xs font-medium text-muted-foreground">
+                {Math.round(progress)}%
+              </div>
+            </div>
+          )}
         </label>
 
         {error && (
