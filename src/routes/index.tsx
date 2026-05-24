@@ -329,6 +329,64 @@ function EditorView() {
         <div className="flex-1 overflow-hidden">
           <LivePreview selectedId={selectedId} onSelect={setSelectedId} />
         </div>
+
+        {/* Mobile-only tools FAB + bottom sheet */}
+        <Sheet>
+          <SheetTrigger asChild>
+            <button
+              onClick={(e) => e.stopPropagation()}
+              aria-label="Open tools"
+              className="fixed bottom-5 right-5 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30 transition active:scale-95 lg:hidden"
+            >
+              <Settings2 className="h-5 w-5" />
+            </button>
+          </SheetTrigger>
+          <SheetContent
+            side="bottom"
+            onClick={(e) => e.stopPropagation()}
+            className="flex max-h-[85vh] flex-col gap-0 rounded-t-2xl p-0 lg:hidden"
+          >
+            <div className="flex items-start justify-between border-b border-border px-5 py-4">
+              <div className="flex items-start gap-3">
+                <div className="rounded-md bg-accent/70 p-2 text-primary-foreground">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold">{fileName}.docx</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stats.words.toLocaleString()} words · {stats.paragraphs} paragraphs
+                  </p>
+                  <button
+                    className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                    onClick={reset}
+                  >
+                    ← New file
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 divide-y divide-border overflow-y-auto">
+              <CleanupBar />
+              <CharStylesPanel />
+            </div>
+            <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
+              <button
+                onClick={onExportDocx}
+                className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+              >
+                <Download className="h-4 w-4" />
+                Export for InDesign
+              </button>
+              <button
+                onClick={onExportTagged}
+                className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
+              >
+                <FileCode2 className="h-4 w-4" />
+                Tagged Text (.txt)
+              </button>
+            </div>
+          </SheetContent>
+        </Sheet>
       </main>
     </div>
   );
