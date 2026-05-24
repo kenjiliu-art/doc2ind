@@ -377,6 +377,7 @@ export const useEditor = create<EditorState>((set, get) => ({
       collapseBlanksToSpacing,
       normalizeLists,
       closeOrphanRuns,
+      trimRunBleed,
       sectionBreaksToPageBreaks,
       sanitizeStyleNames,
     };
