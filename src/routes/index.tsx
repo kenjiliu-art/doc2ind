@@ -214,8 +214,11 @@ function Feature({ title, children }: { title: string; children: React.ReactNode
 function EditorView() {
   const doc = useEditor((s) => s.doc)!;
   const fileName = useEditor((s) => s.fileName);
+  const setDoc = useEditor((s) => s.setDoc);
   const reset = useEditor((s) => s.reset);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [sampleLoading, setSampleLoading] = useState(false);
+  const [sampleError, setSampleError] = useState<string | null>(null);
 
   const stats = useMemo(() => {
     let paragraphs = 0;
@@ -249,6 +252,22 @@ function EditorView() {
     const txt = buildTaggedText(doc);
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
+  };
+
+  const loadSample = async (name: string) => {
+    setSampleLoading(true);
+    setSampleError(null);
+    try {
+      const res = await fetch(`/${name}.docx`);
+      if (!res.ok) throw new Error("Could not load sample document.");
+      const buf = await res.arrayBuffer();
+      const parsed = await parseDocx(buf, () => {});
+      setDoc(parsed, name);
+    } catch (e) {
+      setSampleError(e instanceof Error ? e.message : "Failed to load sample.");
+    } finally {
+      setSampleLoading(false);
+    }
   };
 
   return (
@@ -356,12 +375,34 @@ function EditorView() {
                   <p className="text-xs text-muted-foreground">
                     {stats.words.toLocaleString()} words · {stats.paragraphs} paragraphs
                   </p>
-                  <button
-                    className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
-                    onClick={reset}
-                  >
-                    ← New file
-                  </button>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <button
+                      className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground hover:text-foreground"
+                      onClick={reset}
+                    >
+                      ← New file
+                    </button>
+                    <span className="text-[10px] text-muted-foreground">or load sample:</span>
+                    <button
+                      type="button"
+                      disabled={sampleLoading}
+                      onClick={() => loadSample("sample")}
+                      className="text-[10px] font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                    >
+                      Prose
+                    </button>
+                    <button
+                      type="button"
+                      disabled={sampleLoading}
+                      onClick={() => loadSample("sample-poems")}
+                      className="text-[10px] font-semibold text-primary underline-offset-2 hover:underline disabled:opacity-50"
+                    >
+                      Poems
+                    </button>
+                  </div>
+                  {sampleError && (
+                    <p className="mt-1 text-[10px] text-destructive">{sampleError}</p>
+                  )}
                 </div>
               </div>
             </div>
