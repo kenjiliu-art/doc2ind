@@ -17,17 +17,87 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Word → InDesign Reformatter" },
+      { title: "Word to InDesign Reformatter — Clean .docx for InDesign Import" },
       {
         name: "description",
         content:
-          "Clean up Word documents for InDesign: convert formatting to styles, tabs to margins, soft to hard returns, and blank lines to page breaks — with per-line control.",
+          "Free browser tool to prepare Microsoft Word .docx files for Adobe InDesign. Map paragraph and character styles, fix soft returns, smart quotes, tabs, and export clean .docx or tagged text — no upload, runs locally.",
       },
-      { property: "og:title", content: "Word → InDesign Reformatter" },
+      {
+        name: "keywords",
+        content:
+          "Word to InDesign, docx to InDesign, InDesign import, tagged text export, paragraph styles, character styles, docx cleanup, smart quotes, soft returns, InDesign workflow",
+      },
+      { name: "robots", content: "index, follow, max-image-preview:large" },
+      { property: "og:title", content: "Word to InDesign Reformatter" },
       {
         property: "og:description",
         content:
-          "Reformat .docx files for InDesign import with paragraph + character styles, cleanup rules, and tagged-text export.",
+          "Reformat .docx files for InDesign import with paragraph + character styles, cleanup rules, and tagged-text export. Runs entirely in your browser.",
+      },
+      { property: "og:url", content: "/" },
+      { name: "twitter:title", content: "Word to InDesign Reformatter" },
+      {
+        name: "twitter:description",
+        content:
+          "Clean Word .docx files for InDesign — style mapping, cleanup rules, tagged-text export. In-browser, no upload.",
+      },
+    ],
+    links: [{ rel: "canonical", href: "/" }],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "SoftwareApplication",
+          name: "Word to InDesign Reformatter",
+          applicationCategory: "DesignApplication",
+          operatingSystem: "Web",
+          description:
+            "Browser-based tool that converts Microsoft Word .docx files into InDesign-ready documents and tagged text, with paragraph/character style mapping and pre-import cleanup.",
+          offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+          featureList: [
+            "Paragraph and character style mapping",
+            "Soft return to hard return conversion",
+            "Smart quotes and dash normalization",
+            "Tab and indent cleanup",
+            "Pre-import diagnostics",
+            "Tagged text export for InDesign",
+          ],
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: [
+            {
+              "@type": "Question",
+              name: "Does this upload my Word document to a server?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "No. Parsing, cleanup, and export all run locally in your browser. Your .docx never leaves your device.",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "What file formats are supported?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Import .docx files from Microsoft Word. Export cleaned .docx or InDesign tagged text (.txt).",
+              },
+            },
+            {
+              "@type": "Question",
+              name: "Can I map Word styles to InDesign paragraph styles?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Yes. The style mapping panel lets you rename Word styles to match your InDesign paragraph and character style names before export.",
+              },
+            },
+          ],
+        }),
       },
     ],
   }),
