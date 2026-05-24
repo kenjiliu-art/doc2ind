@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { saveAs } from "file-saver";
+import FileSaver from "file-saver";
+const { saveAs } = FileSaver;
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
 import { buildTaggedText } from "@/lib/tagged-text";
