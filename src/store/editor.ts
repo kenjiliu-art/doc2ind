@@ -323,6 +323,15 @@ export const useEditor = create<EditorState>()(
     };
     set({ doc: fns[action](doc) });
   },
-}));
+    }),
+    {
+      name: "msw-editor-doc",
+      storage: createJSONStorage(() =>
+        typeof window !== "undefined" ? sessionStorage : (undefined as unknown as Storage),
+      ),
+      partialize: (s) => ({ doc: s.doc, fileName: s.fileName }),
+    },
+  ),
+);
 
 export { findParagraph };
