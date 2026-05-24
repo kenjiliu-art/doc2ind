@@ -190,6 +190,16 @@ export const useEditor = create<EditorState>()(
       },
     });
   },
+  updateCharStyleDef: (name, patch) => {
+    const doc = get().doc;
+    if (!doc) return;
+    set({
+      doc: {
+        ...doc,
+        charStyles: doc.charStyles.map((c) => (c.name === name ? { ...c, ...patch } : c)),
+      },
+    });
+  },
   renameStyle: (oldName, newName) => {
     const doc = get().doc;
     if (!doc || oldName === newName) return;
