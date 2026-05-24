@@ -150,7 +150,7 @@ function EditorView() {
   const doc = useEditor((s) => s.doc)!;
   const fileName = useEditor((s) => s.fileName);
   const selectionCount = useEditor((s) => s.selection.size);
-  const reset = useEditor((s) => s.setDoc);
+  const reset = useEditor((s) => s.reset);
 
   const [compact, setCompact] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -201,7 +201,7 @@ function EditorView() {
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
   };
-  const onNewFile = () => reset(null, "");
+  const onNewFile = () => reset();
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
