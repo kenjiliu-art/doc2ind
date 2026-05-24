@@ -28,8 +28,8 @@ export function DiagnosticsPanel({ onJump }: Props) {
   const doc = useEditor((s) => s.doc);
   const [cursors, setCursors] = useState<Record<string, number>>({});
 
-  const findings = useMemo<Finding[]>(() => {
-    if (!doc) return [];
+  const { findings, autoFixed } = useMemo(() => {
+    if (!doc) return { findings: [] as Finding[], autoFixed: [] as { label: string; count: number }[] };
 
     const ids = {
       unstyled: [] as string[],
@@ -46,18 +46,41 @@ export function DiagnosticsPanel({ onJump }: Props) {
     let tables = 0;
     const sourceStyles = new Set<string>();
 
+    const auto = {
+      soft: 0,
+      tabs: 0,
+      spaces: 0,
+      dash: 0,
+      qq: 0,
+    };
+
     const inspectPara = (p: ParagraphBlock) => {
       paragraphs++;
       if (p.sourceStyle) sourceStyles.add(p.sourceStyle);
       else ids.unstyled.push(p.id);
       const text = paraText(p);
       if (!text.trim()) ids.empty.push(p.id);
-      if (p.hasSoftBreaks) ids.soft.push(p.id);
-      if (p.hasMultiSpaces) ids.spaces.push(p.id);
-      if (p.leadingTabs > 0) ids.tabs.push(p.id);
+      if (p.hasSoftBreaks) {
+        ids.soft.push(p.id);
+        if (p.rules.softToHard) auto.soft++;
+      }
+      if (p.hasMultiSpaces) {
+        ids.spaces.push(p.id);
+        if (p.rules.trimTrailing) auto.spaces++;
+      }
+      if (p.leadingTabs > 0) {
+        ids.tabs.push(p.id);
+        if (p.rules.tabsToMargin) auto.tabs++;
+      }
       if (p.rules.pageBreakBefore || p.rules.pageBreakAfter) ids.pb.push(p.id);
-      if (text.includes("--")) ids.dash.push(p.id);
-      if (/['"]/.test(text)) ids.qq.push(p.id);
+      if (text.includes("--")) {
+        ids.dash.push(p.id);
+        if (p.rules.dashes) auto.dash++;
+      }
+      if (/['"]/.test(text)) {
+        ids.qq.push(p.id);
+        if (p.rules.smartQuotes) auto.qq++;
+      }
       for (const r of p.runs) {
         if (r.charStyle && r.text && /\s$/.test(r.text)) {
           ids.bleed.push(p.id);
@@ -78,6 +101,13 @@ export function DiagnosticsPanel({ onJump }: Props) {
     };
     walk(doc.blocks);
 
+    const fixed: { label: string; count: number }[] = [];
+    if (auto.soft > 0) fixed.push({ label: "soft returns", count: auto.soft });
+    if (auto.tabs > 0) fixed.push({ label: "tabs", count: auto.tabs });
+    if (auto.spaces > 0) fixed.push({ label: "multi-spaces", count: auto.spaces });
+    if (auto.dash > 0) fixed.push({ label: "double-hyphens", count: auto.dash });
+    if (auto.qq > 0) fixed.push({ label: "straight quotes", count: auto.qq });
+
     const f = (
       key: string,
       label: string,
@@ -87,7 +117,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
       paraIds: string[] = [],
     ): Finding => ({ key, label, count, severity, hint, ids: paraIds });
 
-    return [
+    const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
       f("src", "Unique source styles", sourceStyles.size, "info"),
       f(
@@ -162,11 +192,13 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "bleed",
         "Bleed-candidate runs (styled trailing space)",
         ids.bleed.length,
-        ids.bleed.length > 0 ? "warn" : "ok",
+        ids.bleed.length > 1 ? "warn" : "ok",
         "Run 'Trim italic/bold bleed' or 'Close orphan runs'.",
         ids.bleed,
       ),
     ];
+
+    return { findings, autoFixed: fixed };
   }, [doc]);
 
   if (!doc) return null;
@@ -209,7 +241,15 @@ export function DiagnosticsPanel({ onJump }: Props) {
           <ChevronDown className="ml-auto h-3.5 w-3.5 shrink-0 transition-transform" />
         </CollapsibleTrigger>
         <CollapsibleContent>
-          {warnings.length === 0 && (
+          {autoFixed.length > 0 && (
+            <p className="mb-2 flex items-center gap-1.5 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
+              <Wand2 className="h-3 w-3 shrink-0" />
+              <span>
+                Auto-fixed: {autoFixed.map((a) => `${a.label} (${a.count})`).join(", ")}
+              </span>
+            </p>
+          )}
+          {warnings.length === 1 && (
             <p className="mb-2 rounded border border-emerald-500/20 bg-emerald-500/5 px-2 py-1.5 text-[10px] leading-snug text-emerald-700 dark:text-emerald-400">
               No structural issues detected. You can safely export — or skim the
               counts below for context.
