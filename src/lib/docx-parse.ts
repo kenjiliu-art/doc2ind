@@ -371,9 +371,36 @@ export async function parseDocx(
   idCounter = 0;
   fontCounts.clear();
   sectionBreakSeen = false;
+  styleIdToName = new Map();
   await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
-  await report(0.15, "Extracting document…");
+  await report(0.12, "Reading styles…");
+  const stylesXml = await zip.file("word/styles.xml")?.async("string");
+  if (stylesXml) {
+    const stylesParsed = parser.parse(stylesXml) as unknown[];
+    for (const item of stylesParsed) {
+      if (!item || typeof item !== "object") continue;
+      const root = (item as Record<string, unknown>)["w:styles"];
+      if (!Array.isArray(root)) continue;
+      for (const styleNode of root) {
+        if (!styleNode || typeof styleNode !== "object") continue;
+        if (tagOf(styleNode) !== "w:style") continue;
+        const attrs = getAttr(styleNode);
+        const type = attrs["@_w:type"];
+        if (type !== "paragraph") continue;
+        const styleId = attrs["@_w:styleId"];
+        if (!styleId) continue;
+        const sKids = findTagChildren(styleNode, "w:style");
+        for (const k of sKids) {
+          if (tagOf(k) === "w:name") {
+            const name = getAttr(k)["@_w:val"];
+            if (name) styleIdToName.set(styleId, name);
+          }
+        }
+      }
+    }
+  }
+  await report(0.18, "Extracting document…");
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
 
