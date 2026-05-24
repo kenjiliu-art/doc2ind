@@ -53,18 +53,39 @@ function HomePage() {
 function UploadView() {
   const setDoc = useEditor((s) => s.setDoc);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [phase, setPhase] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const handleFile = async (file: File) => {
     setLoading(true);
     setError(null);
+    setProgress(2);
+    setPhase("Reading file…");
+    let cancelled = false;
+    // Simulated progress ramp — parseDocx is synchronous-ish so we animate.
+    const tick = (target: number, label: string) => {
+      setPhase(label);
+      setProgress((p) => Math.max(p, target));
+    };
+    const ramp = setInterval(() => {
+      if (cancelled) return;
+      setProgress((p) => (p < 90 ? p + Math.max(1, (90 - p) * 0.08) : p));
+    }, 120);
     try {
       const buf = await file.arrayBuffer();
+      tick(25, "Unzipping document…");
+      await new Promise((r) => setTimeout(r, 0));
+      tick(45, "Parsing paragraphs…");
       const parsed = await parseDocx(buf);
+      tick(95, "Finalizing…");
       setDoc(parsed, file.name.replace(/\.docx$/i, ""));
+      setProgress(100);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to parse file.");
     } finally {
+      cancelled = true;
+      clearInterval(ramp);
       setLoading(false);
     }
   };
