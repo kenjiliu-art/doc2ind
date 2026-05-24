@@ -11,21 +11,10 @@ import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
 import { HealthRing } from "@/components/HealthRing";
-import { HealthBadge } from "@/components/HealthBadge";
-import { ComboToast } from "@/components/ComboToast";
-import { CleanSweepRing } from "@/components/CleanSweepRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { loadSession, clearSession } from "@/lib/storage";
-import { countIssues, countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
-import {
-  evaluateAchievements,
-  getAchievement,
-  loadEarnedAchievements,
-  saveEarnedAchievements,
-  TONE_CLASSES,
-} from "@/lib/achievements";
-import { AchievementsRow } from "@/components/AchievementsRow";
+import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -180,46 +169,6 @@ function toastExportSummary(
   );
 }
 
-/** Detect newly-unlocked achievements at export time, persist, and toast each one. */
-function awardAchievements(
-  initial: IssueBreakdown | null,
-  current: IssueBreakdown,
-) {
-  const earnedNow = evaluateAchievements(initial, current);
-  if (earnedNow.length === 0) return;
-  const already = loadEarnedAchievements();
-  const fresh = earnedNow.filter((id) => !already.has(id));
-  if (fresh.length === 0) return;
-  for (const id of fresh) already.add(id);
-  saveEarnedAchievements(already);
-  window.dispatchEvent(new Event("achievements:update"));
-  fresh.forEach((id, i) => {
-    const a = getAchievement(id);
-    if (!a) return;
-    setTimeout(() => {
-      toast.success(
-        <div className="flex items-start gap-3">
-          <span
-            className={[
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base ring-1",
-              TONE_CLASSES[a.tone],
-            ].join(" ")}
-          >
-            {a.icon}
-          </span>
-          <div className="min-w-0">
-            <div className="text-[10px] font-semibold uppercase tracking-widest opacity-70">
-              Badge unlocked
-            </div>
-            <div className="text-sm font-semibold leading-tight">{a.title}</div>
-            <div className="mt-0.5 text-[11px] opacity-80">{a.desc}</div>
-          </div>
-        </div>,
-        { duration: 4500 },
-      );
-    }, 350 + i * 250);
-  });
-}
 
 function IndexPage() {
   const doc = useEditor((s) => s.doc);
@@ -534,7 +483,6 @@ function EditorView() {
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
     toastExportSummary(initialBreakdown, current, ".docx");
-    awardAchievements(initialBreakdown, current);
   };
   const onExportTagged = () => {
     const current = countIssuesDetailed(doc);
@@ -542,7 +490,6 @@ function EditorView() {
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
     toastExportSummary(initialBreakdown, current, ".txt");
-    awardAchievements(initialBreakdown, current);
   };
 
   const loadSample = async (name: string) => {
@@ -594,14 +541,11 @@ function EditorView() {
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
           <HealthRing />
-          <AchievementsRow />
           <button
             onClick={onExportDocx}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            <CleanSweepRing>
-              <Download className="h-4 w-4" />
-            </CleanSweepRing>
+            <Download className="h-4 w-4" />
             Export for InDesign
           </button>
           <button
@@ -623,7 +567,6 @@ function EditorView() {
             <h1 className="font-display text-sm font-bold tracking-tight">
               Document preview
             </h1>
-            <HealthBadge />
             <p className="hidden text-xs text-muted-foreground sm:block">
               Click to edit · Shift-click to range-select · ⌘Z to undo
             </p>
@@ -745,14 +688,11 @@ function EditorView() {
             </div>
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
               <HealthRing compact />
-              <AchievementsRow />
               <button
                 onClick={onExportDocx}
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
               >
-                <CleanSweepRing>
-                  <Download className="h-4 w-4" />
-                </CleanSweepRing>
+                <Download className="h-4 w-4" />
                 Export for InDesign
               </button>
               <button
@@ -766,7 +706,6 @@ function EditorView() {
           </SheetContent>
         </Sheet>
       </main>
-      <ComboToast />
     </div>
   );
 }
