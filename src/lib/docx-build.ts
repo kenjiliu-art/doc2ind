@@ -157,8 +157,12 @@ function paragraphToDocx(
     };
     out.push(new Paragraph(opts));
   });
-  if (p.rules.pageBreakAfter) {
-    out.push(new Paragraph({ children: [], pageBreakBefore: true }));
+  if (p.rules.pageBreakAfter && out.length > 0) {
+    const last = out[out.length - 1];
+    // Append a PageBreak run to the last emitted paragraph
+    (last as unknown as { root: unknown[] }).root.push(
+      new TextRun({ children: [new PageBreak()] }),
+    );
   }
   return out;
 }
