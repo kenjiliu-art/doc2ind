@@ -30,6 +30,7 @@ interface EditorState {
   doc: ParsedDoc | null;
   selection: Set<string>;
   fileName: string;
+  preflightHistory: Set<PreflightAction>;
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
   updateParagraph: (id: string, patch: Partial<ParagraphBlock>) => void;
