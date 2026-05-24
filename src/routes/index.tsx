@@ -10,9 +10,12 @@ import { StyleMappingPanel } from "@/components/StyleMappingPanel";
 import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
+import { HealthRing } from "@/components/HealthRing";
+import { ComboToast } from "@/components/ComboToast";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import { loadSession, clearSession } from "@/lib/storage";
+import { countIssues } from "@/lib/health";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -421,9 +424,22 @@ function EditorView() {
     return { paragraphs, words };
   }, [doc]);
 
+  const initialIssues = useEditor((s) => s.initialIssues);
+
   const onExportDocx = async () => {
+    const remaining = countIssues(doc);
+    const fixed = Math.max(0, initialIssues - remaining);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
+    if (initialIssues > 0) {
+      toast.success(
+        `Exported — ${fixed.toLocaleString()} of ${initialIssues.toLocaleString()} issues cleaned${
+          remaining > 0 ? ` · ${remaining} remaining` : " · zero warnings 🎉"
+        }`,
+      );
+    } else {
+      toast.success("Exported clean .docx");
+    }
   };
   const onExportTagged = () => {
     const txt = buildTaggedText(doc);
@@ -479,6 +495,7 @@ function EditorView() {
         </div>
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
+          <HealthRing />
           <button
             onClick={onExportDocx}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -625,6 +642,7 @@ function EditorView() {
               <CharStylesPanel />
             </div>
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
+              <HealthRing compact />
               <button
                 onClick={onExportDocx}
                 className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -643,6 +661,7 @@ function EditorView() {
           </SheetContent>
         </Sheet>
       </main>
+      <ComboToast />
     </div>
   );
 }

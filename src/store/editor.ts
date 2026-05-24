@@ -19,6 +19,9 @@ import {
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
+import { countIssues } from "@/lib/health";
+
+const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
   | "stripUnusedStyles"
@@ -40,6 +43,14 @@ interface EditorState {
   preflightHistory: Set<PreflightAction>;
   past: ParsedDoc[];
   future: ParsedDoc[];
+  /** Issue count captured immediately after parsing — baseline for health score & before/after. */
+  initialIssues: number;
+  /** Number of mutations performed in rapid succession (combo). */
+  comboCount: number;
+  /** Timestamp of last mutation, used for combo window. */
+  lastEditAt: number;
+  /** Monotonic tick incremented every time a combo extends — components subscribe to trigger pop animation. */
+  comboTick: number;
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
   undo: () => void;
@@ -109,12 +120,22 @@ function flatParaIds(blocks: Block[]): string[] {
 }
 
 export const useEditor = create<EditorState>((set, get) => {
-  /** Snapshot current doc into past[] before a mutation. */
+  /** Snapshot current doc into past[] before a mutation; also extend combo counter. */
   const snap = () => {
     const cur = get().doc;
     if (!cur) return;
     const past = get().past.concat(cur).slice(-HISTORY_LIMIT);
-    set({ past, future: [] });
+    const now = Date.now();
+    const { lastEditAt, comboCount, comboTick } = get();
+    const withinWindow = now - lastEditAt <= COMBO_WINDOW_MS;
+    const nextCombo = withinWindow ? comboCount + 1 : 1;
+    set({
+      past,
+      future: [],
+      lastEditAt: now,
+      comboCount: nextCombo,
+      comboTick: comboTick + 1,
+    });
   };
 
   return {
@@ -125,6 +146,10 @@ export const useEditor = create<EditorState>((set, get) => {
     preflightHistory: new Set(),
     past: [],
     future: [],
+    initialIssues: 0,
+    comboCount: 0,
+    lastEditAt: 0,
+    comboTick: 0,
     setDoc: (doc, fileName) => {
       const settings = useSettings.getState().autoApply;
       const blocks = mapParagraphs(doc.blocks, (p) => ({
@@ -133,14 +158,19 @@ export const useEditor = create<EditorState>((set, get) => {
           sectionBreakBefore: p.sectionBreakBefore,
         }),
       }));
+      const nextDoc = { ...doc, blocks };
       set({
-        doc: { ...doc, blocks },
+        doc: nextDoc,
         fileName,
         selection: new Set(),
         selectionAnchor: null,
         preflightHistory: new Set(),
         past: [],
         future: [],
+        initialIssues: countIssues(nextDoc),
+        comboCount: 0,
+        lastEditAt: 0,
+        comboTick: 0,
       });
     },
     reset: () => {
@@ -153,6 +183,10 @@ export const useEditor = create<EditorState>((set, get) => {
         preflightHistory: new Set(),
         past: [],
         future: [],
+        initialIssues: 0,
+        comboCount: 0,
+        lastEditAt: 0,
+        comboTick: 0,
       });
     },
     undo: () => {
