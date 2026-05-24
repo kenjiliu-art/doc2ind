@@ -73,6 +73,29 @@ function UploadView() {
     }
   };
 
+  const loadSample = async () => {
+    setLoading(true);
+    setError(null);
+    setProgress(0);
+    setProgressLabel("Loading sample…");
+    try {
+      const res = await fetch("/sample.docx");
+      if (!res.ok) throw new Error("Could not load sample document.");
+      const buf = await res.arrayBuffer();
+      const parsed = await parseDocx(buf, (p, l) => {
+        setProgress(p);
+        setProgressLabel(l);
+      });
+      setProgress(1);
+      setProgressLabel("Done");
+      setDoc(parsed, "sample");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to load sample.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
