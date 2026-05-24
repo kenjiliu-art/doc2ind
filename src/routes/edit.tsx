@@ -42,10 +42,17 @@ function EditPage() {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("edit-compact-header") === "true";
   });
+  const [previewOpen, setPreviewOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return localStorage.getItem("edit-live-preview") !== "false";
+  });
 
   useEffect(() => {
     localStorage.setItem("edit-compact-header", String(compact));
   }, [compact]);
+  useEffect(() => {
+    localStorage.setItem("edit-live-preview", String(previewOpen));
+  }, [previewOpen]);
 
   const stats = useMemo(() => {
     if (!doc) return { paragraphs: 0, words: 0 };
