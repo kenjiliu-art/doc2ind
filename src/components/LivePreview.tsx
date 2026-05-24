@@ -258,6 +258,7 @@ function ParaView({
       hasChanges={hasChanges}
       onSelect={onSelect}
       styles={styles}
+      showMargins={showMargins}
     >
       {groups.map((spans, idx) => {
         let working = spans;
