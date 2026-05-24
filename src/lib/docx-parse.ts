@@ -259,7 +259,7 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
 
   if (!anyRun && runs.length === 0) {
     // empty paragraph
-    return {
+    const empty: ParagraphBlock = {
       id: nextId(),
       kind: "paragraph",
       style: "Body",
@@ -270,6 +270,9 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
       hasMultiSpaces: false,
       rules: defaultRulesFor(),
     };
+    (empty as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__pPrPageBreak = pPrPageBreak;
+    (empty as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__runPageBreak = runPageBreak;
+    return empty;
   }
 
   const fullText = runs.map((r) => r.text).join("");
@@ -292,6 +295,8 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
     alignment,
     rules: defaultRulesFor(),
   };
+  (block as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__pPrPageBreak = pPrPageBreak;
+  (block as ParagraphBlock & { __pPrPageBreak?: boolean; __runPageBreak?: boolean }).__runPageBreak = runPageBreak;
   block.style = detectParagraphStyle(block);
   return block;
 }
