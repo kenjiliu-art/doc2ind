@@ -547,7 +547,9 @@ function EditorView() {
             onClick={onExportDocx}
             className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
           >
-            <Download className="h-4 w-4" />
+            <CleanSweepRing>
+              <Download className="h-4 w-4" />
+            </CleanSweepRing>
             Export for InDesign
           </button>
           <button
