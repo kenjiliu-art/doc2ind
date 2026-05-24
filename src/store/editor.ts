@@ -43,6 +43,14 @@ interface EditorState {
   preflightHistory: Set<PreflightAction>;
   past: ParsedDoc[];
   future: ParsedDoc[];
+  /** Issue count captured immediately after parsing — baseline for health score & before/after. */
+  initialIssues: number;
+  /** Number of mutations performed in rapid succession (combo). */
+  comboCount: number;
+  /** Timestamp of last mutation, used for combo window. */
+  lastEditAt: number;
+  /** Monotonic tick incremented every time a combo extends — components subscribe to trigger pop animation. */
+  comboTick: number;
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
   undo: () => void;
