@@ -283,6 +283,7 @@ function DocPreview({
   filter,
   selection,
   paragraphIndex,
+  showHiddenChars,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
