@@ -85,7 +85,9 @@ export function CleanupBar() {
                     checked={on}
                     onChange={(e) => {
                       setAutoApply(opt.key, e.target.checked);
-                      if (opt.key !== "pageBreakBefore") {
+                      if (opt.key === "stripUnusedStyles") {
+                        if (e.target.checked) runPreflight("stripUnusedStyles");
+                      } else if (opt.key !== "pageBreakBefore") {
                         applyDocCleanup([opt.key], e.target.checked);
                       }
                     }}
