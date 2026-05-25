@@ -9,7 +9,12 @@ export type AutoApplyKey =
   | "smartQuotes"
   | "dashes"
   | "trimTrailing"
-  | "stripUnusedStyles";
+  | "stripUnusedStyles"
+  | "collapseBlanksToSpacing"
+  | "normalizeLists"
+  | "closeOrphanRuns"
+  | "trimRunBleed"
+  | "sanitizeStyleNames";
 
 export interface AutoApplySettings {
   tabsToMargin: boolean;
@@ -19,6 +24,11 @@ export interface AutoApplySettings {
   dashes: boolean;
   trimTrailing: boolean;
   stripUnusedStyles: boolean;
+  collapseBlanksToSpacing: boolean;
+  normalizeLists: boolean;
+  closeOrphanRuns: boolean;
+  trimRunBleed: boolean;
+  sanitizeStyleNames: boolean;
 }
 
 interface SettingsState {
@@ -35,6 +45,11 @@ const DEFAULTS: AutoApplySettings = {
   dashes: true,
   trimTrailing: true,
   stripUnusedStyles: true,
+  collapseBlanksToSpacing: false,
+  normalizeLists: false,
+  closeOrphanRuns: false,
+  trimRunBleed: false,
+  sanitizeStyleNames: false,
 };
 
 export const useSettings = create<SettingsState>()(
@@ -45,7 +60,17 @@ export const useSettings = create<SettingsState>()(
         set((s) => ({ autoApply: { ...s.autoApply, [key]: value } })),
       resetAutoApply: () => set({ autoApply: { ...DEFAULTS } }),
     }),
-    { name: "msw-auto-apply-settings" },
+    {
+      name: "msw-auto-apply-settings",
+      merge: (persisted, current) => {
+        const p = (persisted ?? {}) as Partial<SettingsState>;
+        return {
+          ...current,
+          ...p,
+          autoApply: { ...DEFAULTS, ...(p.autoApply ?? {}) },
+        };
+      },
+    },
   ),
 );
 
