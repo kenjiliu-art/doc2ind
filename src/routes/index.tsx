@@ -512,7 +512,6 @@ function EditorView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo, clearSelection, selectionSize, selectedId]);
 
-  const initialIssues = useEditor((s) => s.initialIssues);
   const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
   const onExportDocx = async () => {
