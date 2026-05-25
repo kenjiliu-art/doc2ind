@@ -9,11 +9,9 @@ import type {
   StyleDef,
 } from "@/lib/types";
 import {
-  closeOrphanRuns,
   collapseBlanksToSpacing,
   normalizeLists,
   removeEmptyParagraphs,
-  removeTrailingTabs,
   sanitizeStyleNames,
   sectionBreaksToPageBreaks,
   stripUnusedStyles,
@@ -28,10 +26,8 @@ const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
   | "collapseBlanksToSpacing"
-  | "closeOrphanRuns"
   | "normalizeLists"
   | "removeEmptyParagraphs"
-  | "removeTrailingTabs"
   | "sanitizeStyleNames"
   | "sectionBreaksToPageBreaks"
   | "stripUnusedStyles"
