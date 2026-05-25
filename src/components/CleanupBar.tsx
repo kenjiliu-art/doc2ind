@@ -21,14 +21,24 @@ const AUTO_APPLY: AutoOpt[] = [
     description:
       "Converts blank lines between paragraphs into extra space-after on the preceding paragraph's style, eliminating visual gaps. Mutually exclusive with 'Remove empty paragraphs'.",
   },
-  { key: "dashes", label: "Em dashes" },
+  {
+    key: "dashes",
+    label: "Em dashes",
+    description:
+      "Converts double hyphens (--) and spaced single hyphens into proper em dashes (—), and spaced en dashes into em dashes where appropriate.",
+  },
   {
     key: "normalizeLists",
     label: "Normalize lists",
     description:
       "Detects bullet or number prefixes in paragraph text and converts them into proper list paragraphs with consistent formatting.",
   },
-  { key: "pageBreakBefore", label: "Section → page break" },
+  {
+    key: "pageBreakBefore",
+    label: "Section → page break",
+    description:
+      "Converts Word section breaks that precede headings into explicit page-break-before formatting on the heading paragraph itself.",
+  },
   {
     key: "removeEmptyParagraphs",
     label: "Remove empty paragraphs",
@@ -41,17 +51,42 @@ const AUTO_APPLY: AutoOpt[] = [
     description:
       "Renames messy auto-generated style names like 'Normal + Bold + 12pt' into clean, readable labels such as 'Body'.",
   },
-  { key: "smartQuotes", label: "Smart quotes" },
-  { key: "softToHard", label: "Soft → hard breaks" },
-  { key: "stripUnusedStyles", label: "Strip unused styles" },
-  { key: "tabsToMargin", label: "Tabs → indent" },
+  {
+    key: "smartQuotes",
+    label: "Smart quotes",
+    description:
+      "Replaces straight quotation marks (' and \") with typographic curly quotes (‘’ and “”) — opening and closing pairs determined by position.",
+  },
+  {
+    key: "softToHard",
+    label: "Soft → hard breaks",
+    description:
+      "Converts soft line breaks (Shift+Enter, manual line breaks) into hard paragraph breaks, creating true separate paragraphs.",
+  },
+  {
+    key: "stripUnusedStyles",
+    label: "Strip unused styles",
+    description:
+      "Removes style definitions from the document that are not applied to any content, reducing file bloat and clutter.",
+  },
+  {
+    key: "tabsToMargin",
+    label: "Tabs → indent",
+    description:
+      "Converts leading tab characters at the start of a paragraph into formal paragraph indentation (left indent or first-line indent).",
+  },
   {
     key: "trimRunBleed",
     label: "Trim italic/bold bleed",
     description:
       "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug. Mutually exclusive with 'Trailing styled spaces → en/em'.",
   },
-  { key: "trimTrailing", label: "Trim trailing whitespace" },
+  {
+    key: "trimTrailing",
+    label: "Trim trailing whitespace",
+    description:
+      "Removes trailing spaces and tabs at the end of every paragraph — common artifacts from copying and pasting between applications.",
+  },
   {
     key: "trailingStyledSpacesToEnEm",
     label: "Trailing styled spaces → en/em",
