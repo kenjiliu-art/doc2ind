@@ -14,7 +14,7 @@ import { PreviewFilters } from "@/components/PreviewFilters";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
+import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw, Eye, EyeOff, HelpCircle } from "lucide-react";
 import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
@@ -613,8 +613,6 @@ function EditorView() {
             <PreviewFilters
               filter={previewFilter}
               onChange={setPreviewFilter}
-              showHiddenChars={showHiddenChars}
-              onToggleHiddenChars={() => setShowHiddenChars((v) => !v)}
             />
           </CollapsibleSection>
           <CollapsibleSection title="Auto-apply on import" defaultOpen>
@@ -790,8 +788,6 @@ function EditorView() {
                 <PreviewFilters
                   filter={previewFilter}
                   onChange={setPreviewFilter}
-                  showHiddenChars={showHiddenChars}
-                  onToggleHiddenChars={() => setShowHiddenChars((v) => !v)}
                 />
               </CollapsibleSection>
               <CollapsibleSection title="Auto-apply on import" defaultOpen>
