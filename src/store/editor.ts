@@ -645,6 +645,7 @@ export const useEditor = create<EditorState>((set, get) => {
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
         removeEmptyParagraphs,
+        removeTrailingTabs,
         trailingStyledSpacesToEnEm,
       };
       snap();
