@@ -67,22 +67,22 @@ const AUTO_APPLY: AutoOpt[] = [
 ];
 
 const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
-  "smartQuotes",
   "dashes",
-  "trimTrailing",
-  "tabsToMargin",
+  "smartQuotes",
   "softToHard",
+  "tabsToMargin",
+  "trimTrailing",
 ]);
 
 const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
-  "stripUnusedStyles",
+  "closeOrphanRuns",
   "collapseBlanksToSpacing",
   "normalizeLists",
-  "closeOrphanRuns",
-  "trimRunBleed",
-  "sanitizeStyleNames",
   "removeEmptyParagraphs",
+  "sanitizeStyleNames",
+  "stripUnusedStyles",
   "trailingStyledSpacesToEnEm",
+  "trimRunBleed",
 ]);
 
 export function CleanupBar() {
