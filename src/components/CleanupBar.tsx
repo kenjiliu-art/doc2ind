@@ -313,7 +313,7 @@ export function CleanupBar() {
                         )}
                       </div>
                     </TooltipTrigger>
-                    <TooltipContent side="right" className="w-60 space-y-1.5">
+                    <TooltipContent side="right" className="w-60 space-y-1.5 bg-popover text-popover-foreground border border-border shadow-lg">
                       <p className="text-[11px] font-semibold text-foreground">{opt.label}</p>
                       <p className="text-[11px] leading-relaxed text-muted-foreground">
                         {opt.description}
