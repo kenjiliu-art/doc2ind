@@ -786,43 +786,12 @@ function EditorView() {
               </div>
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
-              <DiagnosticsPanel onJump={jumpAndCloseSheet} />
-              <CollapsibleSection title="Preview filters">
-                <PreviewFilters
-                  filter={previewFilter}
-                  onChange={setPreviewFilter}
-                />
-              </CollapsibleSection>
-              <CollapsibleSection title="Auto-apply on import" defaultOpen>
-                <CleanupBar />
-              </CollapsibleSection>
-              <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
-                <StyleMappingPanel />
-              </CollapsibleSection>
-              <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
-                <RenameStylesPanel />
-              </CollapsibleSection>
-              <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
-                <CharStylesPanel />
-              </CollapsibleSection>
+              {toolPanels(jumpAndCloseSheet)}
             </div>
 
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
               <HealthRing compact />
-              <button
-                onClick={onExportDocx}
-                className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-              >
-                <Download className="h-4 w-4" />
-                Export for InDesign
-              </button>
-              <button
-                onClick={onExportTagged}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
-              >
-                <FileCode2 className="h-4 w-4" />
-                Tagged Text (.txt)
-              </button>
+              {exportButtons}
             </div>
           </SheetContent>
         </Sheet>
