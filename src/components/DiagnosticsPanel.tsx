@@ -28,10 +28,21 @@ function paraText(p: ParagraphBlock) {
 
 export function DiagnosticsPanel({ onJump }: Props) {
   const doc = useEditor((s) => s.doc);
+  const preflightFixed = useEditor((s) => s.preflightFixed);
   const [cursors, setCursors] = useState<Record<string, number>>({});
 
   const { findings, autoFixed } = useMemo(() => {
     if (!doc) return { findings: [] as Finding[], autoFixed: [] as { label: string; count: number }[] };
+
+    // Aggregate preflight-fixed counts by the diagnostic finding they affect.
+    const pfEmpty =
+      (preflightFixed.removeEmptyParagraphs ?? 0) +
+      (preflightFixed.collapseBlanksToSpacing ?? 0);
+    const pfBleed =
+      (preflightFixed.trimRunBleed ?? 0) +
+      (preflightFixed.closeOrphanRuns ?? 0) +
+      (preflightFixed.trailingStyledSpacesToEnEm ?? 0);
+
 
     const ids = {
       unstyled: [] as string[],
