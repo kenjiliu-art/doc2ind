@@ -48,6 +48,7 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: L
   const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
   const [showNumbers, setShowNumbers] = useState(true);
+  const [showDiff, setShowDiff] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const jump = (id: string) => {
@@ -99,6 +100,19 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: L
           >
             Margins
           </button>
+          <button
+            onClick={() => setShowDiff((v) => !v)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-medium transition",
+              showDiff
+                ? "border-amber-500 bg-amber-500 text-white"
+                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+            )}
+            title="Show original text above each cleaned paragraph"
+          >
+            <GitCompare className="h-3 w-3" />
+            Diff
+          </button>
         </div>
         <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
           <DocPreview
@@ -111,11 +125,18 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: L
             selection={selection}
             paragraphIndex={paragraphIndexFor(doc.blocks)}
             showHiddenChars={showHiddenChars}
+            showDiff={showDiff}
           />
         </div>
         <CharStyleFloatingToolbar doc={doc} />
       </div>
-      <ParagraphMinimap blocks={doc.blocks} scrollRef={scrollRef} onJump={jump} />
+      <ParagraphMinimap
+        blocks={doc.blocks}
+        scrollRef={scrollRef}
+        onJump={jump}
+        filter={filter}
+        selection={selection}
+      />
     </div>
   );
 }
@@ -272,6 +293,7 @@ interface DocPreviewExtras {
   selection: Set<string>;
   paragraphIndex: Map<string, number>;
   showHiddenChars: boolean;
+  showDiff: boolean;
 }
 
 function DocPreview({
@@ -284,6 +306,7 @@ function DocPreview({
   selection,
   paragraphIndex,
   showHiddenChars,
+  showDiff,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
@@ -313,6 +336,7 @@ function DocPreview({
           selection={selection}
           paragraphIndex={paragraphIndex}
           showHiddenChars={showHiddenChars}
+          showDiff={showDiff}
         />
       ))}
     </>
@@ -450,6 +474,7 @@ function ParaView({
   selection,
   paragraphIndex,
   showHiddenChars,
+  showDiff,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
   const isInSelection = selection.has(p.id);
@@ -502,6 +527,7 @@ function ParaView({
     groupsSrc.push(items);
   }
 
+  const originalText = p.original ? runsText(p.original.runs) : "";
   const shellProps = {
     p,
     isSelected,
@@ -514,6 +540,8 @@ function ParaView({
     issues,
     matchesFilter,
     paragraphIndex,
+    showDiff,
+    originalText,
   };
 
   if (groupsSrc.length === 0) {
@@ -658,6 +686,8 @@ function ParaShell({
   issues,
   matchesFilter,
   paragraphIndex,
+  showDiff,
+  originalText,
   children,
 }: {
   p: ParagraphBlock;
@@ -671,6 +701,8 @@ function ParaShell({
   issues: Issue[];
   matchesFilter: boolean;
   paragraphIndex: Map<string, number>;
+  showDiff: boolean;
+  originalText: string;
   children: React.ReactNode;
 }) {
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
@@ -787,6 +819,14 @@ function ParaShell({
             {firstLine !== 0 && `1st ${fmt(firstLine)}`}
           </span>
         </>
+      )}
+      {showDiff && hasChanges && originalText && (
+        <div className="mb-1 rounded-sm border-l-2 border-rose-300 bg-rose-50/60 px-2 py-1 font-mono text-[11px] leading-snug text-rose-700/90 line-through">
+          <span className="mr-1 select-none text-[9px] font-bold uppercase tracking-wider text-rose-500 no-underline">
+            was
+          </span>
+          {originalText || <em className="italic">(empty)</em>}
+        </div>
       )}
       {children}
       {issues.length > 0 && !isSelected && (
