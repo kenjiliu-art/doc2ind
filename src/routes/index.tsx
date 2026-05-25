@@ -635,6 +635,13 @@ function EditorView() {
             <FileCode2 className="h-4 w-4" />
             Tagged Text (.txt)
           </button>
+          <button
+            onClick={onDownloadChangelog}
+            className="flex w-full items-center justify-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-primary"
+          >
+            <Download className="h-3 w-3" />
+            Save cleanup changelog (.md)
+          </button>
         </div>
       </aside>
 
