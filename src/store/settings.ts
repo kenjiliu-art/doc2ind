@@ -3,13 +3,11 @@ import { persist } from "zustand/middleware";
 import type { ParagraphRules } from "@/lib/types";
 
 export type AutoApplyKey =
-  | "closeOrphanRuns"
   | "collapseBlanksToSpacing"
   | "dashes"
   | "normalizeLists"
   | "pageBreakBefore"
   | "removeEmptyParagraphs"
-  | "removeTrailingTabs"
   | "sanitizeStyleNames"
   | "smartQuotes"
   | "softToHard"
@@ -20,13 +18,11 @@ export type AutoApplyKey =
   | "trailingStyledSpacesToEnEm";
 
 export interface AutoApplySettings {
-  closeOrphanRuns: boolean;
   collapseBlanksToSpacing: boolean;
   dashes: boolean;
   normalizeLists: boolean;
   pageBreakBefore: boolean;
   removeEmptyParagraphs: boolean;
-  removeTrailingTabs: boolean;
   sanitizeStyleNames: boolean;
   smartQuotes: boolean;
   softToHard: boolean;
@@ -44,13 +40,11 @@ interface SettingsState {
 }
 
 const DEFAULTS: AutoApplySettings = {
-  closeOrphanRuns: false,
   collapseBlanksToSpacing: false,
   dashes: true,
   normalizeLists: false,
   pageBreakBefore: true,
   removeEmptyParagraphs: false,
-  removeTrailingTabs: false,
   sanitizeStyleNames: false,
   smartQuotes: true,
   softToHard: true,
@@ -61,12 +55,27 @@ const DEFAULTS: AutoApplySettings = {
   trailingStyledSpacesToEnEm: false,
 };
 
+/** Pairs of keys whose effects conflict — enabling one disables the other. */
+export const AUTO_APPLY_EXCLUSIONS: Partial<Record<AutoApplyKey, AutoApplyKey>> = {
+  collapseBlanksToSpacing: "removeEmptyParagraphs",
+  removeEmptyParagraphs: "collapseBlanksToSpacing",
+  trimRunBleed: "trailingStyledSpacesToEnEm",
+  trailingStyledSpacesToEnEm: "trimRunBleed",
+};
+
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
       autoApply: { ...DEFAULTS },
       setAutoApply: (key, value) =>
-        set((s) => ({ autoApply: { ...s.autoApply, [key]: value } })),
+        set((s) => {
+          const next = { ...s.autoApply, [key]: value };
+          if (value) {
+            const opposite = AUTO_APPLY_EXCLUSIONS[key];
+            if (opposite) next[opposite] = false;
+          }
+          return { autoApply: next };
+        }),
       resetAutoApply: () => set({ autoApply: { ...DEFAULTS } }),
     }),
     {
