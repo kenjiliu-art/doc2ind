@@ -164,13 +164,18 @@ export const useEditor = create<EditorState>((set, get) => {
           sectionBreakBefore: p.sectionBreakBefore,
         }),
       }));
-      const nextDoc = { ...doc, blocks };
+      let nextDoc: ParsedDoc = { ...doc, blocks };
+      const preflightHistory = new Set<PreflightAction>();
+      if (settings.stripUnusedStyles) {
+        nextDoc = stripUnusedStyles(nextDoc);
+        preflightHistory.add("stripUnusedStyles");
+      }
       set({
         doc: nextDoc,
         fileName,
         selection: new Set(),
         selectionAnchor: null,
-        preflightHistory: new Set(),
+        preflightHistory,
         past: [],
         future: [],
         initialIssues: rawBreakdown.total,
