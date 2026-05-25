@@ -427,7 +427,8 @@ function EditorView() {
     setMobileSheetOpen(false);
   };
 
-  // Global keyboard shortcuts: Cmd/Ctrl+Z = undo, Shift+Cmd/Ctrl+Z or Ctrl+Y = redo, Esc = clear
+  // Global keyboard shortcuts: Cmd/Ctrl+Z = undo, Shift+Cmd/Ctrl+Z or Ctrl+Y = redo,
+  // Esc = clear selection, 1–6 = preview filter, H = toggle hidden chars.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -454,6 +455,26 @@ function EditorView() {
       if (e.key === "Escape") {
         if (selectionSize > 0) clearSelection();
         if (selectedId) setSelectedId(null);
+      }
+      if (!inEditable && !mod && !e.shiftKey && !e.altKey) {
+        const filterByKey: Record<string, PreviewFilter> = {
+          "1": "all",
+          "2": "warnings",
+          "3": "changed",
+          "4": "selected",
+          "5": "headings",
+          "6": "unstyled",
+        };
+        const next = filterByKey[e.key];
+        if (next) {
+          e.preventDefault();
+          setPreviewFilter(next);
+          return;
+        }
+        if (e.key.toLowerCase() === "h") {
+          e.preventDefault();
+          setShowHiddenChars((v) => !v);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
