@@ -355,23 +355,28 @@ function UploadView() {
           </div>
         )}
 
-        <div className="mt-12 grid gap-4 text-sm sm:grid-cols-2">
-          <Feature title="Paragraph + character styles">
-            Bold, italic, super/subscript runs become named character styles
-            that map straight to InDesign.
-          </Feature>
-          <Feature title="Per-line control">
-            Toggle every rule on a per-paragraph basis, edit text inline, and
-            apply changes in bulk.
-          </Feature>
-          <Feature title="Cleanup baked in">
-            Smart quotes, trailing spaces, track-changes removal, page breaks
-            from blank-line runs.
-          </Feature>
-          <Feature title="Two outputs">
-            Reformatted <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code> plus InDesign
-            Tagged Text XML — File → Place and styles map automatically.
-          </Feature>
+        <div className="mt-14">
+          <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            What it does
+          </p>
+          <div className="grid gap-3 text-sm sm:grid-cols-2">
+            <Feature title="Character styles">
+              Bold, italic, super/subscript become named styles InDesign
+              recognizes.
+            </Feature>
+            <Feature title="Line-by-line control">
+              Toggle fixes per paragraph, edit inline, and apply changes in
+              bulk.
+            </Feature>
+            <Feature title="Built-in cleanup">
+              Fixes smart quotes, trims spaces, removes tracked changes, and
+              cleans page breaks.
+            </Feature>
+            <Feature title="Two export formats">
+              Clean .docx or InDesign Tagged Text — place and styles map
+              automatically.
+            </Feature>
+          </div>
         </div>
       </main>
     </div>
