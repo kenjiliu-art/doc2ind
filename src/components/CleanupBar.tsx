@@ -19,13 +19,7 @@ const AUTO_APPLY: AutoOpt[] = [
     key: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
     description:
-      "Converts blank lines between paragraphs into extra space-after on the preceding paragraph's style, eliminating visual gaps.",
-  },
-  {
-    key: "closeOrphanRuns",
-    label: "Close orphan runs",
-    description:
-      "Moves trailing whitespace out of styled character runs so bold or italic formatting does not bleed into surrounding text.",
+      "Converts blank lines between paragraphs into extra space-after on the preceding paragraph's style, eliminating visual gaps. Mutually exclusive with 'Remove empty paragraphs'.",
   },
   { key: "dashes", label: "Em dashes" },
   {
@@ -39,13 +33,7 @@ const AUTO_APPLY: AutoOpt[] = [
     key: "removeEmptyParagraphs",
     label: "Remove empty paragraphs",
     description:
-      "Deletes blank paragraphs that contain no visible text — common artifacts from Word import.",
-  },
-  {
-    key: "removeTrailingTabs",
-    label: "Remove trailing tabs",
-    description:
-      "Strips tab characters at the end of paragraphs that serve no purpose — common artifacts from Word import.",
+      "Deletes blank paragraphs that contain no visible text — common artifacts from Word import. Mutually exclusive with 'Blanks → spacing'.",
   },
   {
     key: "sanitizeStyleNames",
@@ -61,14 +49,14 @@ const AUTO_APPLY: AutoOpt[] = [
     key: "trimRunBleed",
     label: "Trim italic/bold bleed",
     description:
-      "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug.",
+      "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug. Mutually exclusive with 'Trailing styled spaces → en/em'.",
   },
-  { key: "trimTrailing", label: "Trim trailing spaces" },
+  { key: "trimTrailing", label: "Trim trailing whitespace" },
   {
     key: "trailingStyledSpacesToEnEm",
     label: "Trailing styled spaces → en/em",
     description:
-      "Replaces trailing whitespace inside styled (bold/italic/underline) runs with width-equivalent en (U+2002) and em (U+2003) spaces, stripping the styling. Preserves the visual gap while preventing the style from bleeding into following text.",
+      "Replaces trailing whitespace inside styled (bold/italic/underline) runs with width-equivalent en (U+2002) and em (U+2003) spaces, stripping the styling. Preserves the visual gap while preventing the style from bleeding into following text. Mutually exclusive with 'Trim italic/bold bleed'.",
   },
 ];
 
@@ -81,11 +69,9 @@ const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
 ]);
 
 const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
-  "closeOrphanRuns",
   "collapseBlanksToSpacing",
   "normalizeLists",
   "removeEmptyParagraphs",
-  "removeTrailingTabs",
   "sanitizeStyleNames",
   "stripUnusedStyles",
   "trailingStyledSpacesToEnEm",

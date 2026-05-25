@@ -9,11 +9,9 @@ import type {
   StyleDef,
 } from "@/lib/types";
 import {
-  closeOrphanRuns,
   collapseBlanksToSpacing,
   normalizeLists,
   removeEmptyParagraphs,
-  removeTrailingTabs,
   sanitizeStyleNames,
   sectionBreaksToPageBreaks,
   stripUnusedStyles,
@@ -28,10 +26,8 @@ const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
   | "collapseBlanksToSpacing"
-  | "closeOrphanRuns"
   | "normalizeLists"
   | "removeEmptyParagraphs"
-  | "removeTrailingTabs"
   | "sanitizeStyleNames"
   | "sectionBreaksToPageBreaks"
   | "stripUnusedStyles"
@@ -157,20 +153,10 @@ function countBleedParagraphs(doc: ParsedDoc): number {
   ).length;
 }
 
-/** Number of paragraphs whose text ends in one or more tabs. */
-function countTrailingTabsParagraphs(doc: ParsedDoc): number {
-  return flatParagraphs(doc.blocks).filter((p) => {
-    const text = p.runs.map((r) => r.text).join("");
-    return /\t+$/.test(text);
-  }).length;
-}
-
 /** Metric used to measure what a given preflight pass "fixed" (before − after). */
 const PREFLIGHT_METRIC: Partial<Record<PreflightAction, (d: ParsedDoc) => number>> = {
-  closeOrphanRuns: countBleedParagraphs,
   collapseBlanksToSpacing: countEmptyParagraphs,
   removeEmptyParagraphs: countEmptyParagraphs,
-  removeTrailingTabs: countTrailingTabsParagraphs,
   stripUnusedStyles: (d) => d.paragraphStyles.length,
   trailingStyledSpacesToEnEm: countBleedParagraphs,
   trimRunBleed: countBleedParagraphs,
@@ -231,11 +217,9 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
-        { key: "closeOrphanRuns", fn: closeOrphanRuns },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
         { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
-        { key: "removeTrailingTabs", fn: removeTrailingTabs },
         { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "stripUnusedStyles", fn: stripUnusedStyles },
         { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
@@ -640,12 +624,10 @@ export const useEditor = create<EditorState>((set, get) => {
         stripUnusedStyles,
         collapseBlanksToSpacing,
         normalizeLists,
-        closeOrphanRuns,
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
         removeEmptyParagraphs,
-        removeTrailingTabs,
         trailingStyledSpacesToEnEm,
       };
       snap();

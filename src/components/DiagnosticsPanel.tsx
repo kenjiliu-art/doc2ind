@@ -40,7 +40,6 @@ export function DiagnosticsPanel({ onJump }: Props) {
       (preflightFixed.collapseBlanksToSpacing ?? 0);
     const pfBleed =
       (preflightFixed.trimRunBleed ?? 0) +
-      (preflightFixed.closeOrphanRuns ?? 0) +
       (preflightFixed.trailingStyledSpacesToEnEm ?? 0);
 
 
