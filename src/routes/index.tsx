@@ -424,16 +424,33 @@ function EditorView() {
   const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
   const [showHiddenChars, setShowHiddenChars] = useState(false);
 
-  const sourceStyleCount = useMemo(() => {
-    const set = new Set<string>();
+  const { sourceStyleCount, stats } = useMemo(() => {
+    const sources = new Set<string>();
+    let paragraphs = 0;
+    let words = 0;
+    const visit = (p: ParagraphBlock) => {
+      sources.add(p.sourceStyle ?? "__unstyled__");
+      paragraphs++;
+      for (const r of p.runs) {
+        let inWord = false;
+        for (let i = 0; i < r.text.length; i++) {
+          const c = r.text.charCodeAt(i);
+          const isSpace = c === 32 || c === 9 || c === 10 || c === 13;
+          if (!isSpace && !inWord) {
+            words++;
+            inWord = true;
+          } else if (isSpace) inWord = false;
+        }
+      }
+    };
     const walk = (blocks: Block[]) => {
       for (const b of blocks) {
-        if (b.kind === "paragraph") set.add(b.sourceStyle ?? "__unstyled__");
-        else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach((p: ParagraphBlock) => set.add(p.sourceStyle ?? "__unstyled__"))));
+        if (b.kind === "paragraph") visit(b);
+        else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(visit)));
       }
     };
     walk(doc.blocks);
-    return set.size;
+    return { sourceStyleCount: sources.size, stats: { paragraphs, words } };
   }, [doc.blocks]);
 
   const jumpAndCloseSheet = (id: string) => {
