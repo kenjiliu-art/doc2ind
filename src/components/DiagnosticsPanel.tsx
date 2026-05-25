@@ -28,10 +28,21 @@ function paraText(p: ParagraphBlock) {
 
 export function DiagnosticsPanel({ onJump }: Props) {
   const doc = useEditor((s) => s.doc);
+  const preflightFixed = useEditor((s) => s.preflightFixed);
   const [cursors, setCursors] = useState<Record<string, number>>({});
 
   const { findings, autoFixed } = useMemo(() => {
     if (!doc) return { findings: [] as Finding[], autoFixed: [] as { label: string; count: number }[] };
+
+    // Aggregate preflight-fixed counts by the diagnostic finding they affect.
+    const pfEmpty =
+      (preflightFixed.removeEmptyParagraphs ?? 0) +
+      (preflightFixed.collapseBlanksToSpacing ?? 0);
+    const pfBleed =
+      (preflightFixed.trimRunBleed ?? 0) +
+      (preflightFixed.closeOrphanRuns ?? 0) +
+      (preflightFixed.trailingStyledSpacesToEnEm ?? 0);
+
 
     const ids = {
       unstyled: [] as string[],
@@ -109,6 +120,8 @@ export function DiagnosticsPanel({ onJump }: Props) {
     if (auto.spaces > 0) fixed.push({ label: "multi-spaces", count: auto.spaces });
     if (auto.dash > 0) fixed.push({ label: "double-hyphens", count: auto.dash });
     if (auto.qq > 0) fixed.push({ label: "straight quotes", count: auto.qq });
+    if (pfEmpty > 0) fixed.push({ label: "empty paragraphs", count: pfEmpty });
+    if (pfBleed > 0) fixed.push({ label: "bleed-candidate runs", count: pfBleed });
 
     const f = (
       key: string,
@@ -126,6 +139,24 @@ export function DiagnosticsPanel({ onJump }: Props) {
       if (fixedCount >= count) return "fixed";
       return "warn";
     };
+
+    // For findings whose items have already been removed/transformed by a
+    // preflight auto-apply pass, surface that as an "auto-fixed" badge with
+    // the count that was eliminated, rather than a silent zero.
+    const emptyDisplay = ids.empty.length + pfEmpty;
+    const emptySeverity: Severity =
+      pfEmpty > 0 && ids.empty.length === 0
+        ? "fixed"
+        : ids.empty.length > 5
+          ? "warn"
+          : "ok";
+    const bleedDisplay = ids.bleed.length + pfBleed;
+    const bleedSeverity: Severity =
+      pfBleed > 0 && ids.bleed.length === 0
+        ? "fixed"
+        : ids.bleed.length > 1
+          ? "warn"
+          : "ok";
 
     const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
@@ -180,10 +211,11 @@ export function DiagnosticsPanel({ onJump }: Props) {
       f(
         "empty",
         "Empty paragraphs",
-        ids.empty.length,
-        ids.empty.length > 5 ? "warn" : "ok",
+        emptyDisplay,
+        emptySeverity,
         undefined,
         ids.empty,
+        pfEmpty,
       ),
       f("pb", "Page breaks", ids.pb.length, "info", undefined, ids.pb),
       f(
@@ -207,15 +239,17 @@ export function DiagnosticsPanel({ onJump }: Props) {
       f(
         "bleed",
         "Bleed-candidate runs (styled trailing space)",
-        ids.bleed.length,
-        ids.bleed.length > 1 ? "warn" : "ok",
+        bleedDisplay,
+        bleedSeverity,
         "Run 'Trim italic/bold bleed' or 'Close orphan runs'.",
         ids.bleed,
+        pfBleed,
       ),
     ];
 
     return { findings, autoFixed: fixed };
-  }, [doc]);
+  }, [doc, preflightFixed]);
+
 
   if (!doc) return null;
 

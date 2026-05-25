@@ -45,6 +45,8 @@ interface EditorState {
   selectionAnchor: string | null;
   fileName: string;
   preflightHistory: Set<PreflightAction>;
+  /** Number of items each preflight pass eliminated the last time it ran. */
+  preflightFixed: Partial<Record<PreflightAction, number>>;
   past: ParsedDoc[];
   future: ParsedDoc[];
   /** Issue count captured immediately after parsing — baseline for health score & before/after. */
@@ -57,6 +59,7 @@ interface EditorState {
   lastEditAt: number;
   /** Monotonic tick incremented every time a combo extends — components subscribe to trigger pop animation. */
   comboTick: number;
+
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
   undo: () => void;
@@ -125,6 +128,44 @@ function flatParaIds(blocks: Block[]): string[] {
   return out;
 }
 
+/** Flat iteration over all paragraphs (including those inside tables). */
+function flatParagraphs(blocks: Block[]): ParagraphBlock[] {
+  const out: ParagraphBlock[] = [];
+  for (const b of blocks) {
+    if (b.kind === "paragraph") out.push(b);
+    else
+      for (const row of b.rows)
+        for (const cell of row)
+          for (const p of cell.paragraphs) out.push(p);
+  }
+  return out;
+}
+
+/** Number of paragraphs whose visible text is empty. */
+function countEmptyParagraphs(doc: ParsedDoc): number {
+  return flatParagraphs(doc.blocks).filter(
+    (p) => !p.runs.map((r) => r.text).join("").trim(),
+  ).length;
+}
+
+/** Number of paragraphs containing a styled run that ends in whitespace (bleed candidates). */
+function countBleedParagraphs(doc: ParsedDoc): number {
+  return flatParagraphs(doc.blocks).filter((p) =>
+    p.runs.some((r) => r.charStyle && r.text && /\s$/.test(r.text)),
+  ).length;
+}
+
+/** Metric used to measure what a given preflight pass "fixed" (before − after). */
+const PREFLIGHT_METRIC: Partial<Record<PreflightAction, (d: ParsedDoc) => number>> = {
+  removeEmptyParagraphs: countEmptyParagraphs,
+  collapseBlanksToSpacing: countEmptyParagraphs,
+  trailingStyledSpacesToEnEm: countBleedParagraphs,
+  closeOrphanRuns: countBleedParagraphs,
+  trimRunBleed: countBleedParagraphs,
+  stripUnusedStyles: (d) => d.paragraphStyles.length,
+};
+
+
 export const useEditor = create<EditorState>((set, get) => {
   /** Snapshot current doc into past[] before a mutation; also extend combo counter. */
   const snap = () => {
@@ -150,10 +191,12 @@ export const useEditor = create<EditorState>((set, get) => {
     selectionAnchor: null,
     fileName: "document",
     preflightHistory: new Set(),
+    preflightFixed: {},
     past: [],
     future: [],
     initialIssues: 0,
     initialIssueBreakdown: null,
+
     comboCount: 0,
     lastEditAt: 0,
     comboTick: 0,
@@ -172,6 +215,7 @@ export const useEditor = create<EditorState>((set, get) => {
       nextDoc = { ...nextDoc, blocks };
 
       const preflightHistory = new Set<PreflightAction>();
+      const preflightFixed: Partial<Record<PreflightAction, number>> = {};
       const preflightFns: Array<{
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
@@ -187,7 +231,13 @@ export const useEditor = create<EditorState>((set, get) => {
       ];
       for (const { key, fn } of preflightFns) {
         if (settings[key]) {
+          const metric = PREFLIGHT_METRIC[key];
+          const before = metric ? metric(nextDoc) : 0;
           nextDoc = fn(nextDoc);
+          if (metric) {
+            const fixed = Math.max(0, before - metric(nextDoc));
+            if (fixed > 0) preflightFixed[key] = fixed;
+          }
           preflightHistory.add(key);
         }
       }
@@ -198,6 +248,7 @@ export const useEditor = create<EditorState>((set, get) => {
         selection: new Set(),
         selectionAnchor: null,
         preflightHistory,
+        preflightFixed,
         past: [],
         future: [],
         initialIssues: rawBreakdown.total,
@@ -215,6 +266,7 @@ export const useEditor = create<EditorState>((set, get) => {
         selectionAnchor: null,
         fileName: "document",
         preflightHistory: new Set(),
+        preflightFixed: {},
         past: [],
         future: [],
         initialIssues: 0,
@@ -224,6 +276,7 @@ export const useEditor = create<EditorState>((set, get) => {
         comboTick: 0,
       });
     },
+
     undo: () => {
       const { past, doc, future } = get();
       if (past.length === 0 || !doc) return;
@@ -585,7 +638,16 @@ export const useEditor = create<EditorState>((set, get) => {
       snap();
       const nextHistory = new Set(get().preflightHistory);
       nextHistory.add(action);
-      set({ doc: fns[action](doc), preflightHistory: nextHistory });
+      const metric = PREFLIGHT_METRIC[action];
+      const before = metric ? metric(doc) : 0;
+      const nextDoc = fns[action](doc);
+      const nextFixed = { ...get().preflightFixed };
+      if (metric) {
+        const fixed = Math.max(0, before - metric(nextDoc));
+        if (fixed > 0) nextFixed[action] = fixed;
+        else delete nextFixed[action];
+      }
+      set({ doc: nextDoc, preflightHistory: nextHistory, preflightFixed: nextFixed });
     },
   };
 });
