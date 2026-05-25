@@ -14,7 +14,8 @@ export type AutoApplyKey =
   | "normalizeLists"
   | "closeOrphanRuns"
   | "trimRunBleed"
-  | "sanitizeStyleNames";
+  | "sanitizeStyleNames"
+  | "removeEmptyParagraphs";
 
 export interface AutoApplySettings {
   tabsToMargin: boolean;
