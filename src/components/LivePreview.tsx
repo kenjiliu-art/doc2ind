@@ -311,6 +311,7 @@ function DocPreview({
           filter={filter}
           selection={selection}
           paragraphIndex={paragraphIndex}
+          showHiddenChars={showHiddenChars}
         />
       ))}
     </>
@@ -392,6 +393,48 @@ function alignmentClass(a?: ParagraphBlock["alignment"]): string {
 
 function runsText(runs: RunSpan[]) {
   return runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
+}
+
+function renderHiddenChars(text: string, baseSrcStart: number) {
+  const out: React.ReactNode[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    const pos = baseSrcStart + i;
+    if (ch === " ") {
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={1} className="text-primary/40 select-none">
+          ·
+        </span>
+      );
+      i++;
+    } else if (ch === "\t") {
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={1} className="text-primary/40 select-none">
+          →
+        </span>
+      );
+      i++;
+    } else if (ch === "\n") {
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={1} className="text-primary/40 select-none">
+          ↵
+        </span>
+      );
+      i++;
+    } else {
+      let j = i;
+      while (j < text.length && text[j] !== " " && text[j] !== "\t" && text[j] !== "\n") j++;
+      const slice = text.slice(i, j);
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={slice.length}>
+          {slice}
+        </span>
+      );
+      i = j;
+    }
+  }
+  return out;
 }
 
 function ParaView({
@@ -551,7 +594,9 @@ function ParaView({
                 }
                 const cs = r.charStyle ? csMap.get(r.charStyle) : undefined;
                 let text = applyCleanup(r.text, p);
-                text = text.replace(/\t/g, "    ");
+                if (!showHiddenChars) {
+                  text = text.replace(/\t/g, "    ");
+                }
                 const flags = cs
                   ? [
                       cs.bold && "Bold",
