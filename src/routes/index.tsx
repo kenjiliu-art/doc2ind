@@ -9,7 +9,8 @@ import { CharStylesPanel } from "@/components/CharStylesPanel";
 import { StyleMappingPanel } from "@/components/StyleMappingPanel";
 import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
-import { LivePreview } from "@/components/LivePreview";
+import { LivePreview, type PreviewFilter } from "@/components/LivePreview";
+import { PreviewFilters } from "@/components/PreviewFilters";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -416,6 +417,7 @@ function EditorView() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleError, setSampleError] = useState<string | null>(null);
+  const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
 
   const jumpAndCloseSheet = (id: string) => {
     setSelectedId(id);
@@ -537,6 +539,9 @@ function EditorView() {
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
           <DiagnosticsPanel onJump={setSelectedId} />
+          <CollapsibleSection title="Preview filters">
+            <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+          </CollapsibleSection>
           <CollapsibleSection title="Auto-apply on import" defaultOpen>
             <CleanupBar />
           </CollapsibleSection>
@@ -632,7 +637,7 @@ function EditorView() {
         </header>
 
         <div className="flex-1 overflow-hidden">
-          <LivePreview selectedId={selectedId} onSelect={setSelectedId} />
+          <LivePreview selectedId={selectedId} onSelect={setSelectedId} filter={previewFilter} />
         </div>
 
         {/* Mobile-only tools FAB + bottom sheet */}
@@ -694,6 +699,9 @@ function EditorView() {
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
               <DiagnosticsPanel onJump={jumpAndCloseSheet} />
+              <CollapsibleSection title="Preview filters">
+                <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+              </CollapsibleSection>
               <CollapsibleSection title="Auto-apply on import" defaultOpen>
                 <CleanupBar />
               </CollapsibleSection>
