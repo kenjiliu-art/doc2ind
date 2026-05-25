@@ -45,6 +45,8 @@ interface EditorState {
   selectionAnchor: string | null;
   fileName: string;
   preflightHistory: Set<PreflightAction>;
+  /** Number of items each preflight pass eliminated the last time it ran. */
+  preflightFixed: Partial<Record<PreflightAction, number>>;
   past: ParsedDoc[];
   future: ParsedDoc[];
   /** Issue count captured immediately after parsing — baseline for health score & before/after. */
@@ -57,6 +59,7 @@ interface EditorState {
   lastEditAt: number;
   /** Monotonic tick incremented every time a combo extends — components subscribe to trigger pop animation. */
   comboTick: number;
+
   setDoc: (doc: ParsedDoc, fileName: string) => void;
   reset: () => void;
   undo: () => void;
