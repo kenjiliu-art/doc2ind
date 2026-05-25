@@ -613,7 +613,7 @@ function EditorView() {
           <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
             <RenameStylesPanel />
           </CollapsibleSection>
-          <CollapsibleSection title="Character styles">
+          <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
             <CharStylesPanel />
           </CollapsibleSection>
         </div>
@@ -790,7 +790,7 @@ function EditorView() {
               <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
                 <RenameStylesPanel />
               </CollapsibleSection>
-              <CollapsibleSection title="Character styles">
+              <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
                 <CharStylesPanel />
               </CollapsibleSection>
             </div>
