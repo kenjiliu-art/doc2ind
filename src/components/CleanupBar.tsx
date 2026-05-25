@@ -1,5 +1,22 @@
 import { useMemo } from "react";
-import { Info, Sparkles, Link2Off } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Sparkles,
+  Link2Off,
+  Quote,
+  Minus,
+  Eraser,
+  CornerDownLeft,
+  IndentIncrease,
+  Delete,
+  ArrowDownUp,
+  SeparatorHorizontal,
+  List,
+  Wand2,
+  Trash2,
+  Scissors,
+  Space,
+} from "lucide-react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey, AUTO_APPLY_EXCLUSIONS } from "@/store/settings";
 import type { Block, ParagraphBlock } from "@/lib/types";
@@ -15,18 +32,21 @@ type AutoOpt = {
   key: AutoApplyKey;
   label: string;
   description: string;
+  icon: LucideIcon;
 };
 
 const TYPOGRAPHY: AutoOpt[] = [
   {
     key: "smartQuotes",
     label: "Smart quotes",
+    icon: Quote,
     description:
       "Swaps typewriter quotes for typographic ones based on context. Example: \"hello\" becomes “hello”, and don't becomes don’t. Apostrophes in contractions and possessives are detected by adjacent letters; openers/closers by surrounding whitespace.",
   },
   {
     key: "dashes",
     label: "Em dashes",
+    icon: Minus,
     description:
       "Joins double hyphens and spaced hyphens into em dashes used for parenthetical breaks. Example: word--word becomes word—word, and word -- word becomes word—word. Number ranges like 1990-1995 are left alone (use en dashes manually).",
   },
@@ -36,30 +56,35 @@ const WHITESPACE: AutoOpt[] = [
   {
     key: "trimTrailing",
     label: "Trim trailing whitespace",
+    icon: Eraser,
     description:
       "Cuts spaces and tabs hanging off the end of every paragraph, and collapses runs of two or more internal spaces to one. These are invisible in Word but become visible gaps in InDesign — especially at the end of justified lines.",
   },
   {
     key: "softToHard",
     label: "Soft → hard breaks",
+    icon: CornerDownLeft,
     description:
       "Promotes Shift+Enter line breaks (which keep a single paragraph) into separate paragraphs. After conversion each line becomes its own paragraph and gets its own paragraph style, spacing and indent — required for InDesign to flow them correctly.",
   },
   {
     key: "tabsToMargin",
     label: "Tabs → indent",
+    icon: IndentIncrease,
     description:
       "Removes leading tab characters at the start of a paragraph and moves the equivalent amount into the paragraph style's first-line indent. Result: indentation that survives reflow instead of fixed tab stops that break at different column widths.",
   },
   {
     key: "removeEmptyParagraphs",
     label: "Remove empty paragraphs",
+    icon: Delete,
     description:
       "Deletes paragraphs that contain nothing but whitespace — the empty lines authors use to separate sections in Word. In InDesign these create unwanted gaps and orphaned baseline shifts. Mutually exclusive with 'Blanks → spacing'.",
   },
   {
     key: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
+    icon: ArrowDownUp,
     description:
       "Alternative to deleting empty paragraphs: keeps the visual gap by adding extra space-after onto the preceding paragraph's style. Each empty paragraph adds ~12pt of space-after, then is removed. Mutually exclusive with 'Remove empty paragraphs'.",
   },
@@ -69,12 +94,14 @@ const STRUCTURE: AutoOpt[] = [
   {
     key: "pageBreakBefore",
     label: "Section → page break",
+    icon: SeparatorHorizontal,
     description:
       "Finds Word section breaks sitting before a heading and rewrites them as a 'page-break-before' attribute on that heading's paragraph style. InDesign then starts each chapter on a new frame/page automatically, without needing a manual frame break.",
   },
   {
     key: "normalizeLists",
     label: "Normalize lists",
+    icon: List,
     description:
       "Scans paragraph text for typed-in bullet/number prefixes like '• ', '- ', '* ', '1. ' or '2) '. The prefix is removed and the paragraph is tagged as a real list item so InDesign applies your bullet or numbered list style instead of literal characters.",
   },
@@ -84,24 +111,28 @@ const STYLES: AutoOpt[] = [
   {
     key: "sanitizeStyleNames",
     label: "Sanitize style names",
+    icon: Wand2,
     description:
       "Renames Word's auto-generated combo styles like 'Normal + Bold + 12pt + Italic' into a single clean name (e.g. 'Body'). Reduces hundreds of near-duplicate styles down to the meaningful few — much easier to map to InDesign paragraph styles on import.",
   },
   {
     key: "stripUnusedStyles",
     label: "Strip unused styles",
+    icon: Trash2,
     description:
       "Deletes any paragraph or character style definition that no paragraph actually uses. Shrinks the style list in the export so InDesign's import dialog only shows styles you need to map. The text content is untouched.",
   },
   {
     key: "trimRunBleed",
     label: "Trim italic/bold bleed",
+    icon: Scissors,
     description:
       "Fixes the classic Word bug where italic or bold extends past the styled word into the trailing space and punctuation (e.g. 'word*. *' shows the period in italic). Pulls the punctuation and whitespace out of the styled run. Mutually exclusive with 'Trailing styled spaces → en/em'.",
   },
   {
     key: "trailingStyledSpacesToEnEm",
     label: "Trailing styled spaces → en/em",
+    icon: Space,
     description:
       "An alternative to trimming bleed: instead of removing the styled trailing space, replaces it with a fixed-width en (U+2002) or em (U+2003) space and clears the styling. Preserves the original visual width while killing the bleed. Mutually exclusive with 'Trim italic/bold bleed'.",
   },
@@ -277,9 +308,9 @@ export function CleanupBar() {
                       conflictActive ? "opacity-50" : ""
                     }`}
                   >
-                    <span className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-foreground">
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] text-foreground">
+                      <opt.icon className="h-3 w-3 shrink-0 text-muted-foreground" />
                       <span className="truncate">{opt.label}</span>
-                      <Info className="h-3 w-3 shrink-0 text-muted-foreground/70" />
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
                       {count > 0 && (
