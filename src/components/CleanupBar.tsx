@@ -87,6 +87,8 @@ export function CleanupBar() {
                       setAutoApply(opt.key, e.target.checked);
                       if (opt.key === "stripUnusedStyles") {
                         if (e.target.checked) runPreflight("stripUnusedStyles");
+                      } else if (opt.key === "trimTrailing") {
+                        if (e.target.checked) runPreflight("trimTrailingSpaces");
                       } else if (opt.key !== "pageBreakBefore") {
                         applyDocCleanup([opt.key], e.target.checked);
                       }

@@ -16,6 +16,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
   trimRunBleed,
+  trimTrailingSpaces,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
@@ -30,7 +31,8 @@ export type PreflightAction =
   | "closeOrphanRuns"
   | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames";
+  | "sanitizeStyleNames"
+  | "trimTrailingSpaces";
 
 const HISTORY_LIMIT = 50;
 
@@ -169,6 +171,10 @@ export const useEditor = create<EditorState>((set, get) => {
       if (settings.stripUnusedStyles) {
         nextDoc = stripUnusedStyles(nextDoc);
         preflightHistory.add("stripUnusedStyles");
+      }
+      if (settings.trimTrailing) {
+        nextDoc = trimTrailingSpaces(nextDoc);
+        preflightHistory.add("trimTrailingSpaces");
       }
       set({
         doc: nextDoc,
@@ -557,6 +563,7 @@ export const useEditor = create<EditorState>((set, get) => {
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
+        trimTrailingSpaces,
       };
       snap();
       const nextHistory = new Set(get().preflightHistory);
