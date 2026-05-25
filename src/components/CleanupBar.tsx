@@ -52,6 +52,12 @@ const AUTO_APPLY: AutoOpt[] = [
     description:
       "Renames messy auto-generated style names like 'Normal + Bold + 12pt' into clean, readable labels such as 'Body'.",
   },
+  {
+    key: "removeEmptyParagraphs",
+    label: "Remove empty paragraphs",
+    description:
+      "Deletes blank paragraphs that contain no visible text — common artifacts from Word import.",
+  },
 ];
 
 const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
