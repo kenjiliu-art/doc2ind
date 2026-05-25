@@ -820,6 +820,14 @@ function ParaShell({
           </span>
         </>
       )}
+      {showDiff && hasChanges && originalText && (
+        <div className="mb-1 rounded-sm border-l-2 border-rose-300 bg-rose-50/60 px-2 py-1 font-mono text-[11px] leading-snug text-rose-700/90 line-through">
+          <span className="mr-1 select-none text-[9px] font-bold uppercase tracking-wider text-rose-500 no-underline">
+            was
+          </span>
+          {originalText || <em className="italic">(empty)</em>}
+        </div>
+      )}
       {children}
       {issues.length > 0 && !isSelected && (
         <div className="mt-1 flex flex-wrap items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
