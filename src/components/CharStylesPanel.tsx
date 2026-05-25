@@ -49,13 +49,8 @@ export function CharStylesPanel() {
   if (!doc) return null;
 
   return (
-    <div className="px-3 py-3 text-xs">
-      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        Character styles{" "}
-        <span className="ml-1 font-medium normal-case tracking-normal text-muted-foreground/70">
-          ({usage.length})
-        </span>
-      </p>
+    <div className="px-3 pb-3 text-xs">
+
       {usage.length === 0 ? (
         <p className="px-1 text-[11px] italic text-muted-foreground">
           No inline character styles in this document.
