@@ -31,7 +31,8 @@ export type PreflightAction =
   | "closeOrphanRuns"
   | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames";
+  | "sanitizeStyleNames"
+  | "removeEmptyParagraphs";
 
 const HISTORY_LIMIT = 50;
 
