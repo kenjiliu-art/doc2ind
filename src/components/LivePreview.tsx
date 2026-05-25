@@ -686,6 +686,8 @@ function ParaShell({
   issues,
   matchesFilter,
   paragraphIndex,
+  showDiff,
+  originalText,
   children,
 }: {
   p: ParagraphBlock;
@@ -699,6 +701,8 @@ function ParaShell({
   issues: Issue[];
   matchesFilter: boolean;
   paragraphIndex: Map<string, number>;
+  showDiff: boolean;
+  originalText: string;
   children: React.ReactNode;
 }) {
   const updateParagraphRule = useEditor((s) => s.updateParagraphRule);
