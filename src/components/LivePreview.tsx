@@ -73,49 +73,31 @@ export function LivePreview({ selectedId, onSelect, filter }: LivePreviewProps) 
         ref={scrollRef}
         className="h-full overflow-y-auto bg-[hsl(220_14%_94%)] px-6 py-8"
       >
-        <div className="mx-auto mb-3 flex w-full max-w-[760px] flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-1">
-            {FILTER_LABELS.map((f) => (
-              <button
-                key={f.key}
-                onClick={() => setFilter(f.key)}
-                className={cn(
-                  "rounded-full border px-2.5 py-0.5 text-[10px] font-medium transition",
-                  filter === f.key
-                    ? "border-primary bg-primary text-primary-foreground"
-                    : "border-neutral-300 bg-white text-neutral-600 hover:bg-neutral-50",
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowNumbers((v) => !v)}
-              className={cn(
-                "rounded border px-2 py-1 text-[11px] font-medium transition",
-                showNumbers
-                  ? "border-blue-500 bg-blue-500 text-white"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
-              )}
-              title="Toggle paragraph numbers in the left gutter"
-            >
-              # Numbers
-            </button>
-            <button
-              onClick={() => setShowMargins((v) => !v)}
-              className={cn(
-                "rounded border px-2 py-1 text-[11px] font-medium transition",
-                showMargins
-                  ? "border-fuchsia-500 bg-fuchsia-500 text-white"
-                  : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
-              )}
-              title="Highlight paragraphs with left or first-line indents"
-            >
-              Margins
-            </button>
-          </div>
+        <div className="mx-auto mb-3 flex w-full max-w-[760px] items-center justify-end gap-2">
+          <button
+            onClick={() => setShowNumbers((v) => !v)}
+            className={cn(
+              "rounded border px-2 py-1 text-[11px] font-medium transition",
+              showNumbers
+                ? "border-blue-500 bg-blue-500 text-white"
+                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+            )}
+            title="Toggle paragraph numbers in the left gutter"
+          >
+            # Numbers
+          </button>
+          <button
+            onClick={() => setShowMargins((v) => !v)}
+            className={cn(
+              "rounded border px-2 py-1 text-[11px] font-medium transition",
+              showMargins
+                ? "border-fuchsia-500 bg-fuchsia-500 text-white"
+                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+            )}
+            title="Highlight paragraphs with left or first-line indents"
+          >
+            Margins
+          </button>
         </div>
         <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
           <DocPreview
