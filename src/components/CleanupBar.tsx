@@ -22,13 +22,13 @@ const TYPOGRAPHY: AutoOpt[] = [
     key: "smartQuotes",
     label: "Smart quotes",
     description:
-      "Replaces straight quotation marks (' and \") with typographic curly quotes (‘’ and “”) — opening and closing pairs determined by position.",
+      "Swaps typewriter quotes for typographic ones based on context. Example: \"hello\" becomes “hello”, and don't becomes don’t. Apostrophes in contractions and possessives are detected by adjacent letters; openers/closers by surrounding whitespace.",
   },
   {
     key: "dashes",
     label: "Em dashes",
     description:
-      "Converts double hyphens (--) and spaced single hyphens into proper em dashes (—), and spaced en dashes into em dashes where appropriate.",
+      "Joins double hyphens and spaced hyphens into em dashes used for parenthetical breaks. Example: word--word becomes word—word, and word -- word becomes word—word. Number ranges like 1990-1995 are left alone (use en dashes manually).",
   },
 ];
 
@@ -37,31 +37,31 @@ const WHITESPACE: AutoOpt[] = [
     key: "trimTrailing",
     label: "Trim trailing whitespace",
     description:
-      "Removes trailing spaces and tabs at the end of every paragraph — common artifacts from copying and pasting between applications.",
+      "Cuts spaces and tabs hanging off the end of every paragraph, and collapses runs of two or more internal spaces to one. These are invisible in Word but become visible gaps in InDesign — especially at the end of justified lines.",
   },
   {
     key: "softToHard",
     label: "Soft → hard breaks",
     description:
-      "Converts soft line breaks (Shift+Enter, manual line breaks) into hard paragraph breaks, creating true separate paragraphs.",
+      "Promotes Shift+Enter line breaks (which keep a single paragraph) into separate paragraphs. After conversion each line becomes its own paragraph and gets its own paragraph style, spacing and indent — required for InDesign to flow them correctly.",
   },
   {
     key: "tabsToMargin",
     label: "Tabs → indent",
     description:
-      "Converts leading tab characters at the start of a paragraph into formal paragraph indentation (left indent or first-line indent).",
+      "Removes leading tab characters at the start of a paragraph and moves the equivalent amount into the paragraph style's first-line indent. Result: indentation that survives reflow instead of fixed tab stops that break at different column widths.",
   },
   {
     key: "removeEmptyParagraphs",
     label: "Remove empty paragraphs",
     description:
-      "Deletes blank paragraphs that contain no visible text — common artifacts from Word import. Mutually exclusive with 'Blanks → spacing'.",
+      "Deletes paragraphs that contain nothing but whitespace — the empty lines authors use to separate sections in Word. In InDesign these create unwanted gaps and orphaned baseline shifts. Mutually exclusive with 'Blanks → spacing'.",
   },
   {
     key: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
     description:
-      "Converts blank lines between paragraphs into extra space-after on the preceding paragraph's style, eliminating visual gaps. Mutually exclusive with 'Remove empty paragraphs'.",
+      "Alternative to deleting empty paragraphs: keeps the visual gap by adding extra space-after onto the preceding paragraph's style. Each empty paragraph adds ~12pt of space-after, then is removed. Mutually exclusive with 'Remove empty paragraphs'.",
   },
 ];
 
@@ -70,13 +70,13 @@ const STRUCTURE: AutoOpt[] = [
     key: "pageBreakBefore",
     label: "Section → page break",
     description:
-      "Converts Word section breaks that precede headings into explicit page-break-before formatting on the heading paragraph itself.",
+      "Finds Word section breaks sitting before a heading and rewrites them as a 'page-break-before' attribute on that heading's paragraph style. InDesign then starts each chapter on a new frame/page automatically, without needing a manual frame break.",
   },
   {
     key: "normalizeLists",
     label: "Normalize lists",
     description:
-      "Detects bullet or number prefixes in paragraph text and converts them into proper list paragraphs with consistent formatting.",
+      "Scans paragraph text for typed-in bullet/number prefixes like '• ', '- ', '* ', '1. ' or '2) '. The prefix is removed and the paragraph is tagged as a real list item so InDesign applies your bullet or numbered list style instead of literal characters.",
   },
 ];
 
@@ -85,27 +85,28 @@ const STYLES: AutoOpt[] = [
     key: "sanitizeStyleNames",
     label: "Sanitize style names",
     description:
-      "Renames messy auto-generated style names like 'Normal + Bold + 12pt' into clean, readable labels such as 'Body'.",
+      "Renames Word's auto-generated combo styles like 'Normal + Bold + 12pt + Italic' into a single clean name (e.g. 'Body'). Reduces hundreds of near-duplicate styles down to the meaningful few — much easier to map to InDesign paragraph styles on import.",
   },
   {
     key: "stripUnusedStyles",
     label: "Strip unused styles",
     description:
-      "Removes style definitions from the document that are not applied to any content, reducing file bloat and clutter.",
+      "Deletes any paragraph or character style definition that no paragraph actually uses. Shrinks the style list in the export so InDesign's import dialog only shows styles you need to map. The text content is untouched.",
   },
   {
     key: "trimRunBleed",
     label: "Trim italic/bold bleed",
     description:
-      "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug. Mutually exclusive with 'Trailing styled spaces → en/em'.",
+      "Fixes the classic Word bug where italic or bold extends past the styled word into the trailing space and punctuation (e.g. 'word*. *' shows the period in italic). Pulls the punctuation and whitespace out of the styled run. Mutually exclusive with 'Trailing styled spaces → en/em'.",
   },
   {
     key: "trailingStyledSpacesToEnEm",
     label: "Trailing styled spaces → en/em",
     description:
-      "Replaces trailing whitespace inside styled runs with width-equivalent en (U+2002) and em (U+2003) spaces, stripping the styling. Mutually exclusive with 'Trim italic/bold bleed'.",
+      "An alternative to trimming bleed: instead of removing the styled trailing space, replaces it with a fixed-width en (U+2002) or em (U+2003) space and clears the styling. Preserves the original visual width while killing the bleed. Mutually exclusive with 'Trim italic/bold bleed'.",
   },
 ];
+
 
 const CATEGORIES: Array<{ title: string; items: AutoOpt[] }> = [
   { title: "Typography", items: TYPOGRAPHY },
