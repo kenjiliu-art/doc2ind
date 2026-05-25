@@ -8,7 +8,8 @@ export type AutoApplyKey =
   | "pageBreakBefore"
   | "smartQuotes"
   | "dashes"
-  | "trimTrailing";
+  | "trimTrailing"
+  | "stripUnusedStyles";
 
 export interface AutoApplySettings {
   tabsToMargin: boolean;
@@ -17,6 +18,7 @@ export interface AutoApplySettings {
   smartQuotes: boolean;
   dashes: boolean;
   trimTrailing: boolean;
+  stripUnusedStyles: boolean;
 }
 
 interface SettingsState {
@@ -32,6 +34,7 @@ const DEFAULTS: AutoApplySettings = {
   smartQuotes: true,
   dashes: true,
   trimTrailing: true,
+  stripUnusedStyles: true,
 };
 
 export const useSettings = create<SettingsState>()(
