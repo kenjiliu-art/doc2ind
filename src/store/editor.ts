@@ -128,6 +128,44 @@ function flatParaIds(blocks: Block[]): string[] {
   return out;
 }
 
+/** Flat iteration over all paragraphs (including those inside tables). */
+function flatParagraphs(blocks: Block[]): ParagraphBlock[] {
+  const out: ParagraphBlock[] = [];
+  for (const b of blocks) {
+    if (b.kind === "paragraph") out.push(b);
+    else
+      for (const row of b.rows)
+        for (const cell of row)
+          for (const p of cell.paragraphs) out.push(p);
+  }
+  return out;
+}
+
+/** Number of paragraphs whose visible text is empty. */
+function countEmptyParagraphs(doc: ParsedDoc): number {
+  return flatParagraphs(doc.blocks).filter(
+    (p) => !p.runs.map((r) => r.text).join("").trim(),
+  ).length;
+}
+
+/** Number of paragraphs containing a styled run that ends in whitespace (bleed candidates). */
+function countBleedParagraphs(doc: ParsedDoc): number {
+  return flatParagraphs(doc.blocks).filter((p) =>
+    p.runs.some((r) => r.charStyle && r.text && /\s$/.test(r.text)),
+  ).length;
+}
+
+/** Metric used to measure what a given preflight pass "fixed" (before − after). */
+const PREFLIGHT_METRIC: Partial<Record<PreflightAction, (d: ParsedDoc) => number>> = {
+  removeEmptyParagraphs: countEmptyParagraphs,
+  collapseBlanksToSpacing: countEmptyParagraphs,
+  trailingStyledSpacesToEnEm: countBleedParagraphs,
+  closeOrphanRuns: countBleedParagraphs,
+  trimRunBleed: countBleedParagraphs,
+  stripUnusedStyles: (d) => d.paragraphStyles.length,
+};
+
+
 export const useEditor = create<EditorState>((set, get) => {
   /** Snapshot current doc into past[] before a mutation; also extend combo counter. */
   const snap = () => {
