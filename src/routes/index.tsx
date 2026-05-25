@@ -695,54 +695,6 @@ function EditorView() {
                 <Redo2 className="h-3.5 w-3.5" />
               </button>
             </div>
-            <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setShowHiddenChars((v) => !v);
-                }}
-                title={`${showHiddenChars ? "Hide" : "Show"} hidden characters (H)`}
-                className={cn(
-                  "rounded p-1 transition",
-                  showHiddenChars
-                    ? "bg-primary text-primary-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                {showHiddenChars ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-              </button>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <button
-                    type="button"
-                    aria-label="Hidden characters legend"
-                    className="rounded p-1 text-muted-foreground/70 hover:bg-muted hover:text-foreground"
-                  >
-                    <HelpCircle className="h-3.5 w-3.5" />
-                  </button>
-                </PopoverTrigger>
-                <PopoverContent side="bottom" align="end" className="w-56 p-3 text-[11px]">
-                  <p className="mb-2 font-semibold text-foreground">Hidden characters</p>
-                  <ul className="space-y-1.5 text-muted-foreground">
-                    <li className="flex items-center justify-between">
-                      <span className="font-mono text-primary">·</span>
-                      <span>Space</span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="font-mono text-primary">→</span>
-                      <span>Tab</span>
-                    </li>
-                    <li className="flex items-center justify-between">
-                      <span className="font-mono text-primary">↵</span>
-                      <span>Soft line break</span>
-                    </li>
-                  </ul>
-                  <p className="mt-2 text-[10px] text-muted-foreground/70">
-                    Filter shortcuts: 1–6 select filters · H toggles hidden chars.
-                  </p>
-                </PopoverContent>
-              </Popover>
-            </div>
             {selectionSize > 0 && (
               <span className="hidden rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold text-primary sm:inline-flex">
                 {selectionSize} selected
@@ -771,6 +723,7 @@ function EditorView() {
             onSelect={setSelectedId}
             filter={previewFilter}
             showHiddenChars={showHiddenChars}
+            onToggleHiddenChars={() => setShowHiddenChars((v) => !v)}
           />
         </div>
 
