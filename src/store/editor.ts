@@ -215,6 +215,7 @@ export const useEditor = create<EditorState>((set, get) => {
       nextDoc = { ...nextDoc, blocks };
 
       const preflightHistory = new Set<PreflightAction>();
+      const preflightFixed: Partial<Record<PreflightAction, number>> = {};
       const preflightFns: Array<{
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
@@ -230,7 +231,13 @@ export const useEditor = create<EditorState>((set, get) => {
       ];
       for (const { key, fn } of preflightFns) {
         if (settings[key]) {
+          const metric = PREFLIGHT_METRIC[key];
+          const before = metric ? metric(nextDoc) : 0;
           nextDoc = fn(nextDoc);
+          if (metric) {
+            const fixed = Math.max(0, before - metric(nextDoc));
+            if (fixed > 0) preflightFixed[key] = fixed;
+          }
           preflightHistory.add(key);
         }
       }
@@ -241,6 +248,7 @@ export const useEditor = create<EditorState>((set, get) => {
         selection: new Set(),
         selectionAnchor: null,
         preflightHistory,
+        preflightFixed,
         past: [],
         future: [],
         initialIssues: rawBreakdown.total,
@@ -258,6 +266,7 @@ export const useEditor = create<EditorState>((set, get) => {
         selectionAnchor: null,
         fileName: "document",
         preflightHistory: new Set(),
+        preflightFixed: {},
         past: [],
         future: [],
         initialIssues: 0,
@@ -267,6 +276,7 @@ export const useEditor = create<EditorState>((set, get) => {
         comboTick: 0,
       });
     },
+
     undo: () => {
       const { past, doc, future } = get();
       if (past.length === 0 || !doc) return;
