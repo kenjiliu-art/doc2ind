@@ -1,6 +1,6 @@
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import { Sparkles } from "lucide-react";
+
 import {
   TooltipProvider,
   Tooltip,
