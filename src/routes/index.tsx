@@ -512,30 +512,6 @@ function EditorView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo, clearSelection, selectionSize, selectedId]);
 
-  const stats = useMemo(() => {
-    let paragraphs = 0;
-    let words = 0;
-    const walk = (p: { runs: Array<{ text: string }> }) => {
-      paragraphs++;
-      for (const r of p.runs) {
-        let inWord = false;
-        for (let i = 0; i < r.text.length; i++) {
-          const c = r.text.charCodeAt(i);
-          const isSpace = c === 32 || c === 9 || c === 10 || c === 13;
-          if (!isSpace && !inWord) {
-            words++;
-            inWord = true;
-          } else if (isSpace) inWord = false;
-        }
-      }
-    };
-    doc.blocks.forEach((b) => {
-      if (b.kind === "paragraph") walk(b);
-      else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(walk)));
-    });
-    return { paragraphs, words };
-  }, [doc]);
-
   const initialIssues = useEditor((s) => s.initialIssues);
   const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
