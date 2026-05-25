@@ -1,3 +1,4 @@
+import { trimTrailing } from "./cleanup";
 import type {
   Block,
   ParagraphBlock,

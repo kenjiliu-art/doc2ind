@@ -16,6 +16,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
   trimRunBleed,
+  trimTrailingSpaces,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
@@ -30,7 +31,8 @@ export type PreflightAction =
   | "closeOrphanRuns"
   | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames";
+  | "sanitizeStyleNames"
+  | "trimTrailingSpaces";
 
 const HISTORY_LIMIT = 50;
 
