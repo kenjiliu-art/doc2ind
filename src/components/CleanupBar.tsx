@@ -75,6 +75,7 @@ const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
   "closeOrphanRuns",
   "trimRunBleed",
   "sanitizeStyleNames",
+  "removeEmptyParagraphs",
 ]);
 
 export function CleanupBar() {
