@@ -40,9 +40,10 @@ interface LivePreviewProps {
   selectedId: string | null;
   onSelect: (id: string | null, opts?: { shift?: boolean }) => void;
   filter: PreviewFilter;
+  showHiddenChars: boolean;
 }
 
-export function LivePreview({ selectedId, onSelect, filter }: LivePreviewProps) {
+export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
   const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
@@ -109,6 +110,7 @@ export function LivePreview({ selectedId, onSelect, filter }: LivePreviewProps) 
             filter={filter}
             selection={selection}
             paragraphIndex={paragraphIndexFor(doc.blocks)}
+            showHiddenChars={showHiddenChars}
           />
         </div>
         <CharStyleFloatingToolbar doc={doc} />
@@ -269,6 +271,7 @@ interface DocPreviewExtras {
   filter: PreviewFilter;
   selection: Set<string>;
   paragraphIndex: Map<string, number>;
+  showHiddenChars: boolean;
 }
 
 function DocPreview({
@@ -322,6 +325,7 @@ interface BlockViewProps extends DocPreviewExtras {
   onSelect: LivePreviewProps["onSelect"];
   styles: StyleDef[];
   showMargins: boolean;
+  showHiddenChars: boolean;
 }
 
 function BlockView(props: BlockViewProps) {
@@ -401,6 +405,7 @@ function ParaView({
   filter,
   selection,
   paragraphIndex,
+  showHiddenChars,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
   const isInSelection = selection.has(p.id);
