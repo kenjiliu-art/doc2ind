@@ -19,11 +19,15 @@ function inspectParagraph(p: ParagraphBlock): Partial<IssueBreakdown> {
   const b: Partial<IssueBreakdown> = {};
   // Unstyled paragraphs auto-default to Body — not counted as an outstanding issue.
   if (p.hasSoftBreaks && !p.rules.softToHard) b.softBreaks = 1;
-  if (p.hasMultiSpaces) b.multiSpaces = 1;
+  // Multi-spaces only count when the trim/cleanup rule is OFF for that paragraph.
+  if (p.hasMultiSpaces && !p.rules.trimTrailing) b.multiSpaces = 1;
   if (p.leadingTabs > 0 && !p.rules.tabsToMargin) b.tabs = 1;
   const t = paraText(p);
   if (t.includes("--") && !p.rules.dashes) b.dashes = 1;
   if (/['"]/.test(t) && !p.rules.smartQuotes) b.quotes = 1;
+  // Bleed is not auto-fixable by a per-paragraph rule — counted, but the
+  // total is only treated as a real issue when more than 1 occurs (matches
+  // DiagnosticsPanel's severity threshold).
   for (const r of p.runs) {
     if (r.charStyle && r.text && /\s$/.test(r.text)) {
       b.bleed = 1;
@@ -32,6 +36,7 @@ function inspectParagraph(p: ParagraphBlock): Partial<IssueBreakdown> {
   }
   return b;
 }
+
 
 /** Count outstanding warning-level issues across the document. */
 export function countIssues(doc: ParsedDoc): number {
