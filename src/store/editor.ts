@@ -9,15 +9,15 @@ import type {
   StyleDef,
 } from "@/lib/types";
 import {
-  stripUnusedStyles,
+  closeOrphanRuns,
   collapseBlanksToSpacing,
   normalizeLists,
-  closeOrphanRuns,
-  sectionBreaksToPageBreaks,
-  sanitizeStyleNames,
-  trimRunBleed,
   removeEmptyParagraphs,
+  sanitizeStyleNames,
+  sectionBreaksToPageBreaks,
+  stripUnusedStyles,
   trailingStyledSpacesToEnEm,
+  trimRunBleed,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
