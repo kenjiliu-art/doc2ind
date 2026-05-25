@@ -580,6 +580,7 @@ export const useEditor = create<EditorState>((set, get) => {
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
         removeEmptyParagraphs,
+        trailingStyledSpacesToEnEm,
       };
       snap();
       const nextHistory = new Set(get().preflightHistory);
