@@ -72,6 +72,8 @@ export function countIssuesDetailed(doc: ParsedDoc): IssueBreakdown {
     }
   };
   walk(doc.blocks);
+  // Bleed only counts toward the total when it crosses the warn threshold.
+  const bleedReal = out.bleed > 1 ? out.bleed : 0;
   out.total =
     out.unmapped +
     out.softBreaks +
@@ -79,7 +81,7 @@ export function countIssuesDetailed(doc: ParsedDoc): IssueBreakdown {
     out.tabs +
     out.dashes +
     out.quotes +
-    out.bleed;
+    bleedReal;
   return out;
 }
 
