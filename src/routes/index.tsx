@@ -406,6 +406,15 @@ function Feature({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const FILTER_BY_KEY: Record<string, PreviewFilter> = {
+  "1": "all",
+  "2": "warnings",
+  "3": "changed",
+  "4": "selected",
+  "5": "headings",
+  "6": "unstyled",
+};
+
 function EditorView() {
   const doc = useEditor((s) => s.doc)!;
   const fileName = useEditor((s) => s.fileName);
