@@ -88,15 +88,15 @@ export function applyAutoSettingsToRules(
 ): ParagraphRules {
   return {
     ...rules,
-    tabsToMargin: settings.tabsToMargin ? true : rules.tabsToMargin,
-    softToHard: settings.softToHard ? true : rules.softToHard,
+    dashes: settings.dashes ? true : rules.dashes,
     // Only auto-enable pageBreakBefore where the source actually had a section break
     pageBreakBefore:
       settings.pageBreakBefore && ctx.sectionBreakBefore
         ? true
         : rules.pageBreakBefore,
     smartQuotes: settings.smartQuotes ? true : rules.smartQuotes,
-    dashes: settings.dashes ? true : rules.dashes,
+    softToHard: settings.softToHard ? true : rules.softToHard,
+    tabsToMargin: settings.tabsToMargin ? true : rules.tabsToMargin,
     trimTrailing: settings.trimTrailing ? true : rules.trimTrailing,
   };
 }
