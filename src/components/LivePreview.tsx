@@ -48,6 +48,7 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: L
   const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
   const [showNumbers, setShowNumbers] = useState(true);
+  const [showDiff, setShowDiff] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const jump = (id: string) => {
@@ -99,6 +100,19 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: L
           >
             Margins
           </button>
+          <button
+            onClick={() => setShowDiff((v) => !v)}
+            className={cn(
+              "inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-medium transition",
+              showDiff
+                ? "border-amber-500 bg-amber-500 text-white"
+                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+            )}
+            title="Show original text above each cleaned paragraph"
+          >
+            <GitCompare className="h-3 w-3" />
+            Diff
+          </button>
         </div>
         <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
           <DocPreview
@@ -111,11 +125,18 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: L
             selection={selection}
             paragraphIndex={paragraphIndexFor(doc.blocks)}
             showHiddenChars={showHiddenChars}
+            showDiff={showDiff}
           />
         </div>
         <CharStyleFloatingToolbar doc={doc} />
       </div>
-      <ParagraphMinimap blocks={doc.blocks} scrollRef={scrollRef} onJump={jump} />
+      <ParagraphMinimap
+        blocks={doc.blocks}
+        scrollRef={scrollRef}
+        onJump={jump}
+        filter={filter}
+        selection={selection}
+      />
     </div>
   );
 }
