@@ -327,12 +327,11 @@ interface DocPreviewExtras {
   showNumbers: boolean;
   filter: PreviewFilter;
   selection: Set<string>;
-  paragraphIndex: Map<string, number>;
   showHiddenChars: boolean;
   showDiff: boolean;
 }
 
-function DocPreview({
+function DocPreviewMemo({
   doc,
   selectedId,
   onSelect,
@@ -340,7 +339,6 @@ function DocPreview({
   showNumbers,
   filter,
   selection,
-  paragraphIndex,
   showHiddenChars,
   showDiff,
 }: {
@@ -354,6 +352,7 @@ function DocPreview({
     for (const s of doc.paragraphStyles) m.set(s.name, s);
     return m;
   }, [doc.paragraphStyles]);
+  const paragraphIndex = useMemo(() => paragraphIndexFor(doc.blocks), [doc.blocks]);
 
   return (
     <>
