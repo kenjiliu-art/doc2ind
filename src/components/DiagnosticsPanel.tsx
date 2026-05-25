@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
+import { useSettings, type AutoApplyKey } from "@/store/settings";
 import type { Block, ParagraphBlock } from "@/lib/types";
-import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2, Sparkles } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2, Sparkles, Zap } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
 type Severity = "info" | "warn" | "ok" | "fixed";
@@ -16,6 +17,8 @@ interface Finding {
   fixed?: number;
   /** Ordered paragraph ids that match this finding (for jump-to-paragraph). */
   ids: string[];
+  /** Optional auto-apply key that resolves this warning. */
+  fixKey?: AutoApplyKey;
 }
 
 interface Props {
@@ -26,22 +29,70 @@ function paraText(p: ParagraphBlock) {
   return p.runs.map((r) => r.text).join("");
 }
 
+const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
+  "dashes",
+  "smartQuotes",
+  "softToHard",
+  "tabsToMargin",
+  "trimTrailing",
+]);
+
+const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
+  "collapseBlanksToSpacing",
+  "normalizeLists",
+  "removeEmptyParagraphs",
+  "sanitizeStyleNames",
+  "stripUnusedStyles",
+  "trailingStyledSpacesToEnEm",
+  "trimRunBleed",
+]);
+
 export function DiagnosticsPanel({ onJump }: Props) {
   const doc = useEditor((s) => s.doc);
   const preflightFixed = useEditor((s) => s.preflightFixed);
+  const runPreflight = useEditor((s) => s.runPreflight);
+  const applyDocCleanup = useEditor((s) => s.applyDocCleanup);
+  const setAutoApply = useSettings((s) => s.setAutoApply);
+  const autoApply = useSettings((s) => s.autoApply);
   const [cursors, setCursors] = useState<Record<string, number>>({});
+  const [open, setOpen] = useState(false);
+
+  // Listen for HealthRing click → open this panel + scroll into view.
+  useEffect(() => {
+    const onOpen = () => {
+      setOpen(true);
+      requestAnimationFrame(() => {
+        document
+          .getElementById("diagnostics-panel")
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    };
+    window.addEventListener("open-diagnostics", onOpen);
+    return () => window.removeEventListener("open-diagnostics", onOpen);
+  }, []);
+
+  const handleFix = (key: AutoApplyKey) => {
+    if (autoApply[key]) return;
+    setAutoApply(key, true);
+    if (PREFLIGHT_KEYS.has(key)) {
+      runPreflight(key as Parameters<typeof runPreflight>[0]);
+    } else if (PARAGRAPH_RULE_KEYS.has(key)) {
+      applyDocCleanup(
+        [key as "smartQuotes" | "dashes" | "trimTrailing" | "tabsToMargin" | "softToHard"],
+        true,
+      );
+    }
+  };
 
   const { findings, autoFixed } = useMemo(() => {
     if (!doc) return { findings: [] as Finding[], autoFixed: [] as { label: string; count: number }[] };
 
-    // Aggregate preflight-fixed counts by the diagnostic finding they affect.
     const pfEmpty =
       (preflightFixed.removeEmptyParagraphs ?? 0) +
       (preflightFixed.collapseBlanksToSpacing ?? 0);
     const pfBleed =
       (preflightFixed.trimRunBleed ?? 0) +
       (preflightFixed.trailingStyledSpacesToEnEm ?? 0);
-
 
     const ids = {
       unstyled: [] as string[],
@@ -58,13 +109,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
     let tables = 0;
     const sourceStyles = new Set<string>();
 
-    const auto = {
-      soft: 0,
-      tabs: 0,
-      spaces: 0,
-      dash: 0,
-      qq: 0,
-    };
+    const auto = { soft: 0, tabs: 0, spaces: 0, dash: 0, qq: 0 };
 
     const inspectPara = (p: ParagraphBlock) => {
       paragraphs++;
@@ -130,18 +175,15 @@ export function DiagnosticsPanel({ onJump }: Props) {
       hint?: string,
       paraIds: string[] = [],
       fixedCount?: number,
-    ): Finding => ({ key, label, count, severity, hint, ids: paraIds, fixed: fixedCount });
+      fixKey?: AutoApplyKey,
+    ): Finding => ({ key, label, count, severity, hint, ids: paraIds, fixed: fixedCount, fixKey });
 
-    /** Severity for an auto-fixable issue: 'fixed' when rule covers all matches. */
     const fixSev = (count: number, fixedCount: number): Severity => {
       if (count === 0) return "ok";
       if (fixedCount >= count) return "fixed";
       return "warn";
     };
 
-    // For findings whose items have already been removed/transformed by a
-    // preflight auto-apply pass, surface that as an "auto-fixed" badge with
-    // the count that was eliminated, rather than a silent zero.
     const emptyDisplay = ids.empty.length + pfEmpty;
     const emptySeverity: Severity =
       pfEmpty > 0 && ids.empty.length === 0
@@ -188,6 +230,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "Use 'Soft → hard breaks' to convert.",
         ids.soft,
         auto.soft,
+        "softToHard",
       ),
       f(
         "spaces",
@@ -197,6 +240,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         undefined,
         ids.spaces,
         auto.spaces,
+        "trimTrailing",
       ),
       f(
         "tabs",
@@ -206,6 +250,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "Convert to first-line indent via 'Tabs → indent'.",
         ids.tabs,
         auto.tabs,
+        "tabsToMargin",
       ),
       f(
         "empty",
@@ -215,6 +260,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         undefined,
         ids.empty,
         pfEmpty,
+        "removeEmptyParagraphs",
       ),
       f("pb", "Page breaks", ids.pb.length, "info", undefined, ids.pb),
       f(
@@ -225,6 +271,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "Enable 'Em dashes' cleanup.",
         ids.dash,
         auto.dash,
+        "dashes",
       ),
       f(
         "qq",
@@ -234,6 +281,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "Enable 'Smart quotes'.",
         ids.qq,
         auto.qq,
+        "smartQuotes",
       ),
       f(
         "bleed",
@@ -243,6 +291,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "Run 'Trim italic/bold bleed' or 'Close orphan runs'.",
         ids.bleed,
         pfBleed,
+        "trimRunBleed",
       ),
     ];
 
@@ -261,7 +310,6 @@ export function DiagnosticsPanel({ onJump }: Props) {
     setCursors((c) => ({ ...c, [finding.key]: next }));
     const id = finding.ids[next];
     onJump(id);
-    // Scroll + flash the matching paragraph in the preview.
     requestAnimationFrame(() => {
       const el = document.querySelector(
         `[data-para-id="${id}"]`,
@@ -274,8 +322,8 @@ export function DiagnosticsPanel({ onJump }: Props) {
   };
 
   return (
-    <div className="px-3 py-3 text-xs">
-      <Collapsible defaultOpen={false}>
+    <div id="diagnostics-panel" className="px-3 py-3 text-xs">
+      <Collapsible open={open} onOpenChange={setOpen}>
         <CollapsibleTrigger className="mb-1.5 flex w-full items-center gap-1.5 text-left text-[10px] font-bold uppercase tracking-widest text-muted-foreground [&[data-state=open]>svg]:rotate-180">
           Pre-import diagnostics
           {warnings.length > 0 ? (
@@ -313,6 +361,8 @@ export function DiagnosticsPanel({ onJump }: Props) {
                 jumpable && cursor !== undefined
                   ? `${cursor + 1}/${f.ids.length}`
                   : null;
+              const showFix =
+                f.severity === "warn" && f.count > 0 && !!f.fixKey && !autoApply[f.fixKey];
               return (
                 <li
                   key={f.key}
@@ -357,6 +407,19 @@ export function DiagnosticsPanel({ onJump }: Props) {
                     </span>
                   </span>
                   <span className="flex shrink-0 items-center gap-1">
+                    {showFix && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (f.fixKey) handleFix(f.fixKey);
+                        }}
+                        title="Enable the cleanup rule that fixes this"
+                        className="inline-flex items-center gap-0.5 rounded border border-primary/30 bg-primary/5 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-primary transition hover:bg-primary/10"
+                      >
+                        <Zap className="h-2.5 w-2.5" /> Fix
+                      </button>
+                    )}
                     {position && (
                       <span className="text-[9px] tabular-nums text-muted-foreground">
                         {position}
