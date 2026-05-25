@@ -638,7 +638,16 @@ export const useEditor = create<EditorState>((set, get) => {
       snap();
       const nextHistory = new Set(get().preflightHistory);
       nextHistory.add(action);
-      set({ doc: fns[action](doc), preflightHistory: nextHistory });
+      const metric = PREFLIGHT_METRIC[action];
+      const before = metric ? metric(doc) : 0;
+      const nextDoc = fns[action](doc);
+      const nextFixed = { ...get().preflightFixed };
+      if (metric) {
+        const fixed = Math.max(0, before - metric(nextDoc));
+        if (fixed > 0) nextFixed[action] = fixed;
+        else delete nextFixed[action];
+      }
+      set({ doc: nextDoc, preflightHistory: nextHistory, preflightFixed: nextFixed });
     },
   };
 });
