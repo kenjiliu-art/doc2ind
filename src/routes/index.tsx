@@ -423,6 +423,18 @@ function EditorView() {
   const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
   const [showHiddenChars, setShowHiddenChars] = useState(false);
 
+  const sourceStyleCount = useMemo(() => {
+    const set = new Set<string>();
+    const walk = (blocks: Block[]) => {
+      for (const b of blocks) {
+        if (b.kind === "paragraph") set.add(b.sourceStyle ?? "__unstyled__");
+        else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach((p: ParagraphBlock) => set.add(p.sourceStyle ?? "__unstyled__"))));
+      }
+    };
+    walk(doc.blocks);
+    return set.size;
+  }, [doc.blocks]);
+
   const jumpAndCloseSheet = (id: string) => {
     setSelectedId(id);
     setMobileSheetOpen(false);
