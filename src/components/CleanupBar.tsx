@@ -1,5 +1,22 @@
 import { useMemo } from "react";
-import { Info, Sparkles, Link2Off } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Sparkles,
+  Link2Off,
+  Quote,
+  Minus,
+  Eraser,
+  CornerDownLeft,
+  IndentIncrease,
+  Delete,
+  ArrowDownUp,
+  SeparatorHorizontal,
+  List,
+  Wand2,
+  Trash2,
+  Scissors,
+  Space,
+} from "lucide-react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey, AUTO_APPLY_EXCLUSIONS } from "@/store/settings";
 import type { Block, ParagraphBlock } from "@/lib/types";
