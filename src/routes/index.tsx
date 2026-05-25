@@ -248,14 +248,12 @@ function UploadView() {
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h2 className="font-display text-4xl font-bold tracking-tight text-balance">
-          Clean up Word for InDesign in minutes.
+          Word to InDesign, cleaned up.
         </h2>
-        <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+        <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
           Upload a <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
-          Each paragraph is parsed and tagged with a paragraph style and the cleanups it needs —
-          tabs to margins, soft returns to hard, blank lines to page breaks,
-          smart quotes, and more. Review or override every line, then export a
-          clean Word file plus InDesign Tagged Text.
+          Map styles, fix formatting, and export a clean file or InDesign Tagged Text —
+          everything runs in your browser.
         </p>
 
         {restorable && (
