@@ -619,8 +619,6 @@ function EditorView() {
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground"></div>
-  ) && (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
