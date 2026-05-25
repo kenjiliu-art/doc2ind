@@ -56,6 +56,15 @@ export function stripUnusedStyles(doc: ParsedDoc): ParsedDoc {
   };
 }
 
+/** 2. Trim trailing spaces from every run in every paragraph. */
+export function trimTrailingSpaces(doc: ParsedDoc): ParsedDoc {
+  const blocks = mapParagraphs(doc.blocks, (p) => ({
+    ...p,
+    runs: p.runs.map((r) => ({ ...r, text: trimTrailing(r.text) })),
+  }));
+  return { ...doc, blocks };
+}
+
 /** 3. Bump preceding paragraph's style.spaceAfter based on observed blank lines. */
 export function collapseBlanksToSpacing(doc: ParsedDoc): ParsedDoc {
   // Map of style name -> max blanksBefore observed on the following paragraph
