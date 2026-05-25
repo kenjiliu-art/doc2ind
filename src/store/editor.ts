@@ -16,6 +16,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
   trimRunBleed,
+  removeEmptyParagraphs,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
