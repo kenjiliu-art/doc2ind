@@ -474,6 +474,7 @@ function ParaView({
   selection,
   paragraphIndex,
   showHiddenChars,
+  showDiff,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
   const isInSelection = selection.has(p.id);
