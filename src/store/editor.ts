@@ -191,10 +191,12 @@ export const useEditor = create<EditorState>((set, get) => {
     selectionAnchor: null,
     fileName: "document",
     preflightHistory: new Set(),
+    preflightFixed: {},
     past: [],
     future: [],
     initialIssues: 0,
     initialIssueBreakdown: null,
+
     comboCount: 0,
     lastEditAt: 0,
     comboTick: 0,
