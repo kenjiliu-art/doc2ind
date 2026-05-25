@@ -117,7 +117,15 @@ export function DiagnosticsPanel({ onJump }: Props) {
       severity: Severity,
       hint?: string,
       paraIds: string[] = [],
-    ): Finding => ({ key, label, count, severity, hint, ids: paraIds });
+      fixedCount?: number,
+    ): Finding => ({ key, label, count, severity, hint, ids: paraIds, fixed: fixedCount });
+
+    /** Severity for an auto-fixable issue: 'fixed' when rule covers all matches. */
+    const fixSev = (count: number, fixedCount: number): Severity => {
+      if (count === 0) return "ok";
+      if (fixedCount >= count) return "fixed";
+      return "warn";
+    };
 
     const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
@@ -145,25 +153,28 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "soft",
         "Paragraphs with soft returns",
         ids.soft.length,
-        ids.soft.length > 0 ? "warn" : "ok",
+        fixSev(ids.soft.length, auto.soft),
         "Use 'Soft → hard breaks' to convert.",
         ids.soft,
+        auto.soft,
       ),
       f(
         "spaces",
         "Paragraphs with multi-spaces",
         ids.spaces.length,
-        ids.spaces.length > 0 ? "warn" : "ok",
+        fixSev(ids.spaces.length, auto.spaces),
         undefined,
         ids.spaces,
+        auto.spaces,
       ),
       f(
         "tabs",
         "Paragraphs with leading tabs",
         ids.tabs.length,
-        ids.tabs.length > 0 ? "warn" : "ok",
+        fixSev(ids.tabs.length, auto.tabs),
         "Convert to first-line indent via 'Tabs → indent'.",
         ids.tabs,
+        auto.tabs,
       ),
       f(
         "empty",
@@ -178,17 +189,19 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "dash",
         "Double-hyphen ' -- ' instances",
         ids.dash.length,
-        ids.dash.length > 0 ? "warn" : "ok",
+        fixSev(ids.dash.length, auto.dash),
         "Enable 'Em dashes' cleanup.",
         ids.dash,
+        auto.dash,
       ),
       f(
         "qq",
         "Paragraphs with straight quotes",
         ids.qq.length,
-        ids.qq.length > 0 ? "warn" : "ok",
+        fixSev(ids.qq.length, auto.qq),
         "Enable 'Smart quotes'.",
         ids.qq,
+        auto.qq,
       ),
       f(
         "bleed",
