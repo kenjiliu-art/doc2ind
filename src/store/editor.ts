@@ -17,6 +17,7 @@ import {
   sanitizeStyleNames,
   trimRunBleed,
   removeEmptyParagraphs,
+  trailingStyledSpacesToEnEm,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
@@ -32,7 +33,8 @@ export type PreflightAction =
   | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
   | "sanitizeStyleNames"
-  | "removeEmptyParagraphs";
+  | "removeEmptyParagraphs"
+  | "trailingStyledSpacesToEnEm";
 
 const HISTORY_LIMIT = 50;
 
@@ -178,6 +180,7 @@ export const useEditor = create<EditorState>((set, get) => {
         { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
+        { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
         { key: "closeOrphanRuns", fn: closeOrphanRuns },
         { key: "trimRunBleed", fn: trimRunBleed },
         { key: "stripUnusedStyles", fn: stripUnusedStyles },

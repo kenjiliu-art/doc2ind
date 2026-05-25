@@ -15,7 +15,8 @@ export type AutoApplyKey =
   | "closeOrphanRuns"
   | "trimRunBleed"
   | "sanitizeStyleNames"
-  | "removeEmptyParagraphs";
+  | "removeEmptyParagraphs"
+  | "trailingStyledSpacesToEnEm";
 
 export interface AutoApplySettings {
   tabsToMargin: boolean;
@@ -31,6 +32,7 @@ export interface AutoApplySettings {
   trimRunBleed: boolean;
   sanitizeStyleNames: boolean;
   removeEmptyParagraphs: boolean;
+  trailingStyledSpacesToEnEm: boolean;
 }
 
 interface SettingsState {
@@ -53,6 +55,7 @@ const DEFAULTS: AutoApplySettings = {
   trimRunBleed: false,
   sanitizeStyleNames: false,
   removeEmptyParagraphs: false,
+  trailingStyledSpacesToEnEm: false,
 };
 
 export const useSettings = create<SettingsState>()(
