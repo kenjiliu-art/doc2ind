@@ -293,6 +293,7 @@ interface DocPreviewExtras {
   selection: Set<string>;
   paragraphIndex: Map<string, number>;
   showHiddenChars: boolean;
+  showDiff: boolean;
 }
 
 function DocPreview({
