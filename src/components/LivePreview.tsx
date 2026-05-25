@@ -42,9 +42,10 @@ interface LivePreviewProps {
   onSelect: (id: string | null, opts?: { shift?: boolean }) => void;
   filter: PreviewFilter;
   showHiddenChars: boolean;
+  onToggleHiddenChars: () => void;
 }
 
-export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: LivePreviewProps) {
+export function LivePreview({ selectedId, onSelect, filter, showHiddenChars, onToggleHiddenChars }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
   const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
