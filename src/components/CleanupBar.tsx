@@ -133,14 +133,15 @@ export function CleanupBar() {
     <TooltipProvider delayDuration={300}>
       <div className="space-y-4 px-3 pb-3 text-xs">
         <section>
-          <div className="space-y-0.5">
+          <div className="space-y-1">
             {AUTO_APPLY.map((opt) => {
               const on = autoApply[opt.key];
               const row = (
-                <label
-                  className="flex cursor-pointer items-center justify-between gap-2 rounded px-1.5 py-1 hover:bg-accent/40"
-                >
-                  <span className="text-[11px] text-foreground">{opt.label}</span>
+                <label className="flex cursor-pointer items-center justify-between gap-2 rounded px-1.5 py-1 hover:bg-accent/40">
+                  <span className="flex items-center gap-1 text-[11px] text-foreground">
+                    {opt.label}
+                    <Info className="h-3 w-3 text-muted-foreground/70" />
+                  </span>
                   <input
                     type="checkbox"
                     className="h-3.5 w-3.5 accent-primary"
@@ -149,13 +150,10 @@ export function CleanupBar() {
                   />
                 </label>
               );
-              if (!opt.description) {
-                return <div key={opt.key}>{row}</div>;
-              }
               return (
                 <Tooltip key={opt.key}>
                   <TooltipTrigger asChild>{row}</TooltipTrigger>
-                  <TooltipContent side="right" className="w-56 space-y-1.5">
+                  <TooltipContent side="right" className="w-60 space-y-1.5">
                     <p className="text-[11px] font-semibold text-foreground">{opt.label}</p>
                     <p className="text-[11px] text-muted-foreground leading-relaxed">
                       {opt.description}
