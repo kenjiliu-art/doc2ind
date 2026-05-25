@@ -417,6 +417,7 @@ function EditorView() {
   const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleError, setSampleError] = useState<string | null>(null);
+  const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
 
   const jumpAndCloseSheet = (id: string) => {
     setSelectedId(id);
