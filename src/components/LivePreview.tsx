@@ -39,14 +39,14 @@ const FILTER_LABELS: Array<{ key: PreviewFilter; label: string }> = [
 interface LivePreviewProps {
   selectedId: string | null;
   onSelect: (id: string | null, opts?: { shift?: boolean }) => void;
+  filter: PreviewFilter;
 }
 
-export function LivePreview({ selectedId, onSelect }: LivePreviewProps) {
+export function LivePreview({ selectedId, onSelect, filter }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
   const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
   const [showNumbers, setShowNumbers] = useState(true);
-  const [filter, setFilter] = useState<PreviewFilter>("all");
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
   const jump = (id: string) => {
