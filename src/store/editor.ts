@@ -624,12 +624,10 @@ export const useEditor = create<EditorState>((set, get) => {
         stripUnusedStyles,
         collapseBlanksToSpacing,
         normalizeLists,
-        closeOrphanRuns,
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
         removeEmptyParagraphs,
-        removeTrailingTabs,
         trailingStyledSpacesToEnEm,
       };
       snap();
