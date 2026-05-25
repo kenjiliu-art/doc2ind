@@ -306,6 +306,7 @@ function DocPreview({
   selection,
   paragraphIndex,
   showHiddenChars,
+  showDiff,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
@@ -335,6 +336,7 @@ function DocPreview({
           selection={selection}
           paragraphIndex={paragraphIndex}
           showHiddenChars={showHiddenChars}
+          showDiff={showDiff}
         />
       ))}
     </>
