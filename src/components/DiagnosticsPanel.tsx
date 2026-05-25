@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type { Block, ParagraphBlock } from "@/lib/types";
-import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2, Sparkles } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
-type Severity = "info" | "warn" | "ok";
+type Severity = "info" | "warn" | "ok" | "fixed";
 
 interface Finding {
   key: string;
@@ -12,6 +12,8 @@ interface Finding {
   count: number;
   severity: Severity;
   hint?: string;
+  /** Number auto-fixed by an active cleanup rule. */
+  fixed?: number;
   /** Ordered paragraph ids that match this finding (for jump-to-paragraph). */
   ids: string[];
 }
