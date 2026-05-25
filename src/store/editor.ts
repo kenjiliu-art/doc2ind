@@ -26,15 +26,15 @@ import { countIssues, countIssuesDetailed, type IssueBreakdown } from "@/lib/hea
 const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
-  | "stripUnusedStyles"
   | "collapseBlanksToSpacing"
-  | "normalizeLists"
   | "closeOrphanRuns"
-  | "trimRunBleed"
-  | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames"
+  | "normalizeLists"
   | "removeEmptyParagraphs"
-  | "trailingStyledSpacesToEnEm";
+  | "sanitizeStyleNames"
+  | "sectionBreaksToPageBreaks"
+  | "stripUnusedStyles"
+  | "trailingStyledSpacesToEnEm"
+  | "trimRunBleed";
 
 const HISTORY_LIMIT = 50;
 
