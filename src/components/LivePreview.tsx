@@ -634,7 +634,7 @@ function ParaView({
                           : undefined
                     }
                   >
-                    {text}
+                    {showHiddenChars ? renderHiddenChars(text, it.srcStart) : text}
                   </span>
                 );
               })}
