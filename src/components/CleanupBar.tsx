@@ -1,6 +1,7 @@
 import { useEditor, type PreflightAction } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import { Sparkles, Check, Info } from "lucide-react";
+import { stripUnusedStyles } from "@/lib/preflight";
+import { Sparkles, Check } from "lucide-react";
 import {
   TooltipProvider,
   Tooltip,
@@ -15,6 +16,7 @@ const AUTO_APPLY: Array<{ key: AutoApplyKey; label: string }> = [
   { key: "tabsToMargin", label: "Tabs → indent" },
   { key: "softToHard", label: "Soft → hard breaks" },
   { key: "pageBreakBefore", label: "Section → page break" },
+  { key: "stripUnusedStyles", label: "Strip unused styles" },
 ];
 
 const PREFLIGHT: Array<{
@@ -22,12 +24,6 @@ const PREFLIGHT: Array<{
   label: string;
   description: string;
 }> = [
-  {
-    action: "stripUnusedStyles",
-    label: "Strip unused styles",
-    description:
-      "Removes paragraph and character style definitions that are not referenced by any text in the document, keeping the style list lean.",
-  },
   {
     action: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
