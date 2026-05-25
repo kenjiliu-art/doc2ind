@@ -174,6 +174,7 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
+        { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
         { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
