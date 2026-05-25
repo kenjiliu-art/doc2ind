@@ -1,6 +1,6 @@
 import { useEditor, type PreflightAction } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import { stripUnusedStyles } from "@/lib/preflight";
+
 import { Sparkles, Check } from "lucide-react";
 import {
   TooltipProvider,
