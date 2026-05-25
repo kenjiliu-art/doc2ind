@@ -307,7 +307,14 @@ export function DiagnosticsPanel({ onJump }: Props) {
                   <span className="flex min-w-0 items-start gap-1.5">
                     <SeverityIcon severity={f.severity} count={f.count} />
                     <span className="min-w-0 flex-1 leading-tight text-foreground">
-                      <span className="block truncate text-[11px]">{f.label}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[11px]">{f.label}</span>
+                        {f.severity === "fixed" && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                            <Sparkles className="h-2.5 w-2.5" /> auto-fixed
+                          </span>
+                        )}
+                      </span>
                       {f.hint && f.count > 0 && f.severity === "warn" && (
                         <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
                           {f.hint}
@@ -328,7 +335,9 @@ export function DiagnosticsPanel({ onJump }: Props) {
                       className={`tabular-nums text-[11px] font-semibold ${
                         f.severity === "warn" && f.count > 0
                           ? "text-amber-600"
-                          : "text-muted-foreground"
+                          : f.severity === "fixed"
+                            ? "text-emerald-600 line-through decoration-emerald-600/60 dark:text-emerald-400"
+                            : "text-muted-foreground"
                       }`}
                     >
                       {f.count.toLocaleString()}
