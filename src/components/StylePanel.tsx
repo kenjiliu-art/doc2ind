@@ -69,7 +69,7 @@ export function StylePanel() {
         )}
       </div>
       <div className="border-t border-border px-4 py-3 text-sm font-semibold">
-        Character styles
+        Character styles ({doc.charStyles.length})
       </div>
       <div className="px-4 py-3 text-xs text-muted-foreground">
         {doc.charStyles.map((c) => c.name).join(", ")}
