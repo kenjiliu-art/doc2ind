@@ -386,7 +386,7 @@ interface BlockViewProps extends DocPreviewExtras {
   onSelect: LivePreviewProps["onSelect"];
   styles: StyleDef[];
   showMargins: boolean;
-  showHiddenChars: boolean;
+  paragraphIndex: Map<string, number>;
 }
 
 function BlockView(props: BlockViewProps) {
