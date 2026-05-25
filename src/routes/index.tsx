@@ -418,6 +418,7 @@ function EditorView() {
   const [sampleLoading, setSampleLoading] = useState(false);
   const [sampleError, setSampleError] = useState<string | null>(null);
   const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
+  const [showHiddenChars, setShowHiddenChars] = useState(false);
 
   const jumpAndCloseSheet = (id: string) => {
     setSelectedId(id);
@@ -540,7 +541,12 @@ function EditorView() {
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
           <DiagnosticsPanel onJump={setSelectedId} />
           <CollapsibleSection title="Preview filters">
-            <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+            <PreviewFilters
+              filter={previewFilter}
+              onChange={setPreviewFilter}
+              showHiddenChars={showHiddenChars}
+              onToggleHiddenChars={() => setShowHiddenChars((v) => !v)}
+            />
           </CollapsibleSection>
           <CollapsibleSection title="Auto-apply on import" defaultOpen>
             <CleanupBar />
@@ -637,7 +643,12 @@ function EditorView() {
         </header>
 
         <div className="flex-1 overflow-hidden">
-          <LivePreview selectedId={selectedId} onSelect={setSelectedId} filter={previewFilter} />
+          <LivePreview
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+            filter={previewFilter}
+            showHiddenChars={showHiddenChars}
+          />
         </div>
 
         {/* Mobile-only tools FAB + bottom sheet */}
@@ -700,7 +711,12 @@ function EditorView() {
             <div className="flex-1 divide-y divide-border overflow-y-auto">
               <DiagnosticsPanel onJump={jumpAndCloseSheet} />
               <CollapsibleSection title="Preview filters">
-                <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+                <PreviewFilters
+                  filter={previewFilter}
+                  onChange={setPreviewFilter}
+                  showHiddenChars={showHiddenChars}
+                  onToggleHiddenChars={() => setShowHiddenChars((v) => !v)}
+                />
               </CollapsibleSection>
               <CollapsibleSection title="Auto-apply on import" defaultOpen>
                 <CleanupBar />

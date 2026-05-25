@@ -40,9 +40,10 @@ interface LivePreviewProps {
   selectedId: string | null;
   onSelect: (id: string | null, opts?: { shift?: boolean }) => void;
   filter: PreviewFilter;
+  showHiddenChars: boolean;
 }
 
-export function LivePreview({ selectedId, onSelect, filter }: LivePreviewProps) {
+export function LivePreview({ selectedId, onSelect, filter, showHiddenChars }: LivePreviewProps) {
   const doc = useEditor((s) => s.doc);
   const selection = useEditor((s) => s.selection);
   const [showMargins, setShowMargins] = useState(false);
@@ -109,6 +110,7 @@ export function LivePreview({ selectedId, onSelect, filter }: LivePreviewProps) 
             filter={filter}
             selection={selection}
             paragraphIndex={paragraphIndexFor(doc.blocks)}
+            showHiddenChars={showHiddenChars}
           />
         </div>
         <CharStyleFloatingToolbar doc={doc} />
@@ -269,6 +271,7 @@ interface DocPreviewExtras {
   filter: PreviewFilter;
   selection: Set<string>;
   paragraphIndex: Map<string, number>;
+  showHiddenChars: boolean;
 }
 
 function DocPreview({
@@ -280,6 +283,7 @@ function DocPreview({
   filter,
   selection,
   paragraphIndex,
+  showHiddenChars,
 }: {
   doc: ParsedDoc;
   selectedId: string | null;
@@ -308,6 +312,7 @@ function DocPreview({
           filter={filter}
           selection={selection}
           paragraphIndex={paragraphIndex}
+          showHiddenChars={showHiddenChars}
         />
       ))}
     </>
@@ -322,6 +327,7 @@ interface BlockViewProps extends DocPreviewExtras {
   onSelect: LivePreviewProps["onSelect"];
   styles: StyleDef[];
   showMargins: boolean;
+  showHiddenChars: boolean;
 }
 
 function BlockView(props: BlockViewProps) {
@@ -390,6 +396,48 @@ function runsText(runs: RunSpan[]) {
   return runs.map((r) => (r.text === "\n" ? "↵ " : r.text)).join("");
 }
 
+function renderHiddenChars(text: string, baseSrcStart: number) {
+  const out: React.ReactNode[] = [];
+  let i = 0;
+  while (i < text.length) {
+    const ch = text[i];
+    const pos = baseSrcStart + i;
+    if (ch === " ") {
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={1} className="text-primary/40 select-none">
+          ·
+        </span>
+      );
+      i++;
+    } else if (ch === "\t") {
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={1} className="text-primary/40 select-none">
+          →
+        </span>
+      );
+      i++;
+    } else if (ch === "\n") {
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={1} className="text-primary/40 select-none">
+          ↵
+        </span>
+      );
+      i++;
+    } else {
+      let j = i;
+      while (j < text.length && text[j] !== " " && text[j] !== "\t" && text[j] !== "\n") j++;
+      const slice = text.slice(i, j);
+      out.push(
+        <span key={pos} data-src-start={pos} data-src-len={slice.length}>
+          {slice}
+        </span>
+      );
+      i = j;
+    }
+  }
+  return out;
+}
+
 function ParaView({
   p,
   charStyles,
@@ -401,6 +449,7 @@ function ParaView({
   filter,
   selection,
   paragraphIndex,
+  showHiddenChars,
 }: BlockViewProps & { p: ParagraphBlock }) {
   const isSelected = selectedId === p.id;
   const isInSelection = selection.has(p.id);
@@ -546,7 +595,9 @@ function ParaView({
                 }
                 const cs = r.charStyle ? csMap.get(r.charStyle) : undefined;
                 let text = applyCleanup(r.text, p);
-                text = text.replace(/\t/g, "    ");
+                if (!showHiddenChars) {
+                  text = text.replace(/\t/g, "    ");
+                }
                 const flags = cs
                   ? [
                       cs.bold && "Bold",
@@ -583,7 +634,7 @@ function ParaView({
                           : undefined
                     }
                   >
-                    {text}
+                    {showHiddenChars ? renderHiddenChars(text, it.srcStart) : text}
                   </span>
                 );
               })}
