@@ -172,6 +172,10 @@ export const useEditor = create<EditorState>((set, get) => {
         nextDoc = stripUnusedStyles(nextDoc);
         preflightHistory.add("stripUnusedStyles");
       }
+      if (settings.trimTrailing) {
+        nextDoc = trimTrailingSpaces(nextDoc);
+        preflightHistory.add("trimTrailingSpaces");
+      }
       set({
         doc: nextDoc,
         fileName,
@@ -559,6 +563,7 @@ export const useEditor = create<EditorState>((set, get) => {
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
+        trimTrailingSpaces,
       };
       snap();
       const nextHistory = new Set(get().preflightHistory);
