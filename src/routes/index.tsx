@@ -488,15 +488,7 @@ function EditorView() {
         if (selectedId) setSelectedId(null);
       }
       if (!inEditable && !mod && !e.shiftKey && !e.altKey) {
-        const filterByKey: Record<string, PreviewFilter> = {
-          "1": "all",
-          "2": "warnings",
-          "3": "changed",
-          "4": "selected",
-          "5": "headings",
-          "6": "unstyled",
-        };
-        const next = filterByKey[e.key];
+        const next = FILTER_BY_KEY[e.key];
         if (next) {
           e.preventDefault();
           setPreviewFilter(next);
