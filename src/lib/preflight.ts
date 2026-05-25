@@ -35,7 +35,19 @@ function mapParagraphs(blocks: Block[], fn: (p: ParagraphBlock) => ParagraphBloc
   });
 }
 
-/** 1. Drop paragraph + character style defs that no paragraph references. */
+/** Standard paragraph styles kept available even if no paragraph currently uses them, so the user can still pick them from dropdowns. */
+const KEEP_PARA_STYLES = new Set<string>([
+  "Heading 1",
+  "Heading 2",
+  "Heading 3",
+  "Body",
+  "Caption",
+  "Quote",
+  "Label",
+  "List",
+]);
+
+/** 1. Drop paragraph + character style defs that no paragraph references (keeps the standard built-ins). */
 export function stripUnusedStyles(doc: ParsedDoc): ParsedDoc {
   const usedPara = new Set<string>();
   const usedChar = new Set<string>();
@@ -50,7 +62,9 @@ export function stripUnusedStyles(doc: ParsedDoc): ParsedDoc {
     }
   return {
     ...doc,
-    paragraphStyles: doc.paragraphStyles.filter((s) => usedPara.has(s.name)),
+    paragraphStyles: doc.paragraphStyles.filter(
+      (s) => usedPara.has(s.name) || KEEP_PARA_STYLES.has(s.name),
+    ),
     charStyles: doc.charStyles.filter((c) => usedChar.has(c.name)),
   };
 }
