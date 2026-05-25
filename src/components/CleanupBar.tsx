@@ -15,13 +15,6 @@ type AutoOpt = {
 };
 
 const AUTO_APPLY: AutoOpt[] = [
-  { key: "smartQuotes", label: "Smart quotes" },
-  { key: "dashes", label: "Em dashes" },
-  { key: "trimTrailing", label: "Trim trailing spaces" },
-  { key: "tabsToMargin", label: "Tabs → indent" },
-  { key: "softToHard", label: "Soft → hard breaks" },
-  { key: "pageBreakBefore", label: "Section → page break" },
-  { key: "stripUnusedStyles", label: "Strip unused styles" },
   {
     key: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
@@ -29,22 +22,24 @@ const AUTO_APPLY: AutoOpt[] = [
       "Converts blank lines between paragraphs into extra space-after on the preceding paragraph's style, eliminating visual gaps.",
   },
   {
-    key: "normalizeLists",
-    label: "Normalize lists",
-    description:
-      "Detects bullet or number prefixes in paragraph text and converts them into proper list paragraphs with consistent formatting.",
-  },
-  {
     key: "closeOrphanRuns",
     label: "Close orphan runs",
     description:
       "Moves trailing whitespace out of styled character runs so bold or italic formatting does not bleed into surrounding text.",
   },
+  { key: "dashes", label: "Em dashes" },
   {
-    key: "trimRunBleed",
-    label: "Trim italic/bold bleed",
+    key: "normalizeLists",
+    label: "Normalize lists",
     description:
-      "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug.",
+      "Detects bullet or number prefixes in paragraph text and converts them into proper list paragraphs with consistent formatting.",
+  },
+  { key: "pageBreakBefore", label: "Section → page break" },
+  {
+    key: "removeEmptyParagraphs",
+    label: "Remove empty paragraphs",
+    description:
+      "Deletes blank paragraphs that contain no visible text — common artifacts from Word import.",
   },
   {
     key: "sanitizeStyleNames",
@@ -52,12 +47,17 @@ const AUTO_APPLY: AutoOpt[] = [
     description:
       "Renames messy auto-generated style names like 'Normal + Bold + 12pt' into clean, readable labels such as 'Body'.",
   },
+  { key: "smartQuotes", label: "Smart quotes" },
+  { key: "softToHard", label: "Soft → hard breaks" },
+  { key: "stripUnusedStyles", label: "Strip unused styles" },
+  { key: "tabsToMargin", label: "Tabs → indent" },
   {
-    key: "removeEmptyParagraphs",
-    label: "Remove empty paragraphs",
+    key: "trimRunBleed",
+    label: "Trim italic/bold bleed",
     description:
-      "Deletes blank paragraphs that contain no visible text — common artifacts from Word import.",
+      "Strips trailing punctuation AND whitespace out of italic/bold/underline runs — fixes the classic 'italics won't stop after the styled word' Word import bug.",
   },
+  { key: "trimTrailing", label: "Trim trailing spaces" },
   {
     key: "trailingStyledSpacesToEnEm",
     label: "Trailing styled spaces → en/em",
