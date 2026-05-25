@@ -115,6 +115,50 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars, onT
             <GitCompare className="h-3 w-3" />
             Diff
           </button>
+          <button
+            onClick={onToggleHiddenChars}
+            className={cn(
+              "inline-flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-medium transition",
+              showHiddenChars
+                ? "border-primary bg-primary text-white"
+                : "border-neutral-300 bg-white text-neutral-700 hover:bg-neutral-50",
+            )}
+            title={`${showHiddenChars ? "Hide" : "Show"} hidden characters (H)`}
+          >
+            {showHiddenChars ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+            Hidden
+          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                aria-label="Hidden characters legend"
+                className="rounded border border-neutral-300 bg-white px-2 py-1 text-[11px] font-medium text-neutral-700 hover:bg-neutral-50"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="end" className="w-56 p-3 text-[11px]">
+              <p className="mb-2 font-semibold text-foreground">Hidden characters</p>
+              <ul className="space-y-1.5 text-muted-foreground">
+                <li className="flex items-center justify-between">
+                  <span className="font-mono text-primary">·</span>
+                  <span>Space</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span className="font-mono text-primary">→</span>
+                  <span>Tab</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span className="font-mono text-primary">↵</span>
+                  <span>Soft line break</span>
+                </li>
+              </ul>
+              <p className="mt-2 text-[10px] text-muted-foreground/70">
+                Filter shortcuts: 1–6 select filters · H toggles hidden chars.
+              </p>
+            </PopoverContent>
+          </Popover>
         </div>
         <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
           <DocPreview
