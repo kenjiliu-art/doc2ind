@@ -15,6 +15,7 @@ import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
+import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
 import { toast } from "sonner";
@@ -422,6 +423,18 @@ function EditorView() {
   const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
   const [showHiddenChars, setShowHiddenChars] = useState(false);
 
+  const sourceStyleCount = useMemo(() => {
+    const set = new Set<string>();
+    const walk = (blocks: Block[]) => {
+      for (const b of blocks) {
+        if (b.kind === "paragraph") set.add(b.sourceStyle ?? "__unstyled__");
+        else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach((p: ParagraphBlock) => set.add(p.sourceStyle ?? "__unstyled__"))));
+      }
+    };
+    walk(doc.blocks);
+    return set.size;
+  }, [doc.blocks]);
+
   const jumpAndCloseSheet = (id: string) => {
     setSelectedId(id);
     setMobileSheetOpen(false);
@@ -607,7 +620,7 @@ function EditorView() {
           <CollapsibleSection title="Auto-apply on import" defaultOpen>
             <CleanupBar />
           </CollapsibleSection>
-          <CollapsibleSection title="Source style mapping">
+          <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
             <StyleMappingPanel />
           </CollapsibleSection>
           <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
@@ -784,7 +797,7 @@ function EditorView() {
               <CollapsibleSection title="Auto-apply on import" defaultOpen>
                 <CleanupBar />
               </CollapsibleSection>
-              <CollapsibleSection title="Source style mapping">
+              <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
                 <StyleMappingPanel />
               </CollapsibleSection>
               <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
