@@ -578,7 +578,49 @@ function EditorView() {
     }
   };
 
+  const toolPanels = (onJump: (id: string) => void) => (
+    <>
+      <DiagnosticsPanel onJump={onJump} />
+      <CollapsibleSection title="Preview filters">
+        <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+      </CollapsibleSection>
+      <CollapsibleSection title="Auto-apply on import" defaultOpen>
+        <CleanupBar />
+      </CollapsibleSection>
+      <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
+        <StyleMappingPanel />
+      </CollapsibleSection>
+      <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
+        <RenameStylesPanel />
+      </CollapsibleSection>
+      <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
+        <CharStylesPanel />
+      </CollapsibleSection>
+    </>
+  );
+
+  const exportButtons = (
+    <>
+      <button
+        onClick={onExportDocx}
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+      >
+        <Download className="h-4 w-4" />
+        Export for InDesign
+      </button>
+      <button
+        onClick={onExportTagged}
+        className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
+      >
+        <FileCode2 className="h-4 w-4" />
+        Tagged Text (.txt)
+      </button>
+    </>
+  );
+
   return (
+    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground"></div>
+  ) && (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
