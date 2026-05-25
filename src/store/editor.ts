@@ -217,11 +217,9 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
-        { key: "closeOrphanRuns", fn: closeOrphanRuns },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
         { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
-        { key: "removeTrailingTabs", fn: removeTrailingTabs },
         { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "stripUnusedStyles", fn: stripUnusedStyles },
         { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
