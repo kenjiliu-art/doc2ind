@@ -17,7 +17,7 @@ export interface IssueBreakdown {
 
 function inspectParagraph(p: ParagraphBlock): Partial<IssueBreakdown> {
   const b: Partial<IssueBreakdown> = {};
-  if (!p.sourceStyle) b.unmapped = 1;
+  // Unstyled paragraphs auto-default to Body — not counted as an outstanding issue.
   if (p.hasSoftBreaks && !p.rules.softToHard) b.softBreaks = 1;
   if (p.hasMultiSpaces) b.multiSpaces = 1;
   if (p.leadingTabs > 0 && !p.rules.tabsToMargin) b.tabs = 1;
