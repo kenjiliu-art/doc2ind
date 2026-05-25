@@ -157,12 +157,12 @@ function countBleedParagraphs(doc: ParsedDoc): number {
 
 /** Metric used to measure what a given preflight pass "fixed" (before − after). */
 const PREFLIGHT_METRIC: Partial<Record<PreflightAction, (d: ParsedDoc) => number>> = {
-  removeEmptyParagraphs: countEmptyParagraphs,
-  collapseBlanksToSpacing: countEmptyParagraphs,
-  trailingStyledSpacesToEnEm: countBleedParagraphs,
   closeOrphanRuns: countBleedParagraphs,
-  trimRunBleed: countBleedParagraphs,
+  collapseBlanksToSpacing: countEmptyParagraphs,
+  removeEmptyParagraphs: countEmptyParagraphs,
   stripUnusedStyles: (d) => d.paragraphStyles.length,
+  trailingStyledSpacesToEnEm: countBleedParagraphs,
+  trimRunBleed: countBleedParagraphs,
 };
 
 
