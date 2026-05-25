@@ -120,37 +120,6 @@ export function removeEmptyParagraphs(doc: ParsedDoc): ParsedDoc {
   return { ...doc, blocks: filterBlocks(doc.blocks) };
 }
 
-/** 2a. Strip trailing tab characters from the end of each paragraph. */
-export function removeTrailingTabs(doc: ParsedDoc): ParsedDoc {
-  const fix = (runs: RunSpan[]): RunSpan[] => {
-    if (runs.length === 0) return runs;
-    const out = runs.slice();
-    let i = out.length - 1;
-    while (i >= 0) {
-      const r = out[i];
-      if (!r.text) { i--; continue; }
-      if (/^[\t]+$/.test(r.text)) {
-        out.splice(i, 1);
-        i--;
-        continue;
-      }
-      const m = r.text.match(/^(.*?)(\t+)$/s);
-      if (m) {
-        const head = m[1];
-        if (head) {
-          out[i] = { ...r, text: head };
-        } else {
-          out.splice(i, 1);
-        }
-      }
-      break;
-    }
-    return out;
-  };
-  const blocks = mapParagraphs(doc.blocks, (p) => ({ ...p, runs: fix(p.runs) }));
-  return { ...doc, blocks };
-}
-
 /** 4. Detect bullet/number prefixes in paragraph text and convert to list paragraphs. */
 const BULLET_RE = /^([\u2022\u25E6\u25AA\u00B7•\-\*])\s+/;
 const NUMBER_RE = /^(\d+)[.)]\s+/;
@@ -173,35 +142,6 @@ export function normalizeLists(doc: ParsedDoc): ParsedDoc {
     newRuns[0] = { ...first, text: stripped };
     return { ...p, listKind: kind, runs: newRuns, style: "List" };
   });
-  return { ...doc, blocks };
-}
-
-/** 5. Move trailing whitespace out of a styled run to prevent italic/bold leaking. */
-export function closeOrphanRuns(doc: ParsedDoc): ParsedDoc {
-  const fix = (runs: RunSpan[]): RunSpan[] => {
-    const out: RunSpan[] = [];
-    for (const r of runs) {
-      if (!r.charStyle || !r.text) {
-        out.push(r);
-        continue;
-      }
-      // Run is purely whitespace → drop the charStyle entirely
-      if (/^\s+$/.test(r.text)) {
-        out.push({ text: r.text });
-        continue;
-      }
-      // Split trailing whitespace into an unstyled run
-      const m = r.text.match(/^(.*?)(\s+)$/s);
-      if (m) {
-        out.push({ text: m[1], charStyle: r.charStyle });
-        out.push({ text: m[2] });
-      } else {
-        out.push(r);
-      }
-    }
-    return out;
-  };
-  const blocks = mapParagraphs(doc.blocks, (p) => ({ ...p, runs: fix(p.runs) }));
   return { ...doc, blocks };
 }
 
