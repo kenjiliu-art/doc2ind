@@ -15,6 +15,7 @@ const AUTO_APPLY: Array<{ key: AutoApplyKey; label: string }> = [
   { key: "tabsToMargin", label: "Tabs → indent" },
   { key: "softToHard", label: "Soft → hard breaks" },
   { key: "pageBreakBefore", label: "Section → page break" },
+  { key: "stripUnusedStyles", label: "Strip unused styles" },
 ];
 
 const PREFLIGHT: Array<{
@@ -22,12 +23,6 @@ const PREFLIGHT: Array<{
   label: string;
   description: string;
 }> = [
-  {
-    action: "stripUnusedStyles",
-    label: "Strip unused styles",
-    description:
-      "Removes paragraph and character style definitions that are not referenced by any text in the document, keeping the style list lean.",
-  },
   {
     action: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
@@ -67,6 +62,15 @@ export function CleanupBar() {
   const autoApply = useSettings((s) => s.autoApply);
   const setAutoApply = useSettings((s) => s.setAutoApply);
 
+  const handleAutoChange = (key: AutoApplyKey, checked: boolean) => {
+    setAutoApply(key, checked);
+    if (key === "stripUnusedStyles") {
+      if (checked) runPreflight("stripUnusedStyles");
+    } else if (key !== "pageBreakBefore") {
+      applyDocCleanup([key], checked);
+    }
+  };
+
   return (
     <TooltipProvider delayDuration={300}>
       <div className="space-y-4 px-3 py-3 text-xs">
@@ -87,12 +91,7 @@ export function CleanupBar() {
                     type="checkbox"
                     className="h-3.5 w-3.5 accent-primary"
                     checked={on}
-                    onChange={(e) => {
-                      setAutoApply(opt.key, e.target.checked);
-                      if (opt.key !== "pageBreakBefore") {
-                        applyDocCleanup([opt.key], e.target.checked);
-                      }
-                    }}
+                    onChange={(e) => handleAutoChange(opt.key, e.target.checked)}
                   />
                 </label>
               );

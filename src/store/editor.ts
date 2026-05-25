@@ -158,13 +158,17 @@ export const useEditor = create<EditorState>((set, get) => {
       // so the health score reflects the document's true starting state.
       const rawBreakdown = countIssuesDetailed(doc);
       const settings = useSettings.getState().autoApply;
+      let nextDoc: ParsedDoc = { ...doc };
       const blocks = mapParagraphs(doc.blocks, (p) => ({
         ...p,
         rules: applyAutoSettingsToRules(p.rules, settings, {
           sectionBreakBefore: p.sectionBreakBefore,
         }),
       }));
-      const nextDoc = { ...doc, blocks };
+      nextDoc = { ...nextDoc, blocks };
+      if (settings.stripUnusedStyles) {
+        nextDoc = stripUnusedStyles(nextDoc);
+      }
       set({
         doc: nextDoc,
         fileName,
