@@ -206,21 +206,19 @@ export function CleanupBar() {
       tabsToMargin = 0,
       trimTrailing = 0,
       removeEmpty = 0,
-      collapseBlanks = 0,
       bleed = 0,
       lists = 0,
       pageBreaks = 0;
+    const usedStyles = new Set<string>();
     walkParas(doc.blocks, (p) => {
+      usedStyles.add(p.style);
       const text = p.runs.map((r) => r.text).join("");
       if (text.includes("--")) dashes++;
       if (/['"]/.test(text)) smartQuotes++;
       if (p.hasSoftBreaks) softToHard++;
       if (p.leadingTabs > 0) tabsToMargin++;
       if (p.hasMultiSpaces || / $|\t$/.test(text)) trimTrailing++;
-      if (!text.trim()) {
-        removeEmpty++;
-        collapseBlanks++;
-      }
+      if (!text.trim()) removeEmpty++;
       if (p.sectionBreakBefore) pageBreaks++;
       if (/^\s*([\-\*•·]|\d+[.)])\s/.test(text)) lists++;
       for (const r of p.runs) {
@@ -236,20 +234,15 @@ export function CleanupBar() {
     c.tabsToMargin = tabsToMargin;
     c.trimTrailing = trimTrailing;
     c.removeEmptyParagraphs = removeEmpty;
-    c.collapseBlanksToSpacing = collapseBlanks;
+    c.collapseBlanksToSpacing = removeEmpty;
     c.trimRunBleed = bleed;
     c.trailingStyledSpacesToEnEm = bleed;
     c.normalizeLists = lists;
     c.pageBreakBefore = pageBreaks;
-    // Style-level counts
-    const unused = doc.paragraphStyles.filter((s) => {
-      let used = false;
-      walkParas(doc.blocks, (p) => {
-        if (p.style === s.name) used = true;
-      });
-      return !used;
-    }).length;
-    c.stripUnusedStyles = unused;
+    c.stripUnusedStyles = doc.paragraphStyles.reduce(
+      (n, s) => (usedStyles.has(s.name) ? n : n + 1),
+      0,
+    );
     c.sanitizeStyleNames = doc.paragraphStyles.filter((s) =>
       /\+|Normal\s*\+|\d+pt/.test(s.name),
     ).length;

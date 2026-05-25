@@ -406,6 +406,15 @@ function Feature({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+const FILTER_BY_KEY: Record<string, PreviewFilter> = {
+  "1": "all",
+  "2": "warnings",
+  "3": "changed",
+  "4": "selected",
+  "5": "headings",
+  "6": "unstyled",
+};
+
 function EditorView() {
   const doc = useEditor((s) => s.doc)!;
   const fileName = useEditor((s) => s.fileName);
@@ -424,16 +433,33 @@ function EditorView() {
   const [previewFilter, setPreviewFilter] = useState<PreviewFilter>("all");
   const [showHiddenChars, setShowHiddenChars] = useState(false);
 
-  const sourceStyleCount = useMemo(() => {
-    const set = new Set<string>();
+  const { sourceStyleCount, stats } = useMemo(() => {
+    const sources = new Set<string>();
+    let paragraphs = 0;
+    let words = 0;
+    const visit = (p: ParagraphBlock) => {
+      sources.add(p.sourceStyle ?? "__unstyled__");
+      paragraphs++;
+      for (const r of p.runs) {
+        let inWord = false;
+        for (let i = 0; i < r.text.length; i++) {
+          const c = r.text.charCodeAt(i);
+          const isSpace = c === 32 || c === 9 || c === 10 || c === 13;
+          if (!isSpace && !inWord) {
+            words++;
+            inWord = true;
+          } else if (isSpace) inWord = false;
+        }
+      }
+    };
     const walk = (blocks: Block[]) => {
       for (const b of blocks) {
-        if (b.kind === "paragraph") set.add(b.sourceStyle ?? "__unstyled__");
-        else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach((p: ParagraphBlock) => set.add(p.sourceStyle ?? "__unstyled__"))));
+        if (b.kind === "paragraph") visit(b);
+        else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(visit)));
       }
     };
     walk(doc.blocks);
-    return set.size;
+    return { sourceStyleCount: sources.size, stats: { paragraphs, words } };
   }, [doc.blocks]);
 
   const jumpAndCloseSheet = (id: string) => {
@@ -471,15 +497,7 @@ function EditorView() {
         if (selectedId) setSelectedId(null);
       }
       if (!inEditable && !mod && !e.shiftKey && !e.altKey) {
-        const filterByKey: Record<string, PreviewFilter> = {
-          "1": "all",
-          "2": "warnings",
-          "3": "changed",
-          "4": "selected",
-          "5": "headings",
-          "6": "unstyled",
-        };
-        const next = filterByKey[e.key];
+        const next = FILTER_BY_KEY[e.key];
         if (next) {
           e.preventDefault();
           setPreviewFilter(next);
@@ -495,31 +513,6 @@ function EditorView() {
     return () => window.removeEventListener("keydown", onKey);
   }, [undo, redo, clearSelection, selectionSize, selectedId]);
 
-  const stats = useMemo(() => {
-    let paragraphs = 0;
-    let words = 0;
-    const walk = (p: { runs: Array<{ text: string }> }) => {
-      paragraphs++;
-      for (const r of p.runs) {
-        let inWord = false;
-        for (let i = 0; i < r.text.length; i++) {
-          const c = r.text.charCodeAt(i);
-          const isSpace = c === 32 || c === 9 || c === 10 || c === 13;
-          if (!isSpace && !inWord) {
-            words++;
-            inWord = true;
-          } else if (isSpace) inWord = false;
-        }
-      }
-    };
-    doc.blocks.forEach((b) => {
-      if (b.kind === "paragraph") walk(b);
-      else b.rows.forEach((r) => r.forEach((c) => c.paragraphs.forEach(walk)));
-    });
-    return { paragraphs, words };
-  }, [doc]);
-
-  const initialIssues = useEditor((s) => s.initialIssues);
   const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
   const onExportDocx = async () => {
@@ -585,6 +578,46 @@ function EditorView() {
     }
   };
 
+  const toolPanels = (onJump: (id: string) => void) => (
+    <>
+      <DiagnosticsPanel onJump={onJump} />
+      <CollapsibleSection title="Preview filters">
+        <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+      </CollapsibleSection>
+      <CollapsibleSection title="Auto-apply on import" defaultOpen>
+        <CleanupBar />
+      </CollapsibleSection>
+      <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
+        <StyleMappingPanel />
+      </CollapsibleSection>
+      <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
+        <RenameStylesPanel />
+      </CollapsibleSection>
+      <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
+        <CharStylesPanel />
+      </CollapsibleSection>
+    </>
+  );
+
+  const exportButtons = (
+    <>
+      <button
+        onClick={onExportDocx}
+        className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
+      >
+        <Download className="h-4 w-4" />
+        Export for InDesign
+      </button>
+      <button
+        onClick={onExportTagged}
+        className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
+      >
+        <FileCode2 className="h-4 w-4" />
+        Tagged Text (.txt)
+      </button>
+    </>
+  );
+
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
@@ -609,44 +642,12 @@ function EditorView() {
         </div>
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
-          <DiagnosticsPanel onJump={setSelectedId} />
-          <CollapsibleSection title="Preview filters">
-            <PreviewFilters
-              filter={previewFilter}
-              onChange={setPreviewFilter}
-            />
-          </CollapsibleSection>
-          <CollapsibleSection title="Auto-apply on import" defaultOpen>
-            <CleanupBar />
-          </CollapsibleSection>
-          <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
-            <StyleMappingPanel />
-          </CollapsibleSection>
-          <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
-            <RenameStylesPanel />
-          </CollapsibleSection>
-          <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
-            <CharStylesPanel />
-          </CollapsibleSection>
+          {toolPanels(setSelectedId)}
         </div>
-
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
           <HealthRing />
-          <button
-            onClick={onExportDocx}
-            className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-          >
-            <Download className="h-4 w-4" />
-            Export for InDesign
-          </button>
-          <button
-            onClick={onExportTagged}
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
-          >
-            <FileCode2 className="h-4 w-4" />
-            Tagged Text (.txt)
-          </button>
+          {exportButtons}
           <button
             onClick={onDownloadChangelog}
             className="flex w-full items-center justify-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-primary"
@@ -785,43 +786,12 @@ function EditorView() {
               </div>
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
-              <DiagnosticsPanel onJump={jumpAndCloseSheet} />
-              <CollapsibleSection title="Preview filters">
-                <PreviewFilters
-                  filter={previewFilter}
-                  onChange={setPreviewFilter}
-                />
-              </CollapsibleSection>
-              <CollapsibleSection title="Auto-apply on import" defaultOpen>
-                <CleanupBar />
-              </CollapsibleSection>
-              <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
-                <StyleMappingPanel />
-              </CollapsibleSection>
-              <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
-                <RenameStylesPanel />
-              </CollapsibleSection>
-              <CollapsibleSection title="Character styles" count={doc.charStyles.length}>
-                <CharStylesPanel />
-              </CollapsibleSection>
+              {toolPanels(jumpAndCloseSheet)}
             </div>
 
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
               <HealthRing compact />
-              <button
-                onClick={onExportDocx}
-                className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
-              >
-                <Download className="h-4 w-4" />
-                Export for InDesign
-              </button>
-              <button
-                onClick={onExportTagged}
-                className="flex w-full items-center justify-center gap-2 rounded-md border border-accent bg-transparent px-4 py-2.5 text-sm font-semibold text-primary transition hover:bg-background"
-              >
-                <FileCode2 className="h-4 w-4" />
-                Tagged Text (.txt)
-              </button>
+              {exportButtons}
             </div>
           </SheetContent>
         </Sheet>

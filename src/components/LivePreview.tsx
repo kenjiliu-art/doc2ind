@@ -28,15 +28,6 @@ const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; la
 
 export type PreviewFilter = "all" | "warnings" | "changed" | "selected" | "headings" | "unstyled";
 
-const FILTER_LABELS: Array<{ key: PreviewFilter; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "warnings", label: "Warnings" },
-  { key: "changed", label: "Changed" },
-  { key: "selected", label: "Selected" },
-  { key: "headings", label: "Headings" },
-  { key: "unstyled", label: "Unstyled" },
-];
-
 interface LivePreviewProps {
   selectedId: string | null;
   onSelect: (id: string | null, opts?: { shift?: boolean }) => void;
@@ -161,7 +152,7 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars, onT
           </Popover>
         </div>
         <div className="mx-auto w-full max-w-[760px] rounded-sm bg-white px-14 py-16 text-[13px] leading-[1.55] text-neutral-900 shadow-md">
-          <DocPreview
+          <DocPreviewMemo
             doc={doc}
             selectedId={selectedId}
             onSelect={onSelect}
@@ -169,7 +160,6 @@ export function LivePreview({ selectedId, onSelect, filter, showHiddenChars, onT
             showNumbers={showNumbers}
             filter={filter}
             selection={selection}
-            paragraphIndex={paragraphIndexFor(doc.blocks)}
             showHiddenChars={showHiddenChars}
             showDiff={showDiff}
           />
@@ -337,12 +327,11 @@ interface DocPreviewExtras {
   showNumbers: boolean;
   filter: PreviewFilter;
   selection: Set<string>;
-  paragraphIndex: Map<string, number>;
   showHiddenChars: boolean;
   showDiff: boolean;
 }
 
-function DocPreview({
+function DocPreviewMemo({
   doc,
   selectedId,
   onSelect,
@@ -350,7 +339,6 @@ function DocPreview({
   showNumbers,
   filter,
   selection,
-  paragraphIndex,
   showHiddenChars,
   showDiff,
 }: {
@@ -364,6 +352,7 @@ function DocPreview({
     for (const s of doc.paragraphStyles) m.set(s.name, s);
     return m;
   }, [doc.paragraphStyles]);
+  const paragraphIndex = useMemo(() => paragraphIndexFor(doc.blocks), [doc.blocks]);
 
   return (
     <>
@@ -397,7 +386,7 @@ interface BlockViewProps extends DocPreviewExtras {
   onSelect: LivePreviewProps["onSelect"];
   styles: StyleDef[];
   showMargins: boolean;
-  showHiddenChars: boolean;
+  paragraphIndex: Map<string, number>;
 }
 
 function BlockView(props: BlockViewProps) {
