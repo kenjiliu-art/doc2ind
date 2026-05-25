@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
 
