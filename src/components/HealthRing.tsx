@@ -10,7 +10,7 @@ interface Props {
 
 /**
  * Document Health gauge: circular progress ring around a 0–100 score.
- * Fills as outstanding warnings are resolved relative to the count at import time.
+ * Clickable — scrolls/opens the diagnostics panel.
  */
 export function HealthRing({ compact = false }: Props) {
   const doc = useEditor((s) => s.doc);
@@ -46,8 +46,17 @@ export function HealthRing({ compact = false }: Props) {
 
   const fixed = Math.max(0, initial - current);
 
+  const handleClick = () => {
+    window.dispatchEvent(new CustomEvent("open-diagnostics"));
+  };
+
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-border bg-background/70 px-3 py-2">
+    <button
+      type="button"
+      onClick={handleClick}
+      title="Open diagnostics"
+      className="flex w-full items-center gap-3 rounded-lg border border-border bg-background/70 px-3 py-2 text-left transition hover:border-primary/40 hover:bg-background"
+    >
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg width={size} height={size} className="-rotate-90">
           <circle
@@ -88,6 +97,6 @@ export function HealthRing({ compact = false }: Props) {
             : "No issues detected at import"}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
