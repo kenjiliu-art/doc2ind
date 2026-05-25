@@ -620,7 +620,7 @@ function EditorView() {
           <CollapsibleSection title="Auto-apply on import" defaultOpen>
             <CleanupBar />
           </CollapsibleSection>
-          <CollapsibleSection title="Source style mapping">
+          <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
             <StyleMappingPanel />
           </CollapsibleSection>
           <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
@@ -797,7 +797,7 @@ function EditorView() {
               <CollapsibleSection title="Auto-apply on import" defaultOpen>
                 <CleanupBar />
               </CollapsibleSection>
-              <CollapsibleSection title="Source style mapping">
+              <CollapsibleSection title="Source style mapping" count={sourceStyleCount}>
                 <StyleMappingPanel />
               </CollapsibleSection>
               <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
