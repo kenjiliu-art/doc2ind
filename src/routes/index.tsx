@@ -427,7 +427,8 @@ function EditorView() {
     setMobileSheetOpen(false);
   };
 
-  // Global keyboard shortcuts: Cmd/Ctrl+Z = undo, Shift+Cmd/Ctrl+Z or Ctrl+Y = redo, Esc = clear
+  // Global keyboard shortcuts: Cmd/Ctrl+Z = undo, Shift+Cmd/Ctrl+Z or Ctrl+Y = redo,
+  // Esc = clear selection, 1–6 = preview filter, H = toggle hidden chars.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
@@ -454,6 +455,26 @@ function EditorView() {
       if (e.key === "Escape") {
         if (selectionSize > 0) clearSelection();
         if (selectedId) setSelectedId(null);
+      }
+      if (!inEditable && !mod && !e.shiftKey && !e.altKey) {
+        const filterByKey: Record<string, PreviewFilter> = {
+          "1": "all",
+          "2": "warnings",
+          "3": "changed",
+          "4": "selected",
+          "5": "headings",
+          "6": "unstyled",
+        };
+        const next = filterByKey[e.key];
+        if (next) {
+          e.preventDefault();
+          setPreviewFilter(next);
+          return;
+        }
+        if (e.key.toLowerCase() === "h") {
+          e.preventDefault();
+          setShowHiddenChars((v) => !v);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
@@ -499,6 +520,39 @@ function EditorView() {
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
     saveAs(blob, `${fileName}-tagged.txt`);
     toastExportSummary(initialBreakdown, current, ".txt");
+  };
+  const onDownloadChangelog = () => {
+    const current = countIssuesDetailed(doc);
+    if (!initialBreakdown) {
+      toast.info("No baseline diagnostics captured yet.");
+      return;
+    }
+    const d = diffBreakdown(initialBreakdown, current);
+    const ts = new Date().toISOString();
+    const lines = [
+      `# Cleanup changelog — ${fileName}.docx`,
+      `Generated: ${ts}`,
+      ``,
+      `Total issues at import: ${initialBreakdown.total.toLocaleString()}`,
+      `Remaining issues now:   ${current.total.toLocaleString()}`,
+      `Resolved:               ${d.total.toLocaleString()}`,
+      ``,
+      `## Issues resolved by category`,
+      `- Soft breaks removed:        ${d.softBreaks}`,
+      `- Multi-space runs cleaned:   ${d.multiSpaces}`,
+      `- Leading tabs converted:     ${d.tabs}`,
+      `- Double hyphens → em dashes: ${d.dashes}`,
+      `- Straight quotes → curly:    ${d.quotes}`,
+      `- Style bleed trimmed:        ${d.bleed}`,
+      `- Empty paragraphs removed:   ${d.empty}`,
+      `- Fonts normalized:           ${d.fonts}`,
+      `- Source styles mapped:       ${d.unmapped}`,
+    ];
+    const blob = new Blob([lines.join("\n") + "\n"], {
+      type: "text/markdown;charset=utf-8",
+    });
+    saveAs(blob, `${fileName}-changelog.md`);
+    toast.success("Changelog saved");
   };
 
   const loadSample = async (name: string) => {
@@ -580,6 +634,13 @@ function EditorView() {
           >
             <FileCode2 className="h-4 w-4" />
             Tagged Text (.txt)
+          </button>
+          <button
+            onClick={onDownloadChangelog}
+            className="flex w-full items-center justify-center gap-1.5 text-[11px] font-medium text-muted-foreground transition hover:text-primary"
+          >
+            <Download className="h-3 w-3" />
+            Save cleanup changelog (.md)
           </button>
         </div>
       </aside>
