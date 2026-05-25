@@ -308,9 +308,9 @@ export function CleanupBar() {
                       conflictActive ? "opacity-50" : ""
                     }`}
                   >
-                    <span className="flex min-w-0 flex-1 items-center gap-1 text-[11px] text-foreground">
+                    <span className="flex min-w-0 flex-1 items-center gap-1.5 text-[11px] text-foreground">
+                      <opt.icon className="h-3 w-3 shrink-0 text-muted-foreground" />
                       <span className="truncate">{opt.label}</span>
-                      <Info className="h-3 w-3 shrink-0 text-muted-foreground/70" />
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5">
                       {count > 0 && (
