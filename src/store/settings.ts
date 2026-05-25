@@ -9,6 +9,7 @@ export type AutoApplyKey =
   | "normalizeLists"
   | "pageBreakBefore"
   | "removeEmptyParagraphs"
+  | "removeTrailingTabs"
   | "sanitizeStyleNames"
   | "smartQuotes"
   | "softToHard"
@@ -25,6 +26,7 @@ export interface AutoApplySettings {
   normalizeLists: boolean;
   pageBreakBefore: boolean;
   removeEmptyParagraphs: boolean;
+  removeTrailingTabs: boolean;
   sanitizeStyleNames: boolean;
   smartQuotes: boolean;
   softToHard: boolean;
@@ -48,6 +50,7 @@ const DEFAULTS: AutoApplySettings = {
   normalizeLists: false,
   pageBreakBefore: true,
   removeEmptyParagraphs: false,
+  removeTrailingTabs: false,
   sanitizeStyleNames: false,
   smartQuotes: true,
   softToHard: true,

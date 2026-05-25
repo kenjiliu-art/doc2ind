@@ -120,6 +120,37 @@ export function removeEmptyParagraphs(doc: ParsedDoc): ParsedDoc {
   return { ...doc, blocks: filterBlocks(doc.blocks) };
 }
 
+/** 2a. Strip trailing tab characters from the end of each paragraph. */
+export function removeTrailingTabs(doc: ParsedDoc): ParsedDoc {
+  const fix = (runs: RunSpan[]): RunSpan[] => {
+    if (runs.length === 0) return runs;
+    const out = runs.slice();
+    let i = out.length - 1;
+    while (i >= 0) {
+      const r = out[i];
+      if (!r.text) { i--; continue; }
+      if (/^[\t]+$/.test(r.text)) {
+        out.splice(i, 1);
+        i--;
+        continue;
+      }
+      const m = r.text.match(/^(.*?)(\t+)$/s);
+      if (m) {
+        const head = m[1];
+        if (head) {
+          out[i] = { ...r, text: head };
+        } else {
+          out.splice(i, 1);
+        }
+      }
+      break;
+    }
+    return out;
+  };
+  const blocks = mapParagraphs(doc.blocks, (p) => ({ ...p, runs: fix(p.runs) }));
+  return { ...doc, blocks };
+}
+
 /** 4. Detect bullet/number prefixes in paragraph text and convert to list paragraphs. */
 const BULLET_RE = /^([\u2022\u25E6\u25AA\u00B7•\-\*])\s+/;
 const NUMBER_RE = /^(\d+)[.)]\s+/;
