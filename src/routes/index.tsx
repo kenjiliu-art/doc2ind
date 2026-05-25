@@ -634,7 +634,7 @@ function EditorView() {
         </header>
 
         <div className="flex-1 overflow-hidden">
-          <LivePreview selectedId={selectedId} onSelect={setSelectedId} />
+          <LivePreview selectedId={selectedId} onSelect={setSelectedId} filter={previewFilter} />
         </div>
 
         {/* Mobile-only tools FAB + bottom sheet */}
