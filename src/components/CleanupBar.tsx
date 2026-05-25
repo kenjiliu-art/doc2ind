@@ -1,7 +1,6 @@
 import { useEditor, type PreflightAction } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-
-import { Sparkles, Check } from "lucide-react";
+import { Sparkles, Check, Info } from "lucide-react";
 import {
   TooltipProvider,
   Tooltip,
@@ -16,7 +15,6 @@ const AUTO_APPLY: Array<{ key: AutoApplyKey; label: string }> = [
   { key: "tabsToMargin", label: "Tabs → indent" },
   { key: "softToHard", label: "Soft → hard breaks" },
   { key: "pageBreakBefore", label: "Section → page break" },
-  { key: "stripUnusedStyles", label: "Strip unused styles" },
 ];
 
 const PREFLIGHT: Array<{
@@ -24,6 +22,12 @@ const PREFLIGHT: Array<{
   label: string;
   description: string;
 }> = [
+  {
+    action: "stripUnusedStyles",
+    label: "Strip unused styles",
+    description:
+      "Removes paragraph and character style definitions that are not referenced by any text in the document, keeping the style list lean.",
+  },
   {
     action: "collapseBlanksToSpacing",
     label: "Blanks → spacing",
@@ -85,11 +89,7 @@ export function CleanupBar() {
                     checked={on}
                     onChange={(e) => {
                       setAutoApply(opt.key, e.target.checked);
-                      if (opt.key === "stripUnusedStyles") {
-                        if (e.target.checked) runPreflight("stripUnusedStyles");
-                      } else if (opt.key === "trimTrailing") {
-                        if (e.target.checked) runPreflight("trimTrailingSpaces");
-                      } else if (opt.key !== "pageBreakBefore") {
+                      if (opt.key !== "pageBreakBefore") {
                         applyDocCleanup([opt.key], e.target.checked);
                       }
                     }}

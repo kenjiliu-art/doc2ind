@@ -1,4 +1,3 @@
-import { trimTrailing } from "./cleanup";
 import type {
   Block,
   ParagraphBlock,
@@ -54,15 +53,6 @@ export function stripUnusedStyles(doc: ParsedDoc): ParsedDoc {
     paragraphStyles: doc.paragraphStyles.filter((s) => usedPara.has(s.name)),
     charStyles: doc.charStyles.filter((c) => usedChar.has(c.name)),
   };
-}
-
-/** 2. Trim trailing spaces from every run in every paragraph. */
-export function trimTrailingSpaces(doc: ParsedDoc): ParsedDoc {
-  const blocks = mapParagraphs(doc.blocks, (p) => ({
-    ...p,
-    runs: p.runs.map((r) => ({ ...r, text: trimTrailing(r.text) })),
-  }));
-  return { ...doc, blocks };
 }
 
 /** 3. Bump preceding paragraph's style.spaceAfter based on observed blank lines. */

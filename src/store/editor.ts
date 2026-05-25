@@ -16,7 +16,6 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
   trimRunBleed,
-  trimTrailingSpaces,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
@@ -31,8 +30,7 @@ export type PreflightAction =
   | "closeOrphanRuns"
   | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames"
-  | "trimTrailingSpaces";
+  | "sanitizeStyleNames";
 
 const HISTORY_LIMIT = 50;
 
@@ -166,22 +164,13 @@ export const useEditor = create<EditorState>((set, get) => {
           sectionBreakBefore: p.sectionBreakBefore,
         }),
       }));
-      let nextDoc: ParsedDoc = { ...doc, blocks };
-      const preflightHistory = new Set<PreflightAction>();
-      if (settings.stripUnusedStyles) {
-        nextDoc = stripUnusedStyles(nextDoc);
-        preflightHistory.add("stripUnusedStyles");
-      }
-      if (settings.trimTrailing) {
-        nextDoc = trimTrailingSpaces(nextDoc);
-        preflightHistory.add("trimTrailingSpaces");
-      }
+      const nextDoc = { ...doc, blocks };
       set({
         doc: nextDoc,
         fileName,
         selection: new Set(),
         selectionAnchor: null,
-        preflightHistory,
+        preflightHistory: new Set(),
         past: [],
         future: [],
         initialIssues: rawBreakdown.total,
@@ -563,7 +552,6 @@ export const useEditor = create<EditorState>((set, get) => {
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
-        trimTrailingSpaces,
       };
       snap();
       const nextHistory = new Set(get().preflightHistory);
