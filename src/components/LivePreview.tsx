@@ -527,6 +527,7 @@ function ParaView({
     groupsSrc.push(items);
   }
 
+  const originalText = p.original ? runsText(p.original.runs) : "";
   const shellProps = {
     p,
     isSelected,
@@ -539,6 +540,8 @@ function ParaView({
     issues,
     matchesFilter,
     paragraphIndex,
+    showDiff,
+    originalText,
   };
 
   if (groupsSrc.length === 0) {
