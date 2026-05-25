@@ -52,6 +52,7 @@ const DEFAULTS: AutoApplySettings = {
   closeOrphanRuns: false,
   trimRunBleed: false,
   sanitizeStyleNames: false,
+  removeEmptyParagraphs: false,
 };
 
 export const useSettings = create<SettingsState>()(
