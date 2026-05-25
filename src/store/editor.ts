@@ -220,14 +220,14 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
-        { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
-        { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
+        { key: "closeOrphanRuns", fn: closeOrphanRuns },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
-        { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
-        { key: "closeOrphanRuns", fn: closeOrphanRuns },
-        { key: "trimRunBleed", fn: trimRunBleed },
+        { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
+        { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "stripUnusedStyles", fn: stripUnusedStyles },
+        { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
+        { key: "trimRunBleed", fn: trimRunBleed },
       ];
       for (const { key, fn } of preflightFns) {
         if (settings[key]) {
