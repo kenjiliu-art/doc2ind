@@ -13,21 +13,34 @@ export interface IssueBreakdown {
   dashes: number;
   quotes: number;
   bleed: number;
+  empty: number;
+  fonts: number;
 }
 
-function inspectParagraph(p: ParagraphBlock): Partial<IssueBreakdown> {
-  const b: Partial<IssueBreakdown> = {};
-  // Unstyled paragraphs auto-default to Body — not counted as an outstanding issue.
+/** Severity thresholds — mirror DiagnosticsPanel so both views agree. */
+const EMPTY_WARN_THRESHOLD = 5;
+const BLEED_WARN_THRESHOLD = 1;
+const FONTS_WARN_THRESHOLD = 3;
+
+interface ParaCounts {
+  softBreaks: number;
+  multiSpaces: number;
+  tabs: number;
+  dashes: number;
+  quotes: number;
+  bleed: number;
+  empty: number;
+}
+
+function inspectParagraph(p: ParagraphBlock): Partial<ParaCounts> {
+  const b: Partial<ParaCounts> = {};
   if (p.hasSoftBreaks && !p.rules.softToHard) b.softBreaks = 1;
-  // Multi-spaces only count when the trim/cleanup rule is OFF for that paragraph.
   if (p.hasMultiSpaces && !p.rules.trimTrailing) b.multiSpaces = 1;
   if (p.leadingTabs > 0 && !p.rules.tabsToMargin) b.tabs = 1;
   const t = paraText(p);
+  if (!t.trim()) b.empty = 1;
   if (t.includes("--") && !p.rules.dashes) b.dashes = 1;
   if (/['"]/.test(t) && !p.rules.smartQuotes) b.quotes = 1;
-  // Bleed is not auto-fixable by a per-paragraph rule — counted, but the
-  // total is only treated as a real issue when more than 1 occurs (matches
-  // DiagnosticsPanel's severity threshold).
   for (const r of p.runs) {
     if (r.charStyle && r.text && /\s$/.test(r.text)) {
       b.bleed = 1;
@@ -54,11 +67,12 @@ export function countIssuesDetailed(doc: ParsedDoc): IssueBreakdown {
     dashes: 0,
     quotes: 0,
     bleed: 0,
+    empty: 0,
+    fonts: 0,
   };
   const inspect = (p: ParagraphBlock) => {
     const b = inspectParagraph(p);
-    for (const k of Object.keys(b) as Array<keyof IssueBreakdown>) {
-      if (k === "total") continue;
+    for (const k of Object.keys(b) as Array<keyof ParaCounts>) {
       out[k] += (b[k] as number | undefined) ?? 0;
     }
   };
@@ -72,8 +86,11 @@ export function countIssuesDetailed(doc: ParsedDoc): IssueBreakdown {
     }
   };
   walk(doc.blocks);
-  // Bleed only counts toward the total when it crosses the warn threshold.
-  const bleedReal = out.bleed > 1 ? out.bleed : 0;
+  out.fonts = doc.detectedFonts.length;
+  // Apply diagnostic thresholds: only counts above the warn line contribute to total.
+  const bleedReal = out.bleed > BLEED_WARN_THRESHOLD ? out.bleed : 0;
+  const emptyReal = out.empty > EMPTY_WARN_THRESHOLD ? out.empty : 0;
+  const fontsReal = out.fonts > FONTS_WARN_THRESHOLD ? 1 : 0;
   out.total =
     out.unmapped +
     out.softBreaks +
@@ -81,7 +98,9 @@ export function countIssuesDetailed(doc: ParsedDoc): IssueBreakdown {
     out.tabs +
     out.dashes +
     out.quotes +
-    bleedReal;
+    bleedReal +
+    emptyReal +
+    fontsReal;
   return out;
 }
 
@@ -99,6 +118,8 @@ export function diffBreakdown(
     dashes: Math.max(0, initial.dashes - current.dashes),
     quotes: Math.max(0, initial.quotes - current.quotes),
     bleed: Math.max(0, initial.bleed - current.bleed),
+    empty: Math.max(0, initial.empty - current.empty),
+    fonts: Math.max(0, initial.fonts - current.fonts),
   };
 }
 

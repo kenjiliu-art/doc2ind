@@ -142,6 +142,8 @@ function toastExportSummary(
     { label: "double hyphens fixed", count: d.dashes },
     { label: "extra spaces collapsed", count: d.multiSpaces },
     { label: "style bleed trimmed", count: d.bleed },
+    { label: "empty paragraphs removed", count: d.empty },
+    { label: "fonts normalized", count: d.fonts },
     { label: "styles mapped", count: d.unmapped },
   ].filter((i) => i.count > 0);
 
