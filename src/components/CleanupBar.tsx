@@ -42,6 +42,12 @@ const AUTO_APPLY: AutoOpt[] = [
       "Deletes blank paragraphs that contain no visible text — common artifacts from Word import.",
   },
   {
+    key: "removeTrailingTabs",
+    label: "Remove trailing tabs",
+    description:
+      "Strips tab characters at the end of paragraphs that serve no purpose — common artifacts from Word import.",
+  },
+  {
     key: "sanitizeStyleNames",
     label: "Sanitize style names",
     description:
@@ -79,6 +85,7 @@ const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
   "collapseBlanksToSpacing",
   "normalizeLists",
   "removeEmptyParagraphs",
+  "removeTrailingTabs",
   "sanitizeStyleNames",
   "stripUnusedStyles",
   "trailingStyledSpacesToEnEm",
