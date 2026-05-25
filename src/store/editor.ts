@@ -168,15 +168,18 @@ export const useEditor = create<EditorState>((set, get) => {
       nextDoc = { ...nextDoc, blocks };
 
       const preflightHistory = new Set<PreflightAction>();
-      const preflightFns: Array<[PreflightAction, (d: ParsedDoc) => ParsedDoc]> = [
-        ["sanitizeStyleNames", sanitizeStyleNames],
-        ["collapseBlanksToSpacing", collapseBlanksToSpacing],
-        ["normalizeLists", normalizeLists],
-        ["closeOrphanRuns", closeOrphanRuns],
-        ["trimRunBleed", trimRunBleed],
-        ["stripUnusedStyles", stripUnusedStyles],
+      const preflightFns: Array<{
+        key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
+        fn: (d: ParsedDoc) => ParsedDoc;
+      }> = [
+        { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
+        { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
+        { key: "normalizeLists", fn: normalizeLists },
+        { key: "closeOrphanRuns", fn: closeOrphanRuns },
+        { key: "trimRunBleed", fn: trimRunBleed },
+        { key: "stripUnusedStyles", fn: stripUnusedStyles },
       ];
-      for (const [key, fn] of preflightFns) {
+      for (const { key, fn } of preflightFns) {
         if (settings[key]) {
           nextDoc = fn(nextDoc);
           preflightHistory.add(key);
