@@ -58,6 +58,12 @@ const AUTO_APPLY: AutoOpt[] = [
     description:
       "Deletes blank paragraphs that contain no visible text — common artifacts from Word import.",
   },
+  {
+    key: "trailingStyledSpacesToEnEm",
+    label: "Trailing styled spaces → en/em",
+    description:
+      "Replaces trailing whitespace inside styled (bold/italic/underline) runs with width-equivalent en (U+2002) and em (U+2003) spaces, stripping the styling. Preserves the visual gap while preventing the style from bleeding into following text.",
+  },
 ];
 
 const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
@@ -76,6 +82,7 @@ const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
   "trimRunBleed",
   "sanitizeStyleNames",
   "removeEmptyParagraphs",
+  "trailingStyledSpacesToEnEm",
 ]);
 
 export function CleanupBar() {

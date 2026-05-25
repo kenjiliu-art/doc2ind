@@ -204,6 +204,46 @@ export function trimRunBleed(doc: ParsedDoc): ParsedDoc {
   return { ...doc, blocks };
 }
 
+/** Convert trailing whitespace inside a styled run (at the end of a paragraph)
+ *  into width-equivalent unstyled en/em space characters. A regular space ≈ 0.25em,
+ *  an en space (U+2002) = 0.5em, an em space (U+2003) = 1em — so 4 regular spaces ≈
+ *  1 em space, 2 ≈ 1 en space. This preserves the visual trailing width while
+ *  removing the styling that would otherwise bleed into following text. */
+export function trailingStyledSpacesToEnEm(doc: ParsedDoc): ParsedDoc {
+  const widthChars = (n: number): string => {
+    const em = Math.floor(n / 4);
+    let rem = n - em * 4;
+    const en = Math.floor(rem / 2);
+    rem -= en * 2;
+    return "\u2003".repeat(em) + "\u2002".repeat(en) + " ".repeat(rem);
+  };
+  const fix = (runs: RunSpan[]): RunSpan[] => {
+    if (runs.length === 0) return runs;
+    // Walk from the end, peeling styled runs whose content is purely trailing whitespace,
+    // and split a final styled run whose tail is whitespace.
+    const out = runs.slice();
+    let i = out.length - 1;
+    while (i >= 0) {
+      const r = out[i];
+      if (!r.charStyle || r.footnoteRef !== undefined || !r.text) break;
+      if (/^[ \t]+$/.test(r.text)) {
+        out[i] = { text: widthChars(r.text.length) };
+        i--;
+        continue;
+      }
+      const m = r.text.match(/^(.*?)([ \t]+)$/s);
+      if (m && m[2].length > 0) {
+        out[i] = { text: m[1], charStyle: r.charStyle };
+        out.splice(i + 1, 0, { text: widthChars(m[2].length) });
+      }
+      break;
+    }
+    return out;
+  };
+  const blocks = mapParagraphs(doc.blocks, (p) => ({ ...p, runs: fix(p.runs) }));
+  return { ...doc, blocks };
+}
+
 /** 8. Promote section breaks (already marked by the parser) to clean page-break-before. */
 export function sectionBreaksToPageBreaks(doc: ParsedDoc): ParsedDoc {
   const blocks = mapParagraphs(doc.blocks, (p) =>
