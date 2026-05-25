@@ -42,7 +42,7 @@ export function detectIssues(p: ParagraphBlock): Issue[] {
       break;
     }
   }
-  if (!p.sourceStyle) out.push({ key: "unstyled", label: "no source style" });
+  // Unstyled paragraphs auto-default to Body; not surfaced as a per-paragraph issue.
   return out;
 }
 
