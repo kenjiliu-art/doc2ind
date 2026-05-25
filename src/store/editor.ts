@@ -9,15 +9,15 @@ import type {
   StyleDef,
 } from "@/lib/types";
 import {
-  stripUnusedStyles,
+  closeOrphanRuns,
   collapseBlanksToSpacing,
   normalizeLists,
-  closeOrphanRuns,
-  sectionBreaksToPageBreaks,
-  sanitizeStyleNames,
-  trimRunBleed,
   removeEmptyParagraphs,
+  sanitizeStyleNames,
+  sectionBreaksToPageBreaks,
+  stripUnusedStyles,
   trailingStyledSpacesToEnEm,
+  trimRunBleed,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
@@ -26,15 +26,15 @@ import { countIssues, countIssuesDetailed, type IssueBreakdown } from "@/lib/hea
 const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
-  | "stripUnusedStyles"
   | "collapseBlanksToSpacing"
-  | "normalizeLists"
   | "closeOrphanRuns"
-  | "trimRunBleed"
-  | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames"
+  | "normalizeLists"
   | "removeEmptyParagraphs"
-  | "trailingStyledSpacesToEnEm";
+  | "sanitizeStyleNames"
+  | "sectionBreaksToPageBreaks"
+  | "stripUnusedStyles"
+  | "trailingStyledSpacesToEnEm"
+  | "trimRunBleed";
 
 const HISTORY_LIMIT = 50;
 
@@ -157,12 +157,12 @@ function countBleedParagraphs(doc: ParsedDoc): number {
 
 /** Metric used to measure what a given preflight pass "fixed" (before − after). */
 const PREFLIGHT_METRIC: Partial<Record<PreflightAction, (d: ParsedDoc) => number>> = {
-  removeEmptyParagraphs: countEmptyParagraphs,
-  collapseBlanksToSpacing: countEmptyParagraphs,
-  trailingStyledSpacesToEnEm: countBleedParagraphs,
   closeOrphanRuns: countBleedParagraphs,
-  trimRunBleed: countBleedParagraphs,
+  collapseBlanksToSpacing: countEmptyParagraphs,
+  removeEmptyParagraphs: countEmptyParagraphs,
   stripUnusedStyles: (d) => d.paragraphStyles.length,
+  trailingStyledSpacesToEnEm: countBleedParagraphs,
+  trimRunBleed: countBleedParagraphs,
 };
 
 
@@ -220,14 +220,14 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
-        { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
-        { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
+        { key: "closeOrphanRuns", fn: closeOrphanRuns },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
-        { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
-        { key: "closeOrphanRuns", fn: closeOrphanRuns },
-        { key: "trimRunBleed", fn: trimRunBleed },
+        { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
+        { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "stripUnusedStyles", fn: stripUnusedStyles },
+        { key: "trailingStyledSpacesToEnEm", fn: trailingStyledSpacesToEnEm },
+        { key: "trimRunBleed", fn: trimRunBleed },
       ];
       for (const { key, fn } of preflightFns) {
         if (settings[key]) {

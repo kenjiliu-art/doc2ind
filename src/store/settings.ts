@@ -3,35 +3,35 @@ import { persist } from "zustand/middleware";
 import type { ParagraphRules } from "@/lib/types";
 
 export type AutoApplyKey =
-  | "tabsToMargin"
-  | "softToHard"
-  | "pageBreakBefore"
-  | "smartQuotes"
-  | "dashes"
-  | "trimTrailing"
-  | "stripUnusedStyles"
-  | "collapseBlanksToSpacing"
-  | "normalizeLists"
   | "closeOrphanRuns"
-  | "trimRunBleed"
-  | "sanitizeStyleNames"
+  | "collapseBlanksToSpacing"
+  | "dashes"
+  | "normalizeLists"
+  | "pageBreakBefore"
   | "removeEmptyParagraphs"
+  | "sanitizeStyleNames"
+  | "smartQuotes"
+  | "softToHard"
+  | "stripUnusedStyles"
+  | "tabsToMargin"
+  | "trimRunBleed"
+  | "trimTrailing"
   | "trailingStyledSpacesToEnEm";
 
 export interface AutoApplySettings {
-  tabsToMargin: boolean;
-  softToHard: boolean;
-  pageBreakBefore: boolean;
-  smartQuotes: boolean;
-  dashes: boolean;
-  trimTrailing: boolean;
-  stripUnusedStyles: boolean;
-  collapseBlanksToSpacing: boolean;
-  normalizeLists: boolean;
   closeOrphanRuns: boolean;
-  trimRunBleed: boolean;
-  sanitizeStyleNames: boolean;
+  collapseBlanksToSpacing: boolean;
+  dashes: boolean;
+  normalizeLists: boolean;
+  pageBreakBefore: boolean;
   removeEmptyParagraphs: boolean;
+  sanitizeStyleNames: boolean;
+  smartQuotes: boolean;
+  softToHard: boolean;
+  stripUnusedStyles: boolean;
+  tabsToMargin: boolean;
+  trimRunBleed: boolean;
+  trimTrailing: boolean;
   trailingStyledSpacesToEnEm: boolean;
 }
 
@@ -42,19 +42,19 @@ interface SettingsState {
 }
 
 const DEFAULTS: AutoApplySettings = {
-  tabsToMargin: true,
-  softToHard: true,
-  pageBreakBefore: true,
-  smartQuotes: true,
-  dashes: true,
-  trimTrailing: true,
-  stripUnusedStyles: true,
-  collapseBlanksToSpacing: false,
-  normalizeLists: false,
   closeOrphanRuns: false,
-  trimRunBleed: false,
-  sanitizeStyleNames: false,
+  collapseBlanksToSpacing: false,
+  dashes: true,
+  normalizeLists: false,
+  pageBreakBefore: true,
   removeEmptyParagraphs: false,
+  sanitizeStyleNames: false,
+  smartQuotes: true,
+  softToHard: true,
+  stripUnusedStyles: true,
+  tabsToMargin: true,
+  trimRunBleed: false,
+  trimTrailing: true,
   trailingStyledSpacesToEnEm: false,
 };
 
@@ -88,15 +88,15 @@ export function applyAutoSettingsToRules(
 ): ParagraphRules {
   return {
     ...rules,
-    tabsToMargin: settings.tabsToMargin ? true : rules.tabsToMargin,
-    softToHard: settings.softToHard ? true : rules.softToHard,
+    dashes: settings.dashes ? true : rules.dashes,
     // Only auto-enable pageBreakBefore where the source actually had a section break
     pageBreakBefore:
       settings.pageBreakBefore && ctx.sectionBreakBefore
         ? true
         : rules.pageBreakBefore,
     smartQuotes: settings.smartQuotes ? true : rules.smartQuotes,
-    dashes: settings.dashes ? true : rules.dashes,
+    softToHard: settings.softToHard ? true : rules.softToHard,
+    tabsToMargin: settings.tabsToMargin ? true : rules.tabsToMargin,
     trimTrailing: settings.trimTrailing ? true : rules.trimTrailing,
   };
 }
