@@ -521,6 +521,39 @@ function EditorView() {
     saveAs(blob, `${fileName}-tagged.txt`);
     toastExportSummary(initialBreakdown, current, ".txt");
   };
+  const onDownloadChangelog = () => {
+    const current = countIssuesDetailed(doc);
+    if (!initialBreakdown) {
+      toast.info("No baseline diagnostics captured yet.");
+      return;
+    }
+    const d = diffBreakdown(initialBreakdown, current);
+    const ts = new Date().toISOString();
+    const lines = [
+      `# Cleanup changelog — ${fileName}.docx`,
+      `Generated: ${ts}`,
+      ``,
+      `Total issues at import: ${initialBreakdown.total.toLocaleString()}`,
+      `Remaining issues now:   ${current.total.toLocaleString()}`,
+      `Resolved:               ${d.total.toLocaleString()}`,
+      ``,
+      `## Issues resolved by category`,
+      `- Soft breaks removed:        ${d.softBreaks}`,
+      `- Multi-space runs cleaned:   ${d.multiSpaces}`,
+      `- Leading tabs converted:     ${d.tabs}`,
+      `- Double hyphens → em dashes: ${d.dashes}`,
+      `- Straight quotes → curly:    ${d.quotes}`,
+      `- Style bleed trimmed:        ${d.bleed}`,
+      `- Empty paragraphs removed:   ${d.empty}`,
+      `- Fonts normalized:           ${d.fonts}`,
+      `- Source styles mapped:       ${d.unmapped}`,
+    ];
+    const blob = new Blob([lines.join("\n") + "\n"], {
+      type: "text/markdown;charset=utf-8",
+    });
+    saveAs(blob, `${fileName}-changelog.md`);
+    toast.success("Changelog saved");
+  };
 
   const loadSample = async (name: string) => {
     setSampleLoading(true);
