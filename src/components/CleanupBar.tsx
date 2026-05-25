@@ -32,6 +32,7 @@ type AutoOpt = {
   key: AutoApplyKey;
   label: string;
   description: string;
+  icon: LucideIcon;
 };
 
 const TYPOGRAPHY: AutoOpt[] = [
