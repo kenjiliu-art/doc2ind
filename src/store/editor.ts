@@ -16,6 +16,7 @@ import {
   sectionBreaksToPageBreaks,
   sanitizeStyleNames,
   trimRunBleed,
+  removeEmptyParagraphs,
 } from "@/lib/preflight";
 import { useSettings, applyAutoSettingsToRules } from "@/store/settings";
 import { saveSessionDebounced, clearSession } from "@/lib/storage";
@@ -30,7 +31,8 @@ export type PreflightAction =
   | "closeOrphanRuns"
   | "trimRunBleed"
   | "sectionBreaksToPageBreaks"
-  | "sanitizeStyleNames";
+  | "sanitizeStyleNames"
+  | "removeEmptyParagraphs";
 
 const HISTORY_LIMIT = 50;
 
@@ -172,6 +174,7 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
+        { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
         { key: "sanitizeStyleNames", fn: sanitizeStyleNames },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
@@ -573,6 +576,7 @@ export const useEditor = create<EditorState>((set, get) => {
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
+        removeEmptyParagraphs,
       };
       snap();
       const nextHistory = new Set(get().preflightHistory);

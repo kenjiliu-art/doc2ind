@@ -14,7 +14,8 @@ export type AutoApplyKey =
   | "normalizeLists"
   | "closeOrphanRuns"
   | "trimRunBleed"
-  | "sanitizeStyleNames";
+  | "sanitizeStyleNames"
+  | "removeEmptyParagraphs";
 
 export interface AutoApplySettings {
   tabsToMargin: boolean;
@@ -29,6 +30,7 @@ export interface AutoApplySettings {
   closeOrphanRuns: boolean;
   trimRunBleed: boolean;
   sanitizeStyleNames: boolean;
+  removeEmptyParagraphs: boolean;
 }
 
 interface SettingsState {
@@ -50,6 +52,7 @@ const DEFAULTS: AutoApplySettings = {
   closeOrphanRuns: false,
   trimRunBleed: false,
   sanitizeStyleNames: false,
+  removeEmptyParagraphs: false,
 };
 
 export const useSettings = create<SettingsState>()(
