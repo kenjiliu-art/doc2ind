@@ -166,15 +166,29 @@ export const useEditor = create<EditorState>((set, get) => {
         }),
       }));
       nextDoc = { ...nextDoc, blocks };
-      if (settings.stripUnusedStyles) {
-        nextDoc = stripUnusedStyles(nextDoc);
+
+      const preflightHistory = new Set<PreflightAction>();
+      const preflightFns: Array<[PreflightAction, (d: ParsedDoc) => ParsedDoc]> = [
+        ["sanitizeStyleNames", sanitizeStyleNames],
+        ["collapseBlanksToSpacing", collapseBlanksToSpacing],
+        ["normalizeLists", normalizeLists],
+        ["closeOrphanRuns", closeOrphanRuns],
+        ["trimRunBleed", trimRunBleed],
+        ["stripUnusedStyles", stripUnusedStyles],
+      ];
+      for (const [key, fn] of preflightFns) {
+        if (settings[key]) {
+          nextDoc = fn(nextDoc);
+          preflightHistory.add(key);
+        }
       }
+
       set({
         doc: nextDoc,
         fileName,
         selection: new Set(),
         selectionAnchor: null,
-        preflightHistory: new Set(),
+        preflightHistory,
         past: [],
         future: [],
         initialIssues: rawBreakdown.total,
