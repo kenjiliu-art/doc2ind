@@ -10,10 +10,11 @@ import type {
   TableBlock,
 } from "@/lib/types";
 import { smartQuotes, trimTrailing, dashes, multiSpaces } from "@/lib/cleanup";
-import { Undo2, GitCompare } from "lucide-react";
+import { Undo2, GitCompare, Eye, EyeOff, HelpCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { detectIssues, ISSUE_COLOR, type Issue, type IssueKey } from "@/lib/issues";
 import { ParagraphMinimap } from "./ParagraphMinimap";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
 const QUICK_RULES: Array<{ key: Exclude<keyof ParagraphRules, "multiSpaces">; label: string }> = [
   { key: "smartQuotes", label: "Smart quotes" },
