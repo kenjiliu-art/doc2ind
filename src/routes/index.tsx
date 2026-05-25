@@ -539,6 +539,9 @@ function EditorView() {
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
           <DiagnosticsPanel onJump={setSelectedId} />
+          <CollapsibleSection title="Preview filters">
+            <PreviewFilters filter={previewFilter} onChange={setPreviewFilter} />
+          </CollapsibleSection>
           <CollapsibleSection title="Auto-apply on import" defaultOpen>
             <CleanupBar />
           </CollapsibleSection>
