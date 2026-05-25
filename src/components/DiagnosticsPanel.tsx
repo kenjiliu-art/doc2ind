@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import type { Block, ParagraphBlock } from "@/lib/types";
-import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2, Sparkles } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
-type Severity = "info" | "warn" | "ok";
+type Severity = "info" | "warn" | "ok" | "fixed";
 
 interface Finding {
   key: string;
@@ -12,6 +12,8 @@ interface Finding {
   count: number;
   severity: Severity;
   hint?: string;
+  /** Number auto-fixed by an active cleanup rule. */
+  fixed?: number;
   /** Ordered paragraph ids that match this finding (for jump-to-paragraph). */
   ids: string[];
 }
@@ -115,7 +117,15 @@ export function DiagnosticsPanel({ onJump }: Props) {
       severity: Severity,
       hint?: string,
       paraIds: string[] = [],
-    ): Finding => ({ key, label, count, severity, hint, ids: paraIds });
+      fixedCount?: number,
+    ): Finding => ({ key, label, count, severity, hint, ids: paraIds, fixed: fixedCount });
+
+    /** Severity for an auto-fixable issue: 'fixed' when rule covers all matches. */
+    const fixSev = (count: number, fixedCount: number): Severity => {
+      if (count === 0) return "ok";
+      if (fixedCount >= count) return "fixed";
+      return "warn";
+    };
 
     const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
@@ -143,25 +153,28 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "soft",
         "Paragraphs with soft returns",
         ids.soft.length,
-        ids.soft.length > 0 ? "warn" : "ok",
+        fixSev(ids.soft.length, auto.soft),
         "Use 'Soft → hard breaks' to convert.",
         ids.soft,
+        auto.soft,
       ),
       f(
         "spaces",
         "Paragraphs with multi-spaces",
         ids.spaces.length,
-        ids.spaces.length > 0 ? "warn" : "ok",
+        fixSev(ids.spaces.length, auto.spaces),
         undefined,
         ids.spaces,
+        auto.spaces,
       ),
       f(
         "tabs",
         "Paragraphs with leading tabs",
         ids.tabs.length,
-        ids.tabs.length > 0 ? "warn" : "ok",
+        fixSev(ids.tabs.length, auto.tabs),
         "Convert to first-line indent via 'Tabs → indent'.",
         ids.tabs,
+        auto.tabs,
       ),
       f(
         "empty",
@@ -176,17 +189,19 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "dash",
         "Double-hyphen ' -- ' instances",
         ids.dash.length,
-        ids.dash.length > 0 ? "warn" : "ok",
+        fixSev(ids.dash.length, auto.dash),
         "Enable 'Em dashes' cleanup.",
         ids.dash,
+        auto.dash,
       ),
       f(
         "qq",
         "Paragraphs with straight quotes",
         ids.qq.length,
-        ids.qq.length > 0 ? "warn" : "ok",
+        fixSev(ids.qq.length, auto.qq),
         "Enable 'Smart quotes'.",
         ids.qq,
+        auto.qq,
       ),
       f(
         "bleed",
@@ -292,7 +307,14 @@ export function DiagnosticsPanel({ onJump }: Props) {
                   <span className="flex min-w-0 items-start gap-1.5">
                     <SeverityIcon severity={f.severity} count={f.count} />
                     <span className="min-w-0 flex-1 leading-tight text-foreground">
-                      <span className="block truncate text-[11px]">{f.label}</span>
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-[11px]">{f.label}</span>
+                        {f.severity === "fixed" && (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+                            <Sparkles className="h-2.5 w-2.5" /> auto-fixed
+                          </span>
+                        )}
+                      </span>
                       {f.hint && f.count > 0 && f.severity === "warn" && (
                         <span className="mt-0.5 block text-[10px] leading-snug text-muted-foreground">
                           {f.hint}
@@ -313,7 +335,9 @@ export function DiagnosticsPanel({ onJump }: Props) {
                       className={`tabular-nums text-[11px] font-semibold ${
                         f.severity === "warn" && f.count > 0
                           ? "text-amber-600"
-                          : "text-muted-foreground"
+                          : f.severity === "fixed"
+                            ? "text-emerald-600 line-through decoration-emerald-600/60 dark:text-emerald-400"
+                            : "text-muted-foreground"
                       }`}
                     >
                       {f.count.toLocaleString()}
@@ -333,5 +357,7 @@ function SeverityIcon({ severity, count }: { severity: Severity; count: number }
   if (severity === "info") return <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />;
   if (severity === "warn" && count > 0)
     return <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />;
+  if (severity === "fixed")
+    return <Wand2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />;
   return <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500/70" />;
 }
