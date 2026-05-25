@@ -97,7 +97,9 @@ function tagOf(item: unknown): string | null {
 
 function isUnderlineEnabled(item: unknown): boolean {
   const raw = getAttr(item)["@_w:val"];
-  if (raw === undefined) return true;
+  // Per OOXML, w:val defaults to "none" when omitted. A bare <w:u w:color="..."/>
+  // sets the color a future underline would use, but does NOT turn underline on.
+  if (raw === undefined) return false;
   const val = String(raw).trim().toLowerCase();
   return val !== "" && val !== "none" && val !== "nil" && val !== "0" && val !== "false";
 }
