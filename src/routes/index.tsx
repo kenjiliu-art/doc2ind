@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
 import { buildDocx } from "@/lib/docx-build";
