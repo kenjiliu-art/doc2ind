@@ -30,6 +30,7 @@ export interface AutoApplySettings {
   closeOrphanRuns: boolean;
   trimRunBleed: boolean;
   sanitizeStyleNames: boolean;
+  removeEmptyParagraphs: boolean;
 }
 
 interface SettingsState {
