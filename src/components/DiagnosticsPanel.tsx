@@ -357,5 +357,7 @@ function SeverityIcon({ severity, count }: { severity: Severity; count: number }
   if (severity === "info") return <Info className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />;
   if (severity === "warn" && count > 0)
     return <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0 text-amber-500" />;
+  if (severity === "fixed")
+    return <Wand2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500" />;
   return <CheckCircle2 className="mt-0.5 h-3 w-3 shrink-0 text-emerald-500/70" />;
 }
