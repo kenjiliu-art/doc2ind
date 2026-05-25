@@ -48,13 +48,8 @@ export function RenameStylesPanel() {
   };
 
   return (
-    <div className="px-3 py-3 text-xs">
-      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        Paragraph styles{" "}
-        <span className="ml-1 font-medium normal-case tracking-normal text-muted-foreground/70">
-          ({doc.paragraphStyles.length})
-        </span>
-      </p>
+    <div className="px-3 pb-3 text-xs">
+
       <p className="mb-2 px-1 text-[10px] leading-snug text-muted-foreground">
         Rename to match your InDesign style names. Renames cascade to every
         paragraph using the style.
