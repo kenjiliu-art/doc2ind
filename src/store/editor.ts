@@ -576,6 +576,7 @@ export const useEditor = create<EditorState>((set, get) => {
         trimRunBleed,
         sectionBreaksToPageBreaks,
         sanitizeStyleNames,
+        removeEmptyParagraphs,
       };
       snap();
       const nextHistory = new Set(get().preflightHistory);
