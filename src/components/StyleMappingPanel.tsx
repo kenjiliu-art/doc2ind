@@ -56,13 +56,8 @@ export function StyleMappingPanel() {
   if (!doc) return null;
 
   return (
-    <div className="px-3 py-3 text-xs">
-      <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-        Source style mapping{" "}
-        <span className="ml-1 font-medium normal-case tracking-normal text-muted-foreground/70">
-          ({sources.length})
-        </span>
-      </p>
+    <div className="px-3 pb-3 text-xs">
+
       <p className="mb-2 px-1 text-[10px] leading-snug text-muted-foreground">
         Word styles found in this file. Remap each to one of your target paragraph
         styles, or discard the paragraphs entirely.

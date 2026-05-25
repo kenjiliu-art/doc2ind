@@ -10,6 +10,7 @@ import { StyleMappingPanel } from "@/components/StyleMappingPanel";
 import { RenameStylesPanel } from "@/components/RenameStylesPanel";
 import { DiagnosticsPanel } from "@/components/DiagnosticsPanel";
 import { LivePreview } from "@/components/LivePreview";
+import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
@@ -536,11 +537,20 @@ function EditorView() {
 
         <div className="flex-1 divide-y divide-border overflow-y-auto py-2">
           <DiagnosticsPanel onJump={setSelectedId} />
-          <CleanupBar />
-          <StyleMappingPanel />
-          <RenameStylesPanel />
-          <CharStylesPanel />
+          <CollapsibleSection title="Auto-apply on import" defaultOpen>
+            <CleanupBar />
+          </CollapsibleSection>
+          <CollapsibleSection title="Source style mapping">
+            <StyleMappingPanel />
+          </CollapsibleSection>
+          <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
+            <RenameStylesPanel />
+          </CollapsibleSection>
+          <CollapsibleSection title="Character styles">
+            <CharStylesPanel />
+          </CollapsibleSection>
         </div>
+
 
         <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
           <HealthRing />
@@ -684,11 +694,20 @@ function EditorView() {
             </div>
             <div className="flex-1 divide-y divide-border overflow-y-auto">
               <DiagnosticsPanel onJump={jumpAndCloseSheet} />
-              <CleanupBar />
-              <StyleMappingPanel />
-              <RenameStylesPanel />
-              <CharStylesPanel />
+              <CollapsibleSection title="Auto-apply on import" defaultOpen>
+                <CleanupBar />
+              </CollapsibleSection>
+              <CollapsibleSection title="Source style mapping">
+                <StyleMappingPanel />
+              </CollapsibleSection>
+              <CollapsibleSection title="Paragraph styles" count={doc.paragraphStyles.length}>
+                <RenameStylesPanel />
+              </CollapsibleSection>
+              <CollapsibleSection title="Character styles">
+                <CharStylesPanel />
+              </CollapsibleSection>
             </div>
+
             <div className="space-y-2 border-t border-border bg-sidebar-accent/60 px-5 py-4">
               <HealthRing compact />
               <button

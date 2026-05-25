@@ -1,6 +1,6 @@
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import { Sparkles } from "lucide-react";
+
 import {
   TooltipProvider,
   Tooltip,
@@ -88,11 +88,8 @@ export function CleanupBar() {
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="space-y-4 px-3 py-3 text-xs">
+      <div className="space-y-4 px-3 pb-3 text-xs">
         <section>
-          <p className="mb-1.5 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-primary">
-            <Sparkles className="h-3 w-3" /> Auto-apply on import
-          </p>
           <div className="space-y-0.5">
             {AUTO_APPLY.map((opt) => {
               const on = autoApply[opt.key];
@@ -130,3 +127,4 @@ export function CleanupBar() {
     </TooltipProvider>
   );
 }
+
