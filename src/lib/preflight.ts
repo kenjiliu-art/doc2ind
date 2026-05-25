@@ -92,6 +92,34 @@ export function collapseBlanksToSpacing(doc: ParsedDoc): ParsedDoc {
   return { ...doc, paragraphStyles, blocks };
 }
 
+/** 2. Remove paragraphs that contain no visible text. */
+function isEmptyParagraph(p: ParagraphBlock): boolean {
+  return p.runs.length === 1 && p.runs[0].text === "\n";
+}
+
+export function removeEmptyParagraphs(doc: ParsedDoc): ParsedDoc {
+  const filterBlocks = (blocks: Block[]): Block[] => {
+    const out: Block[] = [];
+    for (const b of blocks) {
+      if (b.kind === "paragraph") {
+        if (!isEmptyParagraph(b)) out.push(b);
+      } else {
+        out.push({
+          ...b,
+          rows: b.rows.map((row) =>
+            row.map((cell) => ({
+              ...cell,
+              paragraphs: cell.paragraphs.filter((p) => !isEmptyParagraph(p)),
+            })),
+          ),
+        });
+      }
+    }
+    return out;
+  };
+  return { ...doc, blocks: filterBlocks(doc.blocks) };
+}
+
 /** 4. Detect bullet/number prefixes in paragraph text and convert to list paragraphs. */
 const BULLET_RE = /^([\u2022\u25E6\u25AA\u00B7•\-\*])\s+/;
 const NUMBER_RE = /^(\d+)[.)]\s+/;
