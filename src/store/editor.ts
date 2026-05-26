@@ -74,6 +74,7 @@ interface EditorState {
   bulkToggleRule: (key: keyof ParagraphRules, value: boolean) => void;
   updateStyleDef: (name: string, patch: Partial<StyleDef>) => void;
   renameStyle: (oldName: string, newName: string) => void;
+  renameCharStyle: (oldName: string, newName: string) => void;
   mapSourceStyle: (sourceStyle: string, target: ParagraphStyle | "__discard") => void;
   applyDocCleanup: (keys: Array<Exclude<keyof ParagraphRules, "multiSpaces">>, value: boolean) => void;
   bulkSetMultiSpaces: (value: "none" | "en" | "em") => void;
@@ -411,6 +412,25 @@ export const useEditor = create<EditorState>((set, get) => {
           blocks: mapParagraphs(doc.blocks, (p) =>
             p.style === oldName ? { ...p, style: newName } : p,
           ),
+        },
+      });
+    },
+    renameCharStyle: (oldName, newName) => {
+      const doc = get().doc;
+      if (!doc || oldName === newName || !newName.trim()) return;
+      snap();
+      set({
+        doc: {
+          ...doc,
+          charStyles: doc.charStyles.map((c) =>
+            c.name === oldName ? { ...c, name: newName } : c,
+          ),
+          blocks: mapParagraphs(doc.blocks, (p) => ({
+            ...p,
+            runs: p.runs.map((r) =>
+              r.charStyle === oldName ? { ...r, charStyle: newName } : r,
+            ),
+          })),
         },
       });
     },
