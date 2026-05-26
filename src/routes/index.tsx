@@ -641,8 +641,25 @@ function EditorView() {
     </>
   );
 
+  const usageBadge = user ? (
+    usage?.isAdmin ? (
+      <div className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+        Admin · unlimited exports
+      </div>
+    ) : usage ? (
+      <div className="text-center text-[10px] font-medium text-muted-foreground">
+        {usage.used} / {usage.limit} free exports used
+      </div>
+    ) : null
+  ) : (
+    <div className="text-center text-[10px] text-muted-foreground">
+      Sign in to export — {FREE_EXPORT_LIMIT} free
+    </div>
+  );
+
   const exportButtons = (
     <>
+      {usageBadge}
       <button
         onClick={onExportDocx}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
