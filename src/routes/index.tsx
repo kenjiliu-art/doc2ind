@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
@@ -14,11 +16,14 @@ import { LivePreview, type PreviewFilter } from "@/components/LivePreview";
 import { PreviewFilters } from "@/components/PreviewFilters";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
+import { PaywallModal } from "@/components/PaywallModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
+import { useAuth } from "@/hooks/use-auth";
+import { getUsageInfo, recordExport, FREE_EXPORT_LIMIT } from "@/lib/usage.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
