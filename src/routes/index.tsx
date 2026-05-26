@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
@@ -14,11 +16,14 @@ import { LivePreview, type PreviewFilter } from "@/components/LivePreview";
 import { PreviewFilters } from "@/components/PreviewFilters";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
+import { PaywallModal } from "@/components/PaywallModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
+import { useAuth } from "@/hooks/use-auth";
+import { getUsageInfo, recordExport, FREE_EXPORT_LIMIT } from "@/lib/usage.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -515,13 +520,50 @@ function EditorView() {
 
   const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
+  // --- Paywall / usage gating ---
+  const { user, loading: authLoading } = useAuth();
+  const queryClient = useQueryClient();
+  const getUsage = useServerFn(getUsageInfo);
+  const recordExportFn = useServerFn(recordExport);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+
+  const { data: usage } = useQuery({
+    queryKey: ["usage", user?.id ?? "anon"],
+    queryFn: () => getUsage(),
+    enabled: !!user,
+    staleTime: 10_000,
+  });
+
+  // Gate any export. Returns true if export may proceed (and records it).
+  const gateExport = async (kind: string): Promise<boolean> => {
+    if (authLoading) return false;
+    if (!user) {
+      setPaywallOpen(true);
+      return false;
+    }
+    try {
+      const res = await recordExportFn({ data: { kind } });
+      queryClient.invalidateQueries({ queryKey: ["usage", user.id] });
+      if (!res.allowed) {
+        setPaywallOpen(true);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not verify export quota");
+      return false;
+    }
+  };
+
   const onExportDocx = async () => {
+    if (!(await gateExport("docx"))) return;
     const current = countIssuesDetailed(doc);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
     toastExportSummary(initialBreakdown, current, ".docx");
   };
-  const onExportTagged = () => {
+  const onExportTagged = async () => {
+    if (!(await gateExport("tagged"))) return;
     const current = countIssuesDetailed(doc);
     const txt = buildTaggedText(doc);
     const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
@@ -599,8 +641,25 @@ function EditorView() {
     </>
   );
 
+  const usageBadge = user ? (
+    usage?.isAdmin ? (
+      <div className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+        Admin · unlimited exports
+      </div>
+    ) : usage ? (
+      <div className="text-center text-[10px] font-medium text-muted-foreground">
+        {usage.used} / {usage.limit} free exports used
+      </div>
+    ) : null
+  ) : (
+    <div className="text-center text-[10px] text-muted-foreground">
+      Sign in to export — {FREE_EXPORT_LIMIT} free
+    </div>
+  );
+
   const exportButtons = (
     <>
+      {usageBadge}
       <button
         onClick={onExportDocx}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -620,6 +679,12 @@ function EditorView() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        used={usage?.used ?? 0}
+        limit={usage?.limit ?? FREE_EXPORT_LIMIT}
+      />
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
           <button
