@@ -679,6 +679,12 @@ function EditorView() {
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => setPaywallOpen(false)}
+        used={usage?.used ?? 0}
+        limit={usage?.limit ?? FREE_EXPORT_LIMIT}
+      />
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
           <button
