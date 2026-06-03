@@ -60,6 +60,9 @@ function runsToDocxRuns(
     const cs = s.charStyle ? csMap.get(s.charStyle) : undefined;
     const opts: IRunOptions = {
       text: applyCleanup(s.text, p),
+      // Reference the registered character style so InDesign maps it on Place.
+      ...(cs ? { style: styleIdFor(cs.name) } : {}),
+      // Direct formatting kept as a fallback for Word and other importers.
       ...(cs?.bold ? { bold: true } : {}),
       ...(cs?.italic ? { italics: true } : {}),
       ...(cs?.underline ? { underline: {} } : {}),
@@ -192,7 +195,22 @@ export async function buildDocx(doc: ParsedDoc): Promise<Blob> {
         keepNext: s.keepWithNext,
       },
     })),
+    characterStyles: doc.charStyles.map((c: CharStyleDef) => ({
+      id: styleIdFor(c.name),
+      name: c.name,
+      basedOn: "DefaultParagraphFont",
+      quickFormat: true,
+      run: {
+        bold: c.bold || undefined,
+        italics: c.italic || undefined,
+        underline: c.underline ? {} : undefined,
+        superScript: c.superscript || undefined,
+        subScript: c.subscript || undefined,
+        smallCaps: c.smallCaps || undefined,
+      },
+    })),
   };
+
 
   // Build footnote map: source id -> docx-js footnote key (numeric)
   const footnoteIdMap = new Map<number, number>();
