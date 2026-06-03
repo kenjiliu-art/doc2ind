@@ -566,7 +566,9 @@ function EditorView() {
     if (!(await gateExport("tagged"))) return;
     const current = countIssuesDetailed(doc);
     const txt = buildTaggedText(doc);
-    const blob = new Blob([txt], { type: "text/plain;charset=utf-8" });
+    // BOM + octet-stream so Safari/Firefox force-download instead of opening inline,
+    // and InDesign reads it as UTF-8 Tagged Text.
+    const blob = new Blob(["\uFEFF", txt], { type: "application/octet-stream" });
     saveAs(blob, `${fileName}-tagged.txt`);
     toastExportSummary(initialBreakdown, current, ".txt");
   };
