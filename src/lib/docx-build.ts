@@ -60,6 +60,9 @@ function runsToDocxRuns(
     const cs = s.charStyle ? csMap.get(s.charStyle) : undefined;
     const opts: IRunOptions = {
       text: applyCleanup(s.text, p),
+      // Reference the registered character style so InDesign maps it on Place.
+      ...(cs ? { style: styleIdFor(cs.name) } : {}),
+      // Direct formatting kept as a fallback for Word and other importers.
       ...(cs?.bold ? { bold: true } : {}),
       ...(cs?.italic ? { italics: true } : {}),
       ...(cs?.underline ? { underline: {} } : {}),
