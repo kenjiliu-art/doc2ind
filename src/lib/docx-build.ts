@@ -195,7 +195,22 @@ export async function buildDocx(doc: ParsedDoc): Promise<Blob> {
         keepNext: s.keepWithNext,
       },
     })),
+    characterStyles: doc.charStyles.map((c: CharStyleDef) => ({
+      id: styleIdFor(c.name),
+      name: c.name,
+      basedOn: "DefaultParagraphFont",
+      quickFormat: true,
+      run: {
+        bold: c.bold || undefined,
+        italics: c.italic || undefined,
+        underline: c.underline ? {} : undefined,
+        superScript: c.superscript || undefined,
+        subScript: c.subscript || undefined,
+        smallCaps: c.smallCaps || undefined,
+      },
+    })),
   };
+
 
   // Build footnote map: source id -> docx-js footnote key (numeric)
   const footnoteIdMap = new Map<number, number>();
