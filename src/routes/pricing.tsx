@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useState } from "react";
 import { Check, X } from "lucide-react";
+import { PaywallModal, type PlanId } from "@/components/PaywallModal";
 
 export const Route = createFileRoute("/pricing")({
   head: () => ({
