@@ -199,6 +199,9 @@ export function DiagnosticsPanel({ onJump }: Props) {
           ? "warn"
           : "ok";
 
+    const pw = doc.preflightWarnings ?? { trackedInsertions: 0, trackedDeletions: 0, hiddenRuns: 0, textBoxes: 0 };
+    const trackedTotal = pw.trackedInsertions + pw.trackedDeletions;
+
     const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
       f("src", "Unique source styles", sourceStyles.size, "info"),
@@ -210,6 +213,37 @@ export function DiagnosticsPanel({ onJump }: Props) {
         "No w:pStyle in source — defaulted to Body.",
         ids.unstyled,
         ids.unstyled.length,
+      ),
+      f(
+        "tracked",
+        "Tracked changes auto-accepted",
+        trackedTotal,
+        trackedTotal > 0 ? "fixed" : "ok",
+        trackedTotal > 0
+          ? `${pw.trackedInsertions} insertions kept, ${pw.trackedDeletions} deletions dropped. Without this, deleted text reappears in InDesign.`
+          : undefined,
+        [],
+        trackedTotal,
+      ),
+      f(
+        "hidden",
+        "Hidden text runs stripped",
+        pw.hiddenRuns,
+        pw.hiddenRuns > 0 ? "fixed" : "ok",
+        pw.hiddenRuns > 0
+          ? "Invisible in Word, visible in InDesign. Common source of leaked editorial notes."
+          : undefined,
+        [],
+        pw.hiddenRuns,
+      ),
+      f(
+        "txbx",
+        "Text boxes in source",
+        pw.textBoxes,
+        pw.textBoxes > 0 ? "warn" : "ok",
+        pw.textBoxes > 0
+          ? "InDesign silently truncates imports at text boxes and drops index markers. Move this content into the main flow in Word before importing."
+          : undefined,
       ),
       f("tables", "Tables", tables, "info"),
       f("fn", "Footnotes", doc.footnotes.length, "info"),
