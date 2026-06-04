@@ -747,6 +747,7 @@ function EditorView() {
                 }}
                 disabled={!canUndo}
                 title="Undo (⌘Z)"
+                aria-label="Undo"
                 className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
               >
                 <Undo2 className="h-3.5 w-3.5" />
@@ -758,6 +759,7 @@ function EditorView() {
                 }}
                 disabled={!canRedo}
                 title="Redo (⇧⌘Z)"
+                aria-label="Redo"
                 className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
               >
                 <Redo2 className="h-3.5 w-3.5" />
