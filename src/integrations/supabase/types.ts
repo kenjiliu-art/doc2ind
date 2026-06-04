@@ -35,6 +35,45 @@ export type Database = {
         }
         Relationships: []
       }
+      purchases: {
+        Row: {
+          created_at: string
+          environment: string
+          expires_at: string | null
+          id: string
+          kind: string
+          paddle_customer_id: string | null
+          paddle_transaction_id: string
+          price_id: string
+          product_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          expires_at?: string | null
+          id?: string
+          kind: string
+          paddle_customer_id?: string | null
+          paddle_transaction_id: string
+          price_id: string
+          product_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          expires_at?: string | null
+          id?: string
+          kind?: string
+          paddle_customer_id?: string | null
+          paddle_transaction_id?: string
+          price_id?: string
+          product_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -61,6 +100,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      has_paid_access: {
+        Args: { check_env?: string; user_uuid: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
