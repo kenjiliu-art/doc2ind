@@ -258,9 +258,9 @@ function UploadView() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
-        <h2 className="font-display text-4xl font-bold tracking-tight text-balance">
+        <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
           Word to InDesign, cleaned up.
-        </h2>
+        </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
           Upload a <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
           Map styles, fix formatting, and export a clean file or InDesign Tagged Text —
