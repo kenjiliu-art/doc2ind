@@ -27,6 +27,12 @@ const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
 let sectionBreakSeen = false;
 let styleIdToName = new Map<string, string>();
+const preflightCounters = {
+  trackedInsertions: 0,
+  trackedDeletions: 0,
+  hiddenRuns: 0,
+  textBoxes: 0,
+};
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
