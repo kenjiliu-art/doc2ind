@@ -27,6 +27,12 @@ const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
 let sectionBreakSeen = false;
 let styleIdToName = new Map<string, string>();
+const preflightCounters = {
+  trackedInsertions: 0,
+  trackedDeletions: 0,
+  hiddenRuns: 0,
+  textBoxes: 0,
+};
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
@@ -112,6 +118,7 @@ interface RunInfo {
   superscript: boolean;
   subscript: boolean;
   smallCaps: boolean;
+  hidden: boolean;
   hasBreak: boolean;
   /** Page break appeared before any text in this run. */
   breakBefore: boolean;
@@ -131,6 +138,7 @@ function parseRun(rNode: unknown): RunInfo {
     superscript: false,
     subscript: false,
     smallCaps: false,
+    hidden: false,
     hasBreak: false,
     breakBefore: false,
     breakAfter: false,
@@ -146,6 +154,7 @@ function parseRun(rNode: unknown): RunInfo {
         else if (kt === "w:i") info.italic = true;
         else if (kt === "w:u") info.underline = isUnderlineEnabled(k);
         else if (kt === "w:smallCaps") info.smallCaps = true;
+        else if (kt === "w:vanish") info.hidden = true;
         else if (kt === "w:vertAlign") {
           const val = getAttr(k)["@_w:val"];
           if (val === "superscript") info.superscript = true;
@@ -241,47 +250,65 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
           sourceStyleId = getAttr(k)["@_w:val"];
         }
       }
-    } else if (t === "w:r") {
-      const info = parseRun(child);
-      if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
-      anyRun = true;
-      if (info.breakBefore && !anyTextSeen) pageBreakBefore = true;
-      // Count leading tabs while we're still in pure tab territory
-      let text = info.text;
-      if (leadingTabPhase) {
-        while (text.startsWith("\t")) {
-          leadingTabs++;
-          text = text.slice(1);
-        }
-        if (text.length > 0) leadingTabPhase = false;
-      }
-      if (text.length > 0) anyTextSeen = true;
-      if (text.includes("\n")) hasSoftBreaks = true;
-      if (info.fontSize && (!maxSize || info.fontSize > maxSize)) maxSize = info.fontSize;
-      if (!info.bold) allBold = false;
-      if (!info.italic) allItalic = false;
-      if (info.footnoteRef !== undefined && !text) {
-        runs.push({ text: "", footnoteRef: info.footnoteRef });
-        if (info.breakAfter) pageBreakAfter = true;
-        else if (info.hasBreak && !info.breakBefore) pageBreakAfter = true;
+    } else if (t === "w:r" || t === "w:ins" || t === "w:del") {
+      // Collect the actual <w:r> nodes to process.
+      // <w:ins> = tracked insertion: accept (process inner runs).
+      // <w:del> = tracked deletion: drop (count and skip).
+      let runNodes: unknown[];
+      if (t === "w:r") {
+        runNodes = [child];
+      } else if (t === "w:ins") {
+        const inner = findTagChildren(child, "w:ins").filter((c) => tagOf(c) === "w:r");
+        preflightCounters.trackedInsertions += inner.length;
+        runNodes = inner;
+      } else {
+        const inner = findTagChildren(child, "w:del").filter((c) => tagOf(c) === "w:r");
+        preflightCounters.trackedDeletions += inner.length;
         continue;
       }
-      // Split on soft breaks into multiple spans (still same paragraph for now)
-      const parts = text.split("\n");
-      parts.forEach((part, idx) => {
-        if (part.length > 0) {
-          runs.push({ text: part, charStyle: runToCharStyle(info) });
+      for (const runNode of runNodes) {
+        const info = parseRun(runNode);
+        if (info.hidden) {
+          preflightCounters.hiddenRuns++;
+          continue;
         }
-        if (idx < parts.length - 1) {
-          runs.push({ text: "\n" });
+        if (!info.text && !info.hasBreak && info.footnoteRef === undefined) continue;
+        anyRun = true;
+        if (info.breakBefore && !anyTextSeen) pageBreakBefore = true;
+        let text = info.text;
+        if (leadingTabPhase) {
+          while (text.startsWith("\t")) {
+            leadingTabs++;
+            text = text.slice(1);
+          }
+          if (text.length > 0) leadingTabPhase = false;
         }
-      });
-      if (info.footnoteRef !== undefined) {
-        runs.push({ text: "", footnoteRef: info.footnoteRef });
+        if (text.length > 0) anyTextSeen = true;
+        if (text.includes("\n")) hasSoftBreaks = true;
+        if (info.fontSize && (!maxSize || info.fontSize > maxSize)) maxSize = info.fontSize;
+        if (!info.bold) allBold = false;
+        if (!info.italic) allItalic = false;
+        if (info.footnoteRef !== undefined && !text) {
+          runs.push({ text: "", footnoteRef: info.footnoteRef });
+          if (info.breakAfter) pageBreakAfter = true;
+          else if (info.hasBreak && !info.breakBefore) pageBreakAfter = true;
+          continue;
+        }
+        const parts = text.split("\n");
+        parts.forEach((part, idx) => {
+          if (part.length > 0) {
+            runs.push({ text: part, charStyle: runToCharStyle(info) });
+          }
+          if (idx < parts.length - 1) {
+            runs.push({ text: "\n" });
+          }
+        });
+        if (info.footnoteRef !== undefined) {
+          runs.push({ text: "", footnoteRef: info.footnoteRef });
+        }
+        if (info.breakAfter) pageBreakAfter = true;
+        if (info.hasBreak && !info.breakBefore && !info.breakAfter) pageBreakAfter = true;
       }
-      if (info.breakAfter) pageBreakAfter = true;
-      // A break in a run with no text and no breakBefore detection still acts as a trailing break
-      if (info.hasBreak && !info.breakBefore && !info.breakAfter) pageBreakAfter = true;
     }
   }
 
@@ -374,6 +401,10 @@ export async function parseDocx(
   fontCounts.clear();
   sectionBreakSeen = false;
   styleIdToName = new Map();
+  preflightCounters.trackedInsertions = 0;
+  preflightCounters.trackedDeletions = 0;
+  preflightCounters.hiddenRuns = 0;
+  preflightCounters.textBoxes = 0;
   await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
   await report(0.12, "Reading styles…");
@@ -405,6 +436,8 @@ export async function parseDocx(
   await report(0.18, "Extracting document…");
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
+  // Count text boxes via raw XML scan — they cause silent InDesign import truncation & drop index markers.
+  preflightCounters.textBoxes = (docXml.match(/<w:txbxContent[\s>]/g) ?? []).length;
 
   await report(0.25, "Parsing XML…");
   const parsed = parser.parse(docXml) as unknown[];
@@ -549,5 +582,12 @@ export async function parseDocx(
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  return { blocks, paragraphStyles, charStyles, detectedFonts, footnotes };
+  return {
+    blocks,
+    paragraphStyles,
+    charStyles,
+    detectedFonts,
+    footnotes,
+    preflightWarnings: { ...preflightCounters },
+  };
 }
