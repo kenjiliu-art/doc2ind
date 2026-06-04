@@ -138,6 +138,7 @@ function RootComponent() {
       {showHeader && <StudioHeader />}
       <Outlet />
       <Toaster position="bottom-right" richColors closeButton />
+      <SiteFooter />
     </QueryClientProvider>
   );
 }
