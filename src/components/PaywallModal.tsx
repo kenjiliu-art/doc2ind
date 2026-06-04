@@ -46,9 +46,20 @@ const PLANS: Array<{
   },
 ];
 
-export function PaywallModal({ open, onClose }: PaywallModalProps) {
+export function PaywallModal({ open, onClose, preselectedPlan }: PaywallModalProps) {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
+  const hasTriggered = useRef(false);
+
+  useEffect(() => {
+    if (open && preselectedPlan && user && !hasTriggered.current) {
+      hasTriggered.current = true;
+      handleCheckout(preselectedPlan);
+    }
+    if (!open) {
+      hasTriggered.current = false;
+    }
+  }, [open, preselectedPlan, user]);
 
   if (!open) return null;
 
