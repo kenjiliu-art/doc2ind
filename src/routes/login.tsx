@@ -8,6 +8,17 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Sign in — Word to InDesign Reformatter" },
+      {
+        name: "description",
+        content:
+          "Sign in to Word to InDesign Reformatter to manage your exports and save your progress.",
+      },
+      { property: "og:title", content: "Sign in — Word to InDesign Reformatter" },
+      {
+        property: "og:description",
+        content:
+          "Sign in to Word to InDesign Reformatter to manage your exports and save your progress.",
+      },
       { name: "robots", content: "noindex" },
     ],
   }),
