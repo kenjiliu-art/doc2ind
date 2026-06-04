@@ -89,7 +89,7 @@ function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             {mode === "signin"
               ? "Sign in to continue exporting."
-              : "Free up to 3 exports — no credit card."}
+              : "Free to try — sign up to unlock exports with a one-time payment."}
           </p>
         </div>
 
