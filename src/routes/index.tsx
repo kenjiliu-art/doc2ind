@@ -472,6 +472,29 @@ function timeAgo(ts: number) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
+function AccountLink() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <Link
+        to="/login"
+        className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+      >
+        Sign in
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/account"
+      title={user.email ?? "Account"}
+      className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+    >
+      Account
+    </Link>
+  );
+}
+
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
