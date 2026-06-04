@@ -891,6 +891,7 @@ function EditorView() {
           </SheetContent>
         </Sheet>
       </main>
+      </div>
     </div>
   );
 }
