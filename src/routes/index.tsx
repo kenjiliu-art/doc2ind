@@ -270,13 +270,14 @@ function UploadView() {
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
-          Word to InDesign, cleaned up.
+          Manuscript formatting, done in your browser.
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Upload a <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
-          Map styles, fix formatting, and export a clean file or InDesign Tagged Text —
-          everything runs in your browser.
+          Upload a Word <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
+          Clean up styles, returns, and quotes, then export a print-ready file or
+          InDesign Tagged Text — everything runs locally, no upload.
         </p>
+
 
         {restorable && (
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
