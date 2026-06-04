@@ -47,21 +47,19 @@ async function handleTransactionCompleted(data: any, env: PaddleEnv) {
       ? "lifetime_unlock"
       : "day_pass";
 
-  await getSupabase()
-    .from("purchases")
-    .upsert(
-      {
-        user_id: userId,
-        paddle_transaction_id: data.id,
-        paddle_customer_id: data.customerId ?? null,
-        price_id: priceExternalId,
-        product_id: productExternalId,
-        kind,
-        expires_at: expiresAt,
-        environment: env,
-      },
-      { onConflict: "paddle_transaction_id" },
-    );
+  await (getSupabase().from("purchases") as any).upsert(
+    {
+      user_id: userId,
+      paddle_transaction_id: data.id,
+      paddle_customer_id: data.customerId ?? null,
+      price_id: priceExternalId,
+      product_id: productExternalId,
+      kind,
+      expires_at: expiresAt,
+      environment: env,
+    },
+    { onConflict: "paddle_transaction_id" },
+  );
 }
 
 async function handleWebhook(req: Request, env: PaddleEnv) {
