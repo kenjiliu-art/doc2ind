@@ -29,11 +29,11 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Word to InDesign Reformatter — Clean .docx for InDesign Import" },
+      { title: "Word to InDesign Reformatter — Clean .docx for InDesign" },
       {
         name: "description",
         content:
-          "Free browser tool to prepare Microsoft Word .docx files for Adobe InDesign. Map paragraph and character styles, fix soft returns, smart quotes, tabs, and export clean .docx or tagged text — no upload, runs locally.",
+          "Free browser tool to prepare Word .docx files for InDesign. Map styles, fix formatting, and export clean files or tagged text — no upload, runs locally.",
       },
       {
         name: "keywords",
@@ -258,9 +258,9 @@ function UploadView() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
-        <h2 className="font-display text-4xl font-bold tracking-tight text-balance">
+        <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
           Word to InDesign, cleaned up.
-        </h2>
+        </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
           Upload a <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
           Map styles, fix formatting, and export a clean file or InDesign Tagged Text —
@@ -747,6 +747,7 @@ function EditorView() {
                 }}
                 disabled={!canUndo}
                 title="Undo (⌘Z)"
+                aria-label="Undo"
                 className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
               >
                 <Undo2 className="h-3.5 w-3.5" />
@@ -758,6 +759,7 @@ function EditorView() {
                 }}
                 disabled={!canRedo}
                 title="Redo (⇧⌘Z)"
+                aria-label="Redo"
                 className="rounded p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-30"
               >
                 <Redo2 className="h-3.5 w-3.5" />
