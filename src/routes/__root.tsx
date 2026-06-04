@@ -11,6 +11,7 @@ import {
 
 import appCss from "../styles.css?url";
 import { StudioHeader } from "@/components/StudioHeader";
+import { SiteFooter } from "@/components/SiteFooter";
 import { Toaster } from "sonner";
 
 function NotFoundComponent() {
@@ -138,6 +139,7 @@ function RootComponent() {
       {showHeader && <StudioHeader />}
       <Outlet />
       <Toaster position="bottom-right" richColors closeButton />
+      <SiteFooter />
     </QueryClientProvider>
   );
 }

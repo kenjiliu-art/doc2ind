@@ -31,7 +31,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: "Can I get a refund?",
-    a: "Yes. Refunds are handled by our payment processor, Paddle, within 30 days of purchase. Email us if you have any issue and we'll sort it out.",
+    a: "Yes. We offer a 30-day money-back guarantee on all purchases. Refunds are processed by our payment provider, Paddle. You can request a refund via paddle.net or by emailing us. See our full refund policy for details.",
   },
   {
     q: "Who is this tool for?",
