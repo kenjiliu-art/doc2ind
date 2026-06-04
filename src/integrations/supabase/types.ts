@@ -35,6 +35,33 @@ export type Database = {
         }
         Relationships: []
       }
+      payment_failures: {
+        Row: {
+          created_at: string
+          environment: string
+          id: string
+          paddle_transaction_id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          environment?: string
+          id?: string
+          paddle_transaction_id: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          environment?: string
+          id?: string
+          paddle_transaction_id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       purchases: {
         Row: {
           created_at: string
