@@ -5,4 +5,4 @@
 ## Pages
 
 - [Home](/): Upload a .docx, format your manuscript, fix styles, and export a clean file or InDesign Tagged Text.
-
+- [Free Manuscript Formatter](/free-manuscript-formatter): Landing page for authors and novelists — what the free manuscript formatter does, how it works, and FAQs.
