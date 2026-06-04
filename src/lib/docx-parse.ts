@@ -118,6 +118,7 @@ interface RunInfo {
   superscript: boolean;
   subscript: boolean;
   smallCaps: boolean;
+  hidden: boolean;
   hasBreak: boolean;
   /** Page break appeared before any text in this run. */
   breakBefore: boolean;
@@ -137,6 +138,7 @@ function parseRun(rNode: unknown): RunInfo {
     superscript: false,
     subscript: false,
     smallCaps: false,
+    hidden: false,
     hasBreak: false,
     breakBefore: false,
     breakAfter: false,
@@ -152,6 +154,7 @@ function parseRun(rNode: unknown): RunInfo {
         else if (kt === "w:i") info.italic = true;
         else if (kt === "w:u") info.underline = isUnderlineEnabled(k);
         else if (kt === "w:smallCaps") info.smallCaps = true;
+        else if (kt === "w:vanish") info.hidden = true;
         else if (kt === "w:vertAlign") {
           const val = getAttr(k)["@_w:val"];
           if (val === "superscript") info.superscript = true;
