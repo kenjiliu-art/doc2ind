@@ -137,6 +137,16 @@ const TIERS: Tier[] = [
 ];
 
 function PricingPage() {
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [preselectedPlan, setPreselectedPlan] = useState<PlanId | undefined>(
+    undefined,
+  );
+
+  const openPaywall = (plan: PlanId) => {
+    setPreselectedPlan(plan);
+    setPaywallOpen(true);
+  };
+
   return (
     <main className="min-h-screen bg-background text-foreground">
       <section className="mx-auto max-w-6xl px-6 pb-20 pt-16 sm:pt-24">
@@ -201,16 +211,30 @@ function PricingPage() {
                 ))}
               </ul>
 
-              <Link
-                to="/"
-                className={`mt-7 rounded-md px-4 py-2.5 text-center text-sm font-semibold transition ${
-                  tier.highlight
-                    ? "bg-primary text-primary-foreground hover:opacity-90"
-                    : "border border-border bg-background text-foreground hover:bg-muted"
-                }`}
-              >
-                {tier.cta}
-              </Link>
+              {tier.planId ? (
+                <button
+                  type="button"
+                  onClick={() => openPaywall(tier.planId!)}
+                  className={`mt-7 rounded-md px-4 py-2.5 text-center text-sm font-semibold transition ${
+                    tier.highlight
+                      ? "bg-primary text-primary-foreground hover:opacity-90"
+                      : "border border-border bg-background text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {tier.cta}
+                </button>
+              ) : (
+                <Link
+                  to="/"
+                  className={`mt-7 rounded-md px-4 py-2.5 text-center text-sm font-semibold transition ${
+                    tier.highlight
+                      ? "bg-primary text-primary-foreground hover:opacity-90"
+                      : "border border-border bg-background text-foreground hover:bg-muted"
+                  }`}
+                >
+                  {tier.cta}
+                </Link>
+              )}
             </div>
           ))}
         </div>
@@ -238,6 +262,15 @@ function PricingPage() {
           .
         </div>
       </section>
+
+      <PaywallModal
+        open={paywallOpen}
+        onClose={() => {
+          setPaywallOpen(false);
+          setPreselectedPlan(undefined);
+        }}
+        preselectedPlan={preselectedPlan}
+      />
     </main>
   );
 }
