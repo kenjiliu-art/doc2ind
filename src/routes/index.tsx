@@ -326,7 +326,16 @@ function UploadView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 px-6 pt-4">
+        <Link
+          to="/pricing"
+          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+        >
+          Pricing
+        </Link>
+        <AccountLink />
+      </div>
+      <main className="mx-auto max-w-3xl px-6 pb-16 pt-8">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
           Manuscript formatting, done in your browser.
         </h1>
