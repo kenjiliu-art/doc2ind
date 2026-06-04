@@ -23,7 +23,9 @@ import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
 import { useAuth } from "@/hooks/use-auth";
-import { getUsageInfo, recordExport, FREE_EXPORT_LIMIT } from "@/lib/usage.functions";
+import { getUsageInfo, recordExport } from "@/lib/usage.functions";
+import { getPaddleEnvironment } from "@/lib/paddle";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
