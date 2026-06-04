@@ -105,6 +105,15 @@ export function ParagraphRow({ paragraph: p, compact }: Props) {
             ))}
           </select>
 
+          {p.rules.pageBreakBefore && (
+            <span
+              title={`Page break before. InDesign will only honor this if the "${p.style}" paragraph style has "Start Paragraph: On Next Page" set in Keep Options.`}
+              className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-primary"
+            >
+              ⤓ New page ({p.style})
+            </span>
+          )}
+
           {p.blanksBefore > 0 && (
             <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
               {p.blanksBefore} blank{p.blanksBefore > 1 ? "s" : ""} before
