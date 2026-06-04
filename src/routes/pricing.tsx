@@ -81,6 +81,7 @@ type Tier = {
   tagline: string;
   cta: string;
   highlight?: boolean;
+  planId?: PlanId;
   features: { label: string; included: boolean }[];
 };
 
