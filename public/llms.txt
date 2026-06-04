@@ -1,7 +1,8 @@
-# Word to InDesign Reformatter
+# Manuscript Formatting Tool
 
-> Free browser tool that prepares Microsoft Word .docx files for Adobe InDesign — maps paragraph and character styles, cleans up formatting, and exports clean .docx or InDesign Tagged Text. Runs entirely in your browser; nothing is uploaded.
+> Free browser-based manuscript formatting tool that prepares Microsoft Word .docx files for print and Adobe InDesign — maps paragraph and character styles, cleans up returns/quotes/tabs, and exports clean .docx or InDesign Tagged Text. Runs entirely in your browser; nothing is uploaded.
 
 ## Pages
 
-- [Home](/): Upload a .docx, map styles, fix formatting, and export a clean file or InDesign Tagged Text.
+- [Home](/): Upload a .docx, format your manuscript, fix styles, and export a clean file or InDesign Tagged Text.
+

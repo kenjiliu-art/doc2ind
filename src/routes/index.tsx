@@ -29,30 +29,30 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Word to InDesign Reformatter — Clean .docx for InDesign" },
+      { title: "Manuscript Formatting Tool — Clean Word Files for InDesign" },
       {
         name: "description",
         content:
-          "Free browser tool to prepare Word .docx files for InDesign. Map styles, fix formatting, and export clean files or tagged text — no upload, runs locally.",
+          "Free browser-based manuscript formatting tool. Clean up Word .docx files, fix styles, smart quotes, and soft returns, then export print-ready files or InDesign Tagged Text.",
       },
       {
         name: "keywords",
         content:
-          "Word to InDesign, docx to InDesign, InDesign import, tagged text export, paragraph styles, character styles, docx cleanup, smart quotes, soft returns, InDesign workflow",
+          "manuscript formatting, manuscript format, book manuscript formatting, novel formatting, Word to InDesign, docx to InDesign, InDesign import, tagged text export, paragraph styles, character styles, docx cleanup, smart quotes, soft returns",
       },
       { name: "robots", content: "index, follow, max-image-preview:large" },
-      { property: "og:title", content: "Word to InDesign Reformatter" },
+      { property: "og:title", content: "Manuscript Formatting Tool — Word to InDesign" },
       {
         property: "og:description",
         content:
-          "Reformat .docx files for InDesign import with paragraph + character styles, cleanup rules, and tagged-text export. Runs entirely in your browser.",
+          "Format your manuscript and prep .docx files for InDesign in the browser. Style mapping, cleanup rules, and tagged-text export — no upload.",
       },
       { property: "og:url", content: "/" },
-      { name: "twitter:title", content: "Word to InDesign Reformatter" },
+      { name: "twitter:title", content: "Manuscript Formatting Tool" },
       {
         name: "twitter:description",
         content:
-          "Clean Word .docx files for InDesign — style mapping, cleanup rules, tagged-text export. In-browser, no upload.",
+          "Format manuscripts and clean Word .docx files for InDesign — style mapping, cleanup, tagged-text export. In-browser, no upload.",
       },
     ],
     links: [{ rel: "canonical", href: "/" }],
@@ -62,13 +62,15 @@ export const Route = createFileRoute("/")({
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "SoftwareApplication",
-          name: "Word to InDesign Reformatter",
+          name: "Manuscript Formatting Tool",
+          alternateName: "Word to InDesign Reformatter",
           applicationCategory: "DesignApplication",
           operatingSystem: "Web",
           description:
-            "Browser-based tool that converts Microsoft Word .docx files into InDesign-ready documents and tagged text, with paragraph/character style mapping and pre-import cleanup.",
+            "Browser-based manuscript formatting tool that cleans Microsoft Word .docx files for print and InDesign import, with paragraph/character style mapping and pre-import cleanup.",
           offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
           featureList: [
+            "Manuscript formatting cleanup",
             "Paragraph and character style mapping",
             "Soft return to hard return conversion",
             "Smart quotes and dash normalization",
@@ -84,6 +86,14 @@ export const Route = createFileRoute("/")({
           "@context": "https://schema.org",
           "@type": "FAQPage",
           mainEntity: [
+            {
+              "@type": "Question",
+              name: "What is manuscript formatting?",
+              acceptedAnswer: {
+                "@type": "Answer",
+                text: "Manuscript formatting is the process of cleaning up a Word document so it follows consistent paragraph and character styles, uses real returns instead of soft breaks, and is ready for typesetting in InDesign or submission to a publisher.",
+              },
+            },
             {
               "@type": "Question",
               name: "Does this upload my Word document to a server?",
@@ -113,6 +123,7 @@ export const Route = createFileRoute("/")({
       },
     ],
   }),
+
   component: IndexPage,
 });
 
@@ -259,13 +270,14 @@ function UploadView() {
     <div className="min-h-screen bg-background text-foreground">
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
-          Word to InDesign, cleaned up.
+          Manuscript formatting, done in your browser.
         </h1>
         <p className="mt-4 max-w-xl text-base leading-relaxed text-muted-foreground">
-          Upload a <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
-          Map styles, fix formatting, and export a clean file or InDesign Tagged Text —
-          everything runs in your browser.
+          Upload a Word <code className="rounded bg-muted px-1 font-mono text-foreground">.docx</code>.
+          Clean up styles, returns, and quotes, then export a print-ready file or
+          InDesign Tagged Text — everything runs locally, no upload.
         </p>
+
 
         {restorable && (
           <div className="mt-8 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
