@@ -821,6 +821,8 @@ function EditorView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <AccountLink />
+
             <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
               <button
                 onClick={(e) => {
