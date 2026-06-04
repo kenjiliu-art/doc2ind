@@ -36,6 +36,10 @@ export function loadSession(): Snapshot | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Snapshot;
     if (!parsed?.doc || !Array.isArray(parsed.doc.blocks)) return null;
+    // Backfill preflightWarnings for sessions saved before this field existed.
+    if (!parsed.doc.preflightWarnings) {
+      parsed.doc.preflightWarnings = { trackedInsertions: 0, trackedDeletions: 0, hiddenRuns: 0, textBoxes: 0 };
+    }
     return parsed;
   } catch {
     return null;
