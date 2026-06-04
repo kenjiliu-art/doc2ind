@@ -540,12 +540,14 @@ function EditorView() {
   const getUsage = useServerFn(getUsageInfo);
   const recordExportFn = useServerFn(recordExport);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const paddleEnv = getPaddleEnvironment();
 
   const { data: usage } = useQuery({
-    queryKey: ["usage", user?.id ?? "anon"],
-    queryFn: () => getUsage(),
+    queryKey: ["usage", user?.id ?? "anon", paddleEnv],
+    queryFn: () => getUsage({ data: { environment: paddleEnv } }),
     enabled: !!user,
     staleTime: 10_000,
+    refetchInterval: (q) => (q.state.data?.hasAccess ? false : 5_000),
   });
 
   // Gate any export. Returns true if export may proceed (and records it).
@@ -556,8 +558,8 @@ function EditorView() {
       return false;
     }
     try {
-      const res = await recordExportFn({ data: { kind } });
-      queryClient.invalidateQueries({ queryKey: ["usage", user.id] });
+      const res = await recordExportFn({ data: { kind, environment: paddleEnv } });
+      queryClient.invalidateQueries({ queryKey: ["usage", user.id, paddleEnv] });
       if (!res.allowed) {
         setPaywallOpen(true);
         return false;
