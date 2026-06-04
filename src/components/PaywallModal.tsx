@@ -137,52 +137,65 @@ export function PaywallModal({ open, onClose, preselectedPlan }: PaywallModalPro
             </div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              {PLANS.map((plan) => (
-                <div
-                  key={plan.id}
-                  className={`relative flex flex-col rounded-xl border p-5 ${
-                    plan.highlight
-                      ? "border-primary bg-primary/5"
-                      : "border-border bg-background"
-                  }`}
-                >
-                  {plan.highlight && (
-                    <div className="absolute -top-2 right-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
-                      Best value
-                    </div>
-                  )}
-                  <div className="font-display text-lg font-bold text-foreground">
-                    {plan.name}
-                  </div>
-                  <div className="mt-1 text-3xl font-bold text-foreground">
-                    {plan.price}
-                  </div>
-                  <div className="text-xs text-muted-foreground">{plan.tagline}</div>
-                  <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
-                    {plan.features.map((f) => (
-                      <li key={f} className="flex items-start gap-2">
-                        <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
-                        <span>{f}</span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => handleCheckout(plan.id)}
-                    disabled={loadingPlan !== null}
-                    className={`mt-5 flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50 ${
-                      plan.highlight
-                        ? "bg-primary text-primary-foreground hover:opacity-90"
-                        : "border border-border bg-background text-foreground hover:bg-muted"
+              {PLANS.map((plan) => {
+                const isSelected = autoCheckoutPlan === plan.id;
+                return (
+                  <div
+                    key={plan.id}
+                    className={`relative flex flex-col rounded-xl border p-5 transition-all ${
+                      isSelected
+                        ? "border-primary ring-1 ring-primary bg-primary/5"
+                        : plan.highlight
+                          ? "border-primary bg-primary/5"
+                          : "border-border bg-background"
                     }`}
                   >
-                    {loadingPlan === plan.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      `Get ${plan.name}`
+                    {isSelected && (
+                      <div className="absolute -top-2 left-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                        Selected
+                      </div>
                     )}
-                  </button>
-                </div>
-              ))}
+                    {plan.highlight && !isSelected && (
+                      <div className="absolute -top-2 right-4 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-primary-foreground">
+                        Best value
+                      </div>
+                    )}
+                    <div className="font-display text-lg font-bold text-foreground">
+                      {plan.name}
+                    </div>
+                    <div className="mt-1 text-3xl font-bold text-foreground">
+                      {plan.price}
+                    </div>
+                    <div className="text-xs text-muted-foreground">{plan.tagline}</div>
+                    <ul className="mt-4 space-y-2 text-xs text-muted-foreground">
+                      {plan.features.map((f) => (
+                        <li key={f} className="flex items-start gap-2">
+                          <Check className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => handleCheckout(plan.id)}
+                      disabled={loadingPlan !== null}
+                      className={`mt-5 flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition disabled:opacity-60 ${
+                        isSelected || plan.highlight
+                          ? "bg-primary text-primary-foreground hover:opacity-90"
+                          : "border border-border bg-background text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {loadingPlan === plan.id ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          {isSelected ? "Starting checkout…" : "Loading…"}
+                        </>
+                      ) : (
+                        `Get ${plan.name}`
+                      )}
+                    </button>
+                  </div>
+                );
+              })}
             </div>
 
             <p className="mt-5 text-center text-[11px] text-muted-foreground">
