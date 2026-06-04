@@ -1,16 +1,17 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import { useAuth } from "@/hooks/use-auth";
 import { initializePaddle, getPaddlePriceId, getPaddleEnvironment } from "@/lib/paddle";
 import { Loader2, Check } from "lucide-react";
 import { toast } from "sonner";
 
+export type PlanId = "day_pass_one_time" | "lifetime_one_time";
+
 interface PaywallModalProps {
   open: boolean;
   onClose: () => void;
+  preselectedPlan?: PlanId;
 }
-
-type PlanId = "day_pass_one_time" | "lifetime_one_time";
 
 const PLANS: Array<{
   id: PlanId;
@@ -45,9 +46,20 @@ const PLANS: Array<{
   },
 ];
 
-export function PaywallModal({ open, onClose }: PaywallModalProps) {
+export function PaywallModal({ open, onClose, preselectedPlan }: PaywallModalProps) {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
+  const hasTriggered = useRef(false);
+
+  useEffect(() => {
+    if (open && preselectedPlan && user && !hasTriggered.current) {
+      hasTriggered.current = true;
+      handleCheckout(preselectedPlan);
+    }
+    if (!open) {
+      hasTriggered.current = false;
+    }
+  }, [open, preselectedPlan, user]);
 
   if (!open) return null;
 
