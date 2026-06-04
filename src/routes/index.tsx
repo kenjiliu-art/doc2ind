@@ -29,11 +29,11 @@ import { toast } from "sonner";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Word to InDesign Reformatter — Clean .docx for InDesign Import" },
+      { title: "Word to InDesign Reformatter — Clean .docx for InDesign" },
       {
         name: "description",
         content:
-          "Free browser tool to prepare Microsoft Word .docx files for Adobe InDesign. Map paragraph and character styles, fix soft returns, smart quotes, tabs, and export clean .docx or tagged text — no upload, runs locally.",
+          "Free browser tool to prepare Word .docx files for InDesign. Map styles, fix formatting, and export clean files or tagged text — no upload, runs locally.",
       },
       {
         name: "keywords",
