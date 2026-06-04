@@ -90,7 +90,7 @@ const TIERS: Tier[] = [
     price: "$0",
     cadence: "forever",
     tagline: "Full tool, no exports.",
-    cta: "Open the tool",
+    cta: "Start free",
     features: [
       { label: "Upload & parse .docx in browser", included: true },
       { label: "Diagnostics & cleanup preview", included: true },
@@ -105,7 +105,8 @@ const TIERS: Tier[] = [
     price: "$5",
     cadence: "one-time, 24h",
     tagline: "One manuscript, done today.",
-    cta: "Get Day Pass",
+    cta: "Export with Day Pass",
+    planId: "day_pass_one_time" as PlanId,
     features: [
       { label: "Everything in Free to Try", included: true },
       { label: "Unlimited .docx exports for 24h", included: true },
@@ -120,7 +121,8 @@ const TIERS: Tier[] = [
     price: "$29",
     cadence: "one-time, forever",
     tagline: "One payment. Done.",
-    cta: "Get Lifetime",
+    cta: "Unlock Lifetime",
+    planId: "lifetime_one_time" as PlanId,
     highlight: true,
     features: [
       { label: "Everything in Day Pass", included: true },
