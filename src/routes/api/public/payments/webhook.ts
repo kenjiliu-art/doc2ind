@@ -41,11 +41,7 @@ async function handleTransactionCompleted(data: any, env: PaddleEnv) {
     return;
   }
 
-  // Look up product external id via price (transactions only carry price).
-  const productExternalId =
-    item?.price?.productId === "lifetime_unlock" || kind === "lifetime"
-      ? "lifetime_unlock"
-      : "day_pass";
+  const productExternalId = kind === "lifetime" ? "lifetime_unlock" : "day_pass";
 
   await (getSupabase().from("purchases") as any).upsert(
     {
@@ -62,12 +58,57 @@ async function handleTransactionCompleted(data: any, env: PaddleEnv) {
   );
 }
 
+async function handleTransactionPaymentFailed(data: any, env: PaddleEnv) {
+  const userId = data.customData?.userId;
+  if (!userId) return;
+  const lastPayment = Array.isArray(data.payments)
+    ? data.payments[data.payments.length - 1]
+    : null;
+  const reason =
+    lastPayment?.errorCode ||
+    lastPayment?.methodDetails?.type ||
+    "payment_failed";
+  await (getSupabase().from("payment_failures") as any).insert({
+    user_id: userId,
+    paddle_transaction_id: data.id,
+    reason: String(reason).slice(0, 200),
+    environment: env,
+  });
+}
+
+// User policy: revoke entitlement on FULL refunds only.
+async function handleAdjustment(data: any, env: PaddleEnv) {
+  const action = data.action; // refund | chargeback | credit | ...
+  const type = data.type; // full | partial
+  const status = data.status; // pending | approved | rejected | reversed
+  const transactionId = data.transactionId;
+  if (!transactionId) return;
+  const revokes = (action === "refund" || action === "chargeback") && type === "full";
+  const active = status === "approved" || status === "pending";
+  if (!revokes || !active) return;
+
+  await getSupabase()
+    .from("purchases")
+    .delete()
+    .eq("paddle_transaction_id", transactionId)
+    .eq("environment", env);
+}
+
 async function handleWebhook(req: Request, env: PaddleEnv) {
   const event = await verifyWebhook(req, env);
-  if (event.eventType === EventName.TransactionCompleted) {
-    await handleTransactionCompleted(event.data, env);
-  } else {
-    console.log("Unhandled event:", event.eventType);
+  switch (event.eventType) {
+    case EventName.TransactionCompleted:
+      await handleTransactionCompleted(event.data, env);
+      break;
+    case EventName.TransactionPaymentFailed:
+      await handleTransactionPaymentFailed(event.data, env);
+      break;
+    case EventName.AdjustmentCreated:
+    case EventName.AdjustmentUpdated:
+      await handleAdjustment(event.data, env);
+      break;
+    default:
+      console.log("Unhandled event:", event.eventType);
   }
 }
 
