@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -196,7 +196,63 @@ function toastExportSummary(
 
 function IndexPage() {
   const doc = useEditor((s) => s.doc);
-  return doc ? <EditorView /> : <UploadView />;
+  return (
+    <>
+      <PostCheckoutWatcher />
+      {doc ? <EditorView /> : <UploadView />}
+    </>
+  );
+}
+
+function PostCheckoutWatcher() {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const getUsage = useServerFn(getUsageInfo);
+  const paddleEnv = getPaddleEnvironment();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("checkout") !== "success") return;
+    // Clean URL immediately so refreshes don't re-trigger.
+    params.delete("checkout");
+    const qs = params.toString();
+    window.history.replaceState(
+      {},
+      "",
+      window.location.pathname + (qs ? `?${qs}` : ""),
+    );
+    if (!user) return;
+
+    toast.success("Payment received — unlocking exports…");
+
+    let cancelled = false;
+    const deadline = Date.now() + 30_000;
+    const poll = async () => {
+      if (cancelled) return;
+      try {
+        const usage = await getUsage({ data: { environment: paddleEnv } });
+        queryClient.setQueryData(["usage", user.id, paddleEnv], usage);
+        if (usage.hasAccess) {
+          toast.success(
+            usage.entitlementKind === "lifetime"
+              ? "Lifetime Unlock active — unlimited exports."
+              : "Day Pass active for the next 24 hours.",
+          );
+          return;
+        }
+      } catch {
+        /* keep polling */
+      }
+      if (Date.now() < deadline) setTimeout(poll, 2_000);
+    };
+    poll();
+    return () => {
+      cancelled = true;
+    };
+  }, [user, queryClient, getUsage, paddleEnv]);
+
+  return null;
 }
 
 function UploadView() {
@@ -270,7 +326,16 @@ function UploadView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <main className="mx-auto max-w-3xl px-6 py-16">
+      <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 px-6 pt-4">
+        <Link
+          to="/pricing"
+          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
+        >
+          Pricing
+        </Link>
+        <AccountLink />
+      </div>
+      <main className="mx-auto max-w-3xl px-6 pb-16 pt-8">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
           Manuscript formatting, done in your browser.
         </h1>
@@ -414,6 +479,29 @@ function timeAgo(ts: number) {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
+}
+
+function AccountLink() {
+  const { user } = useAuth();
+  if (!user) {
+    return (
+      <Link
+        to="/login"
+        className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+      >
+        Sign in
+      </Link>
+    );
+  }
+  return (
+    <Link
+      to="/account"
+      title={user.email ?? "Account"}
+      className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
+    >
+      Account
+    </Link>
+  );
 }
 
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
@@ -765,6 +853,8 @@ function EditorView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
+            <AccountLink />
+
             <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
               <button
                 onClick={(e) => {
