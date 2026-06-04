@@ -436,6 +436,8 @@ export async function parseDocx(
   await report(0.18, "Extracting document…");
   const docXml = await zip.file("word/document.xml")?.async("string");
   if (!docXml) throw new Error("No word/document.xml found in file.");
+  // Count text boxes via raw XML scan — they cause silent InDesign import truncation & drop index markers.
+  preflightCounters.textBoxes = (docXml.match(/<w:txbxContent[\s>]/g) ?? []).length;
 
   await report(0.25, "Parsing XML…");
   const parsed = parser.parse(docXml) as unknown[];
@@ -580,5 +582,12 @@ export async function parseDocx(
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count);
 
-  return { blocks, paragraphStyles, charStyles, detectedFonts, footnotes };
+  return {
+    blocks,
+    paragraphStyles,
+    charStyles,
+    detectedFonts,
+    footnotes,
+    preflightWarnings: { ...preflightCounters },
+  };
 }
