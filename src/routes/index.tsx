@@ -23,7 +23,9 @@ import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
 import { useAuth } from "@/hooks/use-auth";
-import { getUsageInfo, recordExport, FREE_EXPORT_LIMIT } from "@/lib/usage.functions";
+import { getUsageInfo, recordExport } from "@/lib/usage.functions";
+import { getPaddleEnvironment } from "@/lib/paddle";
+import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -538,12 +540,14 @@ function EditorView() {
   const getUsage = useServerFn(getUsageInfo);
   const recordExportFn = useServerFn(recordExport);
   const [paywallOpen, setPaywallOpen] = useState(false);
+  const paddleEnv = getPaddleEnvironment();
 
   const { data: usage } = useQuery({
-    queryKey: ["usage", user?.id ?? "anon"],
-    queryFn: () => getUsage(),
+    queryKey: ["usage", user?.id ?? "anon", paddleEnv],
+    queryFn: () => getUsage({ data: { environment: paddleEnv } }),
     enabled: !!user,
     staleTime: 10_000,
+    refetchInterval: (q) => (q.state.data?.hasAccess ? false : 5_000),
   });
 
   // Gate any export. Returns true if export may proceed (and records it).
@@ -554,8 +558,8 @@ function EditorView() {
       return false;
     }
     try {
-      const res = await recordExportFn({ data: { kind } });
-      queryClient.invalidateQueries({ queryKey: ["usage", user.id] });
+      const res = await recordExportFn({ data: { kind, environment: paddleEnv } });
+      queryClient.invalidateQueries({ queryKey: ["usage", user.id, paddleEnv] });
       if (!res.allowed) {
         setPaywallOpen(true);
         return false;
@@ -660,14 +664,27 @@ function EditorView() {
       <div className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
         Admin · unlimited exports
       </div>
-    ) : usage ? (
-      <div className="text-center text-[10px] font-medium text-muted-foreground">
-        {usage.used} / {usage.limit} free exports used
+    ) : usage?.hasAccess ? (
+      <div className="rounded-md bg-primary/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-primary">
+        {usage.entitlementKind === "lifetime"
+          ? "Lifetime · unlimited"
+          : `Day Pass · active${
+              usage.entitlementExpiresAt
+                ? ` until ${new Date(usage.entitlementExpiresAt).toLocaleString()}`
+                : ""
+            }`}
       </div>
+    ) : usage ? (
+      <button
+        onClick={() => setPaywallOpen(true)}
+        className="w-full rounded-md border border-dashed border-border px-2 py-1 text-center text-[10px] font-medium text-muted-foreground hover:border-primary hover:text-primary"
+      >
+        Free to try · unlock exports →
+      </button>
     ) : null
   ) : (
     <div className="text-center text-[10px] text-muted-foreground">
-      Sign in to export — {FREE_EXPORT_LIMIT} free
+      Free to try — sign in to unlock exports
     </div>
   );
 
@@ -692,13 +709,10 @@ function EditorView() {
   );
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        used={usage?.used ?? 0}
-        limit={usage?.limit ?? FREE_EXPORT_LIMIT}
-      />
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
+      <PaymentTestModeBanner />
+      <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)} />
+      <div className="flex flex-1 overflow-hidden">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
           <button
@@ -877,6 +891,7 @@ function EditorView() {
           </SheetContent>
         </Sheet>
       </main>
+      </div>
     </div>
   );
 }
