@@ -130,10 +130,23 @@ export interface Footnote {
   paragraphs: ParagraphBlock[];
 }
 
+export interface PreflightWarnings {
+  /** Count of <w:ins> runs auto-accepted (tracked insertions kept). */
+  trackedInsertions: number;
+  /** Count of <w:del> runs auto-removed (tracked deletions dropped). */
+  trackedDeletions: number;
+  /** Count of runs carrying <w:vanish/> that were auto-stripped. */
+  hiddenRuns: number;
+  /** Count of <w:txbxContent> blocks — these silently truncate InDesign imports & eat index markers. */
+  textBoxes: number;
+}
+
 export interface ParsedDoc {
   blocks: Block[];
   paragraphStyles: StyleDef[];
   charStyles: CharStyleDef[];
   detectedFonts: FontUsage[];
   footnotes: Footnote[];
+  /** Silent-corruption risks detected & auto-resolved at parse time. */
+  preflightWarnings: PreflightWarnings;
 }
