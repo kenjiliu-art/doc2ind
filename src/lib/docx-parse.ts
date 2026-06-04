@@ -401,6 +401,10 @@ export async function parseDocx(
   fontCounts.clear();
   sectionBreakSeen = false;
   styleIdToName = new Map();
+  preflightCounters.trackedInsertions = 0;
+  preflightCounters.trackedDeletions = 0;
+  preflightCounters.hiddenRuns = 0;
+  preflightCounters.textBoxes = 0;
   await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
   await report(0.12, "Reading styles…");
