@@ -58,7 +58,7 @@ export const Route = createFileRoute("/free-manuscript-formatter")({
               name: "Is this manuscript formatter really free?",
               acceptedAnswer: {
                 "@type": "Answer",
-                text: "Yes. You can upload a .docx, clean it, and export a formatted manuscript without paying or creating an account. Heavy users can unlock unlimited exports, but the formatter itself is free to use.",
+                text: "Yes, completely. You can upload a .docx, clean it, and export a formatted manuscript without paying or creating an account. There are no limits and no signup.",
               },
             },
             {
@@ -197,7 +197,7 @@ function FreeManuscriptFormatterPage() {
         <dl className="mt-6 space-y-6 text-muted-foreground">
           <Faq
             q="Is this manuscript formatter really free?"
-            a="Yes. You can upload, clean, and export a manuscript without paying or signing up. Heavy users can unlock unlimited exports, but the formatter itself is free."
+            a="Yes, completely. You can upload, clean, and export a manuscript without paying or signing up — no limits, no account."
           />
           <Faq
             q="What does a manuscript formatter actually do?"

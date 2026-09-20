@@ -1,7 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
@@ -16,16 +14,11 @@ import { LivePreview, type PreviewFilter } from "@/components/LivePreview";
 import { PreviewFilters } from "@/components/PreviewFilters";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
-import { PaywallModal } from "@/components/PaywallModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
-import { useAuth } from "@/hooks/use-auth";
-import { getUsageInfo, recordExport } from "@/lib/usage.functions";
-import { getPaddleEnvironment } from "@/lib/paddle";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -196,63 +189,7 @@ function toastExportSummary(
 
 function IndexPage() {
   const doc = useEditor((s) => s.doc);
-  return (
-    <>
-      <PostCheckoutWatcher />
-      {doc ? <EditorView /> : <UploadView />}
-    </>
-  );
-}
-
-function PostCheckoutWatcher() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const getUsage = useServerFn(getUsageInfo);
-  const paddleEnv = getPaddleEnvironment();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") !== "success") return;
-    // Clean URL immediately so refreshes don't re-trigger.
-    params.delete("checkout");
-    const qs = params.toString();
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname + (qs ? `?${qs}` : ""),
-    );
-    if (!user) return;
-
-    toast.success("Payment received — unlocking exports…");
-
-    let cancelled = false;
-    const deadline = Date.now() + 30_000;
-    const poll = async () => {
-      if (cancelled) return;
-      try {
-        const usage = await getUsage({ data: { environment: paddleEnv } });
-        queryClient.setQueryData(["usage", user.id, paddleEnv], usage);
-        if (usage.hasAccess) {
-          toast.success(
-            usage.entitlementKind === "lifetime"
-              ? "Lifetime Unlock active — unlimited exports."
-              : "Day Pass active for the next 24 hours.",
-          );
-          return;
-        }
-      } catch {
-        /* keep polling */
-      }
-      if (Date.now() < deadline) setTimeout(poll, 2_000);
-    };
-    poll();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, queryClient, getUsage, paddleEnv]);
-
-  return null;
+  return doc ? <EditorView /> : <UploadView />;
 }
 
 function UploadView() {
@@ -326,16 +263,7 @@ function UploadView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 px-6 pt-4">
-        <Link
-          to="/pricing"
-          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-        >
-          Pricing
-        </Link>
-        <AccountLink />
-      </div>
-      <main className="mx-auto max-w-3xl px-6 pb-16 pt-8">
+      <main className="mx-auto max-w-3xl px-6 pb-16 pt-12">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
           Manuscript formatting, done in your browser.
         </h1>
@@ -481,29 +409,6 @@ function timeAgo(ts: number) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-function AccountLink() {
-  const { user } = useAuth();
-  if (!user) {
-    return (
-      <Link
-        to="/login"
-        className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
-      >
-        Sign in
-      </Link>
-    );
-  }
-  return (
-    <Link
-      to="/account"
-      title={user.email ?? "Account"}
-      className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
-    >
-      Account
-    </Link>
-  );
-}
-
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -622,52 +527,13 @@ function EditorView() {
 
   const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
-  // --- Paywall / usage gating ---
-  const { user, loading: authLoading } = useAuth();
-  const queryClient = useQueryClient();
-  const getUsage = useServerFn(getUsageInfo);
-  const recordExportFn = useServerFn(recordExport);
-  const [paywallOpen, setPaywallOpen] = useState(false);
-  const paddleEnv = getPaddleEnvironment();
-
-  const { data: usage } = useQuery({
-    queryKey: ["usage", user?.id ?? "anon", paddleEnv],
-    queryFn: () => getUsage({ data: { environment: paddleEnv } }),
-    enabled: !!user,
-    staleTime: 10_000,
-    refetchInterval: (q) => (q.state.data?.hasAccess ? false : 5_000),
-  });
-
-  // Gate any export. Returns true if export may proceed (and records it).
-  const gateExport = async (kind: string): Promise<boolean> => {
-    if (authLoading) return false;
-    if (!user) {
-      setPaywallOpen(true);
-      return false;
-    }
-    try {
-      const res = await recordExportFn({ data: { kind, environment: paddleEnv } });
-      queryClient.invalidateQueries({ queryKey: ["usage", user.id, paddleEnv] });
-      if (!res.allowed) {
-        setPaywallOpen(true);
-        return false;
-      }
-      return true;
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not verify export quota");
-      return false;
-    }
-  };
-
   const onExportDocx = async () => {
-    if (!(await gateExport("docx"))) return;
     const current = countIssuesDetailed(doc);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
     toastExportSummary(initialBreakdown, current, ".docx");
   };
   const onExportTagged = async () => {
-    if (!(await gateExport("tagged"))) return;
     const current = countIssuesDetailed(doc);
     const txt = buildTaggedText(doc);
     // BOM + octet-stream so Safari/Firefox force-download instead of opening inline,
@@ -747,38 +613,8 @@ function EditorView() {
     </>
   );
 
-  const usageBadge = user ? (
-    usage?.isAdmin ? (
-      <div className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-        Admin · unlimited exports
-      </div>
-    ) : usage?.hasAccess ? (
-      <div className="rounded-md bg-primary/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-primary">
-        {usage.entitlementKind === "lifetime"
-          ? "Lifetime · unlimited"
-          : `Day Pass · active${
-              usage.entitlementExpiresAt
-                ? ` until ${new Date(usage.entitlementExpiresAt).toLocaleString()}`
-                : ""
-            }`}
-      </div>
-    ) : usage ? (
-      <button
-        onClick={() => setPaywallOpen(true)}
-        className="w-full rounded-md border border-dashed border-border px-2 py-1 text-center text-[10px] font-medium text-muted-foreground hover:border-primary hover:text-primary"
-      >
-        Free to try · unlock exports →
-      </button>
-    ) : null
-  ) : (
-    <div className="text-center text-[10px] text-muted-foreground">
-      Free to try — sign in to unlock exports
-    </div>
-  );
-
   const exportButtons = (
     <>
-      {usageBadge}
       <button
         onClick={onExportDocx}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -798,8 +634,6 @@ function EditorView() {
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
-      <PaymentTestModeBanner />
-      <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)} />
       <div className="flex flex-1 overflow-hidden">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
@@ -853,8 +687,6 @@ function EditorView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <AccountLink />
-
             <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
               <button
                 onClick={(e) => {

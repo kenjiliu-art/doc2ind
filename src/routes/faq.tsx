@@ -6,20 +6,12 @@ const FAQS: { q: string; a: string }[] = [
     a: "It's a browser-based tool that cleans up Word manuscripts and exports them as a print-ready .docx or InDesign Tagged Text file. It removes soft returns, fixes smart quotes, normalizes paragraph and character styles, and produces a file ready to flow into InDesign.",
   },
   {
-    q: "Is it really free to try?",
-    a: "Yes. You can upload a .docx, run cleanup, map styles, and preview the entire result for free. The only thing behind the paywall is the actual export button — you only pay when you're ready to download the cleaned file.",
-  },
-  {
-    q: "What's the difference between the Day Pass and Lifetime Unlock?",
-    a: "The $5 Day Pass gives you unlimited exports for 24 hours — perfect if you're formatting a single manuscript on a deadline. The $29 Lifetime Unlock is a one-time payment that gives you unlimited exports forever, including all future updates. There's no subscription on either plan.",
-  },
-  {
-    q: "Is there a monthly subscription?",
-    a: "No. Both paid options are one-time payments. We don't store your card and there's nothing to cancel.",
+    q: "Is it really free?",
+    a: "Yes — completely. Upload a .docx, run cleanup, map styles, preview the result, and export as much as you like. There are no accounts, no paywalls, and no limits.",
   },
   {
     q: "Does the tool upload my manuscript to a server?",
-    a: "No. Parsing, cleanup, style mapping, preview, and export all run locally in your browser. Your manuscript never leaves your device. Only the purchase itself goes through our payment processor.",
+    a: "No. Parsing, cleanup, style mapping, preview, and export all run locally in your browser. Your manuscript never leaves your device.",
   },
   {
     q: "What file formats does it accept?",
@@ -28,10 +20,6 @@ const FAQS: { q: string; a: string }[] = [
   {
     q: "Will the export work in Adobe InDesign?",
     a: "Yes. The Tagged Text export maps paragraph and character styles to InDesign style names you choose, so the import respects your InDesign style sheet. The .docx export is also cleaned to import cleanly via File → Place.",
-  },
-  {
-    q: "Can I get a refund?",
-    a: "Yes. We offer a 30-day money-back guarantee on all purchases. Refunds are processed by our payment provider, Paddle. You can request a refund via paddle.net or by emailing us. See our full refund policy for details.",
   },
   {
     q: "Who is this tool for?",
@@ -50,7 +38,7 @@ export const Route = createFileRoute("/faq")({
       {
         name: "description",
         content:
-          "Answers about the manuscript formatter: pricing, .docx and InDesign Tagged Text exports, local processing, refunds, and how it works for authors and editors.",
+          "Answers about the manuscript formatter: .docx and InDesign Tagged Text exports, local processing, and how it works for authors and editors.",
       },
       {
         name: "keywords",
@@ -61,7 +49,7 @@ export const Route = createFileRoute("/faq")({
       {
         property: "og:description",
         content:
-          "Common questions about pricing, exports, file formats, and how the manuscript formatter works.",
+          "Common questions about exports, file formats, and how the free manuscript formatter works.",
       },
       { property: "og:url", content: "/faq" },
       { property: "og:type", content: "article" },
@@ -69,7 +57,7 @@ export const Route = createFileRoute("/faq")({
       {
         name: "twitter:description",
         content:
-          "Pricing, exports, file formats, and how the manuscript formatter works.",
+          "Exports, file formats, and how the free manuscript formatter works.",
       },
     ],
     links: [{ rel: "canonical", href: "/faq" }],
@@ -132,10 +120,6 @@ function FAQPage() {
           Ready to try it?{" "}
           <Link to="/" className="text-primary underline">
             Open the tool
-          </Link>{" "}
-          or{" "}
-          <Link to="/pricing" className="text-primary underline">
-            view pricing
           </Link>
           .
         </div>
