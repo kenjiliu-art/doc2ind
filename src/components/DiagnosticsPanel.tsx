@@ -93,6 +93,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
     const pfBleed =
       (preflightFixed.trimRunBleed ?? 0) +
       (preflightFixed.trailingStyledSpacesToEnEm ?? 0);
+    const paginationKeysCleaned = (preflightFixed.cleanWordPagination ?? 0) > 0;
 
     const ids = {
       unstyled: [] as string[],
