@@ -166,6 +166,7 @@ const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
 ]);
 
 const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
+  "cleanWordPagination",
   "collapseBlanksToSpacing",
   "normalizeLists",
   "removeEmptyParagraphs",
@@ -177,6 +178,7 @@ const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
 
 /** A sensible default set for first-time users. */
 const RECOMMENDED: AutoApplyKey[] = [
+  "cleanWordPagination",
   "smartQuotes",
   "dashes",
   "trimTrailing",
