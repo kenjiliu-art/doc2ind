@@ -38,3 +38,8 @@ dist-ssr
 .env
 .env.*
 !.env.example
+
+# Auto-generated Lovable Cloud bindings (not used by this standalone app)
+src/integrations/
+supabase/
+wrangler.jsonc
