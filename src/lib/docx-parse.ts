@@ -27,12 +27,30 @@ const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
 let sectionBreakSeen = false;
 let styleIdToName = new Map<string, string>();
+interface StylePagination {
+  keepNext?: boolean;
+  keepLines?: boolean;
+  pageBreakBefore?: boolean;
+}
+let stylePagination = new Map<string, StylePagination>();
 const preflightCounters = {
   trackedInsertions: 0,
   trackedDeletions: 0,
   hiddenRuns: 0,
   textBoxes: 0,
+  keepWithNextParas: 0,
+  keepLinesParas: 0,
+  pageBreakBeforeParas: 0,
+  keepWithNextChain: 0,
+  paginationFromStyles: false,
 };
+
+/** OOXML on/off element: present means true unless w:val is explicitly falsey. */
+function onOff(item: unknown): boolean {
+  const v = getAttr(item)["@_w:val"];
+  if (v === undefined) return true;
+  return v !== "0" && v !== "false" && v !== "off";
+}
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
