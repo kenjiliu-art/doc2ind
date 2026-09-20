@@ -360,6 +360,20 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   const hasMultiSpaces = /  +/.test(fullText);
 
   const resolvedSource = sourceStyleId ? (styleIdToName.get(sourceStyleId) ?? sourceStyleId) : undefined;
+  // Resolve Word pagination: paragraph-level property wins, otherwise inherit from the style.
+  const sp = sourceStyleId ? stylePagination.get(sourceStyleId) : undefined;
+  const effKeepNext = pPrKeepNext ?? sp?.keepNext ?? false;
+  const effKeepLines = pPrKeepLines ?? sp?.keepLines ?? false;
+  const effBreakBefore = pPrPageBreakBefore ?? sp?.pageBreakBefore ?? false;
+  const inherited =
+    (pPrKeepNext === undefined && sp?.keepNext === true) ||
+    (pPrKeepLines === undefined && sp?.keepLines === true) ||
+    (pPrPageBreakBefore === undefined && sp?.pageBreakBefore === true);
+  if (effKeepNext) preflightCounters.keepWithNextParas++;
+  if (effKeepLines) preflightCounters.keepLinesParas++;
+  if (effBreakBefore && !pageBreakBefore) preflightCounters.pageBreakBeforeParas++;
+  if (inherited) preflightCounters.paginationFromStyles = true;
+
   const block: ParagraphBlock = {
     id: nextId(),
     kind: "paragraph",
@@ -376,10 +390,19 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
     isBold: anyRun ? allBold : false,
     isItalic: anyRun ? allItalic : false,
     alignment,
+    pagination: {
+      keepNext: effKeepNext,
+      keepLines: effKeepLines,
+      pageBreakBefore: effBreakBefore,
+      manualBreak: pageBreakBefore,
+      inherited,
+    },
     rules: {
       ...defaultRulesFor(),
-      pageBreakBefore: pageBreakBefore || pPrPageBreakBefore,
+      pageBreakBefore: pageBreakBefore || effBreakBefore,
       pageBreakAfter,
+      keepWithNext: effKeepNext,
+      keepLinesTogether: effKeepLines,
     },
   };
   block.style = detectParagraphStyle(block);
