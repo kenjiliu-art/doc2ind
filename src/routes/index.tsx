@@ -613,38 +613,8 @@ function EditorView() {
     </>
   );
 
-  const usageBadge = user ? (
-    usage?.isAdmin ? (
-      <div className="rounded-md bg-emerald-500/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-        Admin · unlimited exports
-      </div>
-    ) : usage?.hasAccess ? (
-      <div className="rounded-md bg-primary/10 px-2 py-1 text-center text-[10px] font-semibold uppercase tracking-wider text-primary">
-        {usage.entitlementKind === "lifetime"
-          ? "Lifetime · unlimited"
-          : `Day Pass · active${
-              usage.entitlementExpiresAt
-                ? ` until ${new Date(usage.entitlementExpiresAt).toLocaleString()}`
-                : ""
-            }`}
-      </div>
-    ) : usage ? (
-      <button
-        onClick={() => setPaywallOpen(true)}
-        className="w-full rounded-md border border-dashed border-border px-2 py-1 text-center text-[10px] font-medium text-muted-foreground hover:border-primary hover:text-primary"
-      >
-        Free to try · unlock exports →
-      </button>
-    ) : null
-  ) : (
-    <div className="text-center text-[10px] text-muted-foreground">
-      Free to try — sign in to unlock exports
-    </div>
-  );
-
   const exportButtons = (
     <>
-      {usageBadge}
       <button
         onClick={onExportDocx}
         className="flex w-full items-center justify-center gap-2 rounded-md bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90"
@@ -664,8 +634,6 @@ function EditorView() {
 
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
-      <PaymentTestModeBanner />
-      <PaywallModal open={paywallOpen} onClose={() => setPaywallOpen(false)} />
       <div className="flex flex-1 overflow-hidden">
       <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar lg:flex">
         <div className="border-b border-border px-5 py-4">
@@ -719,8 +687,6 @@ function EditorView() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <AccountLink />
-
             <div className="flex items-center gap-0.5 rounded-md border border-border bg-background p-0.5">
               <button
                 onClick={(e) => {
