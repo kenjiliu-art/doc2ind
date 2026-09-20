@@ -144,6 +144,7 @@ function paragraphToDocx(
       heading: styleNameToHeading(p.style),
       pageBreakBefore: idx === 0 && p.rules.pageBreakBefore,
       keepNext: p.rules.keepWithNext,
+      keepLines: p.rules.keepLinesTogether,
       alignment: p.alignment ? alignmentMap[p.alignment] : undefined,
       ...(numbering ? { numbering } : {}),
       ...(p.spaceBefore || p.spaceAfter

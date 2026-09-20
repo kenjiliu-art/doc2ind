@@ -3,6 +3,7 @@ import { persist } from "zustand/middleware";
 import type { ParagraphRules } from "@/lib/types";
 
 export type AutoApplyKey =
+  | "cleanWordPagination"
   | "collapseBlanksToSpacing"
   | "dashes"
   | "normalizeLists"
@@ -18,6 +19,7 @@ export type AutoApplyKey =
   | "trailingStyledSpacesToEnEm";
 
 export interface AutoApplySettings {
+  cleanWordPagination: boolean;
   collapseBlanksToSpacing: boolean;
   dashes: boolean;
   normalizeLists: boolean;
@@ -40,6 +42,7 @@ interface SettingsState {
 }
 
 const DEFAULTS: AutoApplySettings = {
+  cleanWordPagination: true,
   collapseBlanksToSpacing: false,
   dashes: true,
   normalizeLists: false,
