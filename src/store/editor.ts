@@ -227,6 +227,7 @@ export const useEditor = create<EditorState>((set, get) => {
         key: Exclude<PreflightAction, "sectionBreaksToPageBreaks">;
         fn: (d: ParsedDoc) => ParsedDoc;
       }> = [
+        { key: "cleanWordPagination", fn: cleanWordPagination },
         { key: "collapseBlanksToSpacing", fn: collapseBlanksToSpacing },
         { key: "normalizeLists", fn: normalizeLists },
         { key: "removeEmptyParagraphs", fn: removeEmptyParagraphs },
@@ -650,6 +651,7 @@ export const useEditor = create<EditorState>((set, get) => {
       const doc = get().doc;
       if (!doc) return;
       const fns: Record<PreflightAction, (d: ParsedDoc) => ParsedDoc> = {
+        cleanWordPagination,
         stripUnusedStyles,
         collapseBlanksToSpacing,
         normalizeLists,
