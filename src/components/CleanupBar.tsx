@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey, AUTO_APPLY_EXCLUSIONS } from "@/store/settings";
+import { hasUnintendedPagination } from "@/lib/preflight";
 import type { Block, ParagraphBlock } from "@/lib/types";
 
 import {
@@ -218,6 +219,7 @@ export function CleanupBar() {
       removeEmpty = 0,
       bleed = 0,
       lists = 0,
+      pagination = 0,
       pageBreaks = 0;
     const usedStyles = new Set<string>();
     walkParas(doc.blocks, (p) => {
@@ -231,6 +233,7 @@ export function CleanupBar() {
       if (!text.trim()) removeEmpty++;
       if (p.sectionBreakBefore) pageBreaks++;
       if (/^\s*([\-\*•·]|\d+[.)])\s/.test(text)) lists++;
+      if (hasUnintendedPagination(p)) pagination++;
       for (const r of p.runs) {
         if (r.charStyle && r.text && /[\s.,;:!?]$/.test(r.text)) {
           bleed++;
@@ -249,6 +252,7 @@ export function CleanupBar() {
     c.trailingStyledSpacesToEnEm = bleed;
     c.normalizeLists = lists;
     c.pageBreakBefore = pageBreaks;
+    c.cleanWordPagination = pagination;
     c.stripUnusedStyles = doc.paragraphStyles.reduce(
       (n, s) => (usedStyles.has(s.name) ? n : n + 1),
       0,
