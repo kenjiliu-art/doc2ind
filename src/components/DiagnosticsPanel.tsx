@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import type { Block, ParagraphBlock } from "@/lib/types";
+import { EMPTY_PREFLIGHT_WARNINGS, type Block, type ParagraphBlock } from "@/lib/types";
 import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2, Sparkles, Zap } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
@@ -93,6 +93,7 @@ export function DiagnosticsPanel({ onJump }: Props) {
     const pfBleed =
       (preflightFixed.trimRunBleed ?? 0) +
       (preflightFixed.trailingStyledSpacesToEnEm ?? 0);
+    const paginationKeysCleaned = (preflightFixed.cleanWordPagination ?? 0) > 0;
 
     const ids = {
       unstyled: [] as string[],
@@ -199,8 +200,10 @@ export function DiagnosticsPanel({ onJump }: Props) {
           ? "warn"
           : "ok";
 
-    const pw = doc.preflightWarnings ?? { trackedInsertions: 0, trackedDeletions: 0, hiddenRuns: 0, textBoxes: 0 };
+    const pw = { ...EMPTY_PREFLIGHT_WARNINGS, ...(doc.preflightWarnings ?? {}) };
     const trackedTotal = pw.trackedInsertions + pw.trackedDeletions;
+    const paginationTotal =
+      pw.keepWithNextParas + pw.keepLinesParas + pw.pageBreakBeforeParas;
 
     const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
@@ -243,6 +246,19 @@ export function DiagnosticsPanel({ onJump }: Props) {
         pw.textBoxes > 0 ? "warn" : "ok",
         pw.textBoxes > 0
           ? "InDesign silently truncates imports at text boxes and drops index markers. Move this content into the main flow in Word before importing."
+          : undefined,
+      ),
+      f(
+        "pagination",
+        "Word pagination settings",
+        paginationTotal,
+        paginationTotal === 0
+          ? "ok"
+          : paginationKeysCleaned
+            ? "fixed"
+            : "warn",
+        paginationTotal > 0
+          ? `${pw.keepWithNextParas} “Keep with next”, ${pw.keepLinesParas} “Keep lines together”, ${pw.pageBreakBeforeParas} “Page break before”${pw.keepWithNextChain > 3 ? ` — longest unbroken chain: ${pw.keepWithNextChain} paragraphs` : ""}${pw.paginationFromStyles ? ". Some come from Word style definitions." : ""}. InDesign reads these as Keep Options and pushes paragraphs onto new pages.`
           : undefined,
       ),
       f("tables", "Tables", tables, "info"),

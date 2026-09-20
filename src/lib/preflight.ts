@@ -253,3 +253,63 @@ export function sanitizeStyleNames(doc: ParsedDoc): ParsedDoc {
   );
   return { ...doc, paragraphStyles, blocks };
 }
+
+/** Style names where Word pagination controls are usually intentional. */
+const HEADING_LIKE_RE = /heading|title|chapter|subtitle|^part\b|^h[1-6]$/i;
+
+/** True when a paragraph is heading-like, so "Keep with next" / "Page break before" may be deliberate. */
+export function isHeadingLikeParagraph(p: ParagraphBlock): boolean {
+  return (
+    HEADING_LIKE_RE.test(p.style) ||
+    p.style === "Label" ||
+    (p.sourceStyle ? HEADING_LIKE_RE.test(p.sourceStyle) : false)
+  );
+}
+
+/** True when this paragraph carries Word pagination metadata that InDesign would read as
+ *  Keep Options but which was almost certainly not intentional. */
+export function hasUnintendedPagination(p: ParagraphBlock): boolean {
+  const pag = p.pagination;
+  if (!pag) return false;
+  if (isHeadingLikeParagraph(p)) return false;
+  if (pag.keepNext || pag.keepLines) return true;
+  // A pPr "page break before" on body text with no manual break character and no section break.
+  return pag.pageBreakBefore && !pag.manualBreak && !p.sectionBreakBefore;
+}
+
+/** Normalize Word paragraph pagination metadata for a clean InDesign import.
+ *  Body text loses Keep with next / Keep lines together / Page break before;
+ *  heading-like paragraphs and real manual or section breaks are preserved. */
+export function cleanWordPagination(doc: ParsedDoc): ParsedDoc {
+  const blocks = mapParagraphs(doc.blocks, (p) => {
+    if (isHeadingLikeParagraph(p)) return p;
+    const pag = p.pagination;
+    const intentionalBreak = p.sectionBreakBefore === true || pag?.manualBreak === true;
+    const rules = {
+      ...p.rules,
+      keepWithNext: false,
+      keepLinesTogether: false,
+      pageBreakBefore: intentionalBreak ? p.rules.pageBreakBefore : false,
+    };
+    return {
+      ...p,
+      rules,
+      ...(pag
+        ? {
+            pagination: {
+              ...pag,
+              keepNext: false,
+              keepLines: false,
+              pageBreakBefore: intentionalBreak ? pag.pageBreakBefore : false,
+            },
+          }
+        : {}),
+    };
+  });
+  // Also clear keepWithNext from non-heading paragraph style definitions so the
+  // exported styles don't reintroduce it on import.
+  const paragraphStyles = doc.paragraphStyles.map((s) =>
+    HEADING_LIKE_RE.test(s.name) || s.name === "Label" ? s : { ...s, keepWithNext: false },
+  );
+  return { ...doc, blocks, paragraphStyles };
+}

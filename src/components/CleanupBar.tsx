@@ -16,9 +16,11 @@ import {
   Trash2,
   Scissors,
   Space,
+  FileWarning,
 } from "lucide-react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey, AUTO_APPLY_EXCLUSIONS } from "@/store/settings";
+import { hasUnintendedPagination } from "@/lib/preflight";
 import type { Block, ParagraphBlock } from "@/lib/types";
 
 import {
@@ -92,6 +94,13 @@ const WHITESPACE: AutoOpt[] = [
 
 const STRUCTURE: AutoOpt[] = [
   {
+    key: "cleanWordPagination",
+    label: "Clean Word pagination formatting",
+    icon: FileWarning,
+    description:
+      "Removes hidden Word paragraph settings that can force text onto new pages, including accidental “Keep with next,” “Keep lines together,” and “Page break before” formatting — whether set on the paragraph or inherited from a Word style. Intentional chapter and section page breaks are preserved, and headings can still stay attached to the paragraph below them.",
+  },
+  {
     key: "pageBreakBefore",
     label: "Section → page break",
     icon: SeparatorHorizontal,
@@ -158,6 +167,7 @@ const PARAGRAPH_RULE_KEYS = new Set<AutoApplyKey>([
 ]);
 
 const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
+  "cleanWordPagination",
   "collapseBlanksToSpacing",
   "normalizeLists",
   "removeEmptyParagraphs",
@@ -169,6 +179,7 @@ const PREFLIGHT_KEYS = new Set<AutoApplyKey>([
 
 /** A sensible default set for first-time users. */
 const RECOMMENDED: AutoApplyKey[] = [
+  "cleanWordPagination",
   "smartQuotes",
   "dashes",
   "trimTrailing",
@@ -208,6 +219,7 @@ export function CleanupBar() {
       removeEmpty = 0,
       bleed = 0,
       lists = 0,
+      pagination = 0,
       pageBreaks = 0;
     const usedStyles = new Set<string>();
     walkParas(doc.blocks, (p) => {
@@ -221,6 +233,7 @@ export function CleanupBar() {
       if (!text.trim()) removeEmpty++;
       if (p.sectionBreakBefore) pageBreaks++;
       if (/^\s*([\-\*•·]|\d+[.)])\s/.test(text)) lists++;
+      if (hasUnintendedPagination(p)) pagination++;
       for (const r of p.runs) {
         if (r.charStyle && r.text && /[\s.,;:!?]$/.test(r.text)) {
           bleed++;
@@ -239,6 +252,7 @@ export function CleanupBar() {
     c.trailingStyledSpacesToEnEm = bleed;
     c.normalizeLists = lists;
     c.pageBreakBefore = pageBreaks;
+    c.cleanWordPagination = pagination;
     c.stripUnusedStyles = doc.paragraphStyles.reduce(
       (n, s) => (usedStyles.has(s.name) ? n : n + 1),
       0,

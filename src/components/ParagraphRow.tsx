@@ -25,6 +25,7 @@ const RULE_LABELS: Record<keyof ParagraphRules, string> = {
   pageBreakBefore: "Page break above",
   pageBreakAfter: "Page break below",
   keepWithNext: "Keep next",
+  keepLinesTogether: "Keep lines",
   smartQuotes: "Smart quotes",
   dashes: "Em dashes",
   trimTrailing: "Trim spaces",

@@ -27,12 +27,30 @@ const nextId = () => `b${++idCounter}`;
 const fontCounts = new Map<string, number>();
 let sectionBreakSeen = false;
 let styleIdToName = new Map<string, string>();
+interface StylePagination {
+  keepNext?: boolean;
+  keepLines?: boolean;
+  pageBreakBefore?: boolean;
+}
+let stylePagination = new Map<string, StylePagination>();
 const preflightCounters = {
   trackedInsertions: 0,
   trackedDeletions: 0,
   hiddenRuns: 0,
   textBoxes: 0,
+  keepWithNextParas: 0,
+  keepLinesParas: 0,
+  pageBreakBeforeParas: 0,
+  keepWithNextChain: 0,
+  paginationFromStyles: false,
 };
+
+/** OOXML on/off element: present means true unless w:val is explicitly falsey. */
+function onOff(item: unknown): boolean {
+  const v = getAttr(item)["@_w:val"];
+  if (v === undefined) return true;
+  return v !== "0" && v !== "false" && v !== "off";
+}
 
 type Node = Record<string, unknown> & { ":@"?: Record<string, string> };
 
@@ -218,7 +236,9 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let allItalic = true;
   let leadingTabPhase = true;
   let hasSectPr = false;
-  let pPrPageBreakBefore = false;
+  let pPrPageBreakBefore: boolean | undefined;
+  let pPrKeepNext: boolean | undefined;
+  let pPrKeepLines: boolean | undefined;
   let pageBreakBefore = false;
   let pageBreakAfter = false;
   let anyTextSeen = false;
@@ -243,9 +263,12 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
         } else if (kt === "w:sectPr") {
           hasSectPr = true;
         } else if (kt === "w:pageBreakBefore") {
-          const v = getAttr(k)["@_w:val"];
           // Default is true when element is present; only false if explicitly "0"/"false"
-          if (v === undefined || (v !== "0" && v !== "false")) pPrPageBreakBefore = true;
+          pPrPageBreakBefore = onOff(k);
+        } else if (kt === "w:keepNext") {
+          pPrKeepNext = onOff(k);
+        } else if (kt === "w:keepLines") {
+          pPrKeepLines = onOff(k);
         } else if (kt === "w:pStyle") {
           sourceStyleId = getAttr(k)["@_w:val"];
         }
@@ -337,6 +360,20 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   const hasMultiSpaces = /  +/.test(fullText);
 
   const resolvedSource = sourceStyleId ? (styleIdToName.get(sourceStyleId) ?? sourceStyleId) : undefined;
+  // Resolve Word pagination: paragraph-level property wins, otherwise inherit from the style.
+  const sp = sourceStyleId ? stylePagination.get(sourceStyleId) : undefined;
+  const effKeepNext = pPrKeepNext ?? sp?.keepNext ?? false;
+  const effKeepLines = pPrKeepLines ?? sp?.keepLines ?? false;
+  const effBreakBefore = pPrPageBreakBefore ?? sp?.pageBreakBefore ?? false;
+  const inherited =
+    (pPrKeepNext === undefined && sp?.keepNext === true) ||
+    (pPrKeepLines === undefined && sp?.keepLines === true) ||
+    (pPrPageBreakBefore === undefined && sp?.pageBreakBefore === true);
+  if (effKeepNext) preflightCounters.keepWithNextParas++;
+  if (effKeepLines) preflightCounters.keepLinesParas++;
+  if (effBreakBefore && !pageBreakBefore) preflightCounters.pageBreakBeforeParas++;
+  if (inherited) preflightCounters.paginationFromStyles = true;
+
   const block: ParagraphBlock = {
     id: nextId(),
     kind: "paragraph",
@@ -353,10 +390,19 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
     isBold: anyRun ? allBold : false,
     isItalic: anyRun ? allItalic : false,
     alignment,
+    pagination: {
+      keepNext: effKeepNext,
+      keepLines: effKeepLines,
+      pageBreakBefore: effBreakBefore,
+      manualBreak: pageBreakBefore,
+      inherited,
+    },
     rules: {
       ...defaultRulesFor(),
-      pageBreakBefore: pageBreakBefore || pPrPageBreakBefore,
+      pageBreakBefore: pageBreakBefore || effBreakBefore,
       pageBreakAfter,
+      keepWithNext: effKeepNext,
+      keepLinesTogether: effKeepLines,
     },
   };
   block.style = detectParagraphStyle(block);
@@ -401,10 +447,16 @@ export async function parseDocx(
   fontCounts.clear();
   sectionBreakSeen = false;
   styleIdToName = new Map();
+  stylePagination = new Map();
   preflightCounters.trackedInsertions = 0;
   preflightCounters.trackedDeletions = 0;
   preflightCounters.hiddenRuns = 0;
   preflightCounters.textBoxes = 0;
+  preflightCounters.keepWithNextParas = 0;
+  preflightCounters.keepLinesParas = 0;
+  preflightCounters.pageBreakBeforeParas = 0;
+  preflightCounters.keepWithNextChain = 0;
+  preflightCounters.paginationFromStyles = false;
   await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
   await report(0.12, "Reading styles…");
@@ -428,6 +480,16 @@ export async function parseDocx(
           if (tagOf(k) === "w:name") {
             const name = getAttr(k)["@_w:val"];
             if (name) styleIdToName.set(styleId, name);
+          } else if (tagOf(k) === "w:pPr") {
+            // Pagination properties inherited by every paragraph using this style.
+            const pag: StylePagination = {};
+            for (const pk of findTagChildren(k, "w:pPr")) {
+              const pt = tagOf(pk);
+              if (pt === "w:keepNext") pag.keepNext = onOff(pk);
+              else if (pt === "w:keepLines") pag.keepLines = onOff(pk);
+              else if (pt === "w:pageBreakBefore") pag.pageBreakBefore = onOff(pk);
+            }
+            if (Object.keys(pag).length > 0) stylePagination.set(styleId, pag);
           }
         }
       }
@@ -507,6 +569,22 @@ export async function parseDocx(
     blankCount = 0;
     blocks.push(b);
   }
+
+  // Longest run of consecutive "Keep with next" paragraphs — long chains push whole
+  // blocks of text forward in InDesign.
+  {
+    let chain = 0;
+    for (const b of blocks) {
+      if (b.kind === "paragraph" && b.pagination?.keepNext) {
+        chain++;
+        if (chain > preflightCounters.keepWithNextChain) preflightCounters.keepWithNextChain = chain;
+      } else {
+        chain = 0;
+      }
+    }
+  }
+
+
 
   // Parse footnotes (if present)
   const footnotes: import("./types").Footnote[] = [];
