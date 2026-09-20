@@ -236,7 +236,9 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
   let allItalic = true;
   let leadingTabPhase = true;
   let hasSectPr = false;
-  let pPrPageBreakBefore = false;
+  let pPrPageBreakBefore: boolean | undefined;
+  let pPrKeepNext: boolean | undefined;
+  let pPrKeepLines: boolean | undefined;
   let pageBreakBefore = false;
   let pageBreakAfter = false;
   let anyTextSeen = false;
@@ -261,9 +263,12 @@ function parseParagraph(pNode: unknown): ParagraphBlock | null {
         } else if (kt === "w:sectPr") {
           hasSectPr = true;
         } else if (kt === "w:pageBreakBefore") {
-          const v = getAttr(k)["@_w:val"];
           // Default is true when element is present; only false if explicitly "0"/"false"
-          if (v === undefined || (v !== "0" && v !== "false")) pPrPageBreakBefore = true;
+          pPrPageBreakBefore = onOff(k);
+        } else if (kt === "w:keepNext") {
+          pPrKeepNext = onOff(k);
+        } else if (kt === "w:keepLines") {
+          pPrKeepLines = onOff(k);
         } else if (kt === "w:pStyle") {
           sourceStyleId = getAttr(k)["@_w:val"];
         }
