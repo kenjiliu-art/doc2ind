@@ -20,12 +20,6 @@ export function SiteFooter() {
           >
             Privacy
           </Link>
-          <Link
-            to="/refund-policy"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            Refunds
-          </Link>
           <a
             href="https://kenjiliu.com"
             target="_blank"
