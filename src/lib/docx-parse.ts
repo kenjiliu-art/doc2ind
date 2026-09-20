@@ -570,6 +570,22 @@ export async function parseDocx(
     blocks.push(b);
   }
 
+  // Longest run of consecutive "Keep with next" paragraphs — long chains push whole
+  // blocks of text forward in InDesign.
+  {
+    let chain = 0;
+    for (const b of blocks) {
+      if (b.kind === "paragraph" && b.pagination?.keepNext) {
+        chain++;
+        if (chain > preflightCounters.keepWithNextChain) preflightCounters.keepWithNextChain = chain;
+      } else {
+        chain = 0;
+      }
+    }
+  }
+
+
+
   // Parse footnotes (if present)
   const footnotes: import("./types").Footnote[] = [];
   const footnotesXml = await zip.file("word/footnotes.xml")?.async("string");
