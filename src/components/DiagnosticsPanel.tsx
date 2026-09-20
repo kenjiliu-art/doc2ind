@@ -199,8 +199,10 @@ export function DiagnosticsPanel({ onJump }: Props) {
           ? "warn"
           : "ok";
 
-    const pw = doc.preflightWarnings ?? { trackedInsertions: 0, trackedDeletions: 0, hiddenRuns: 0, textBoxes: 0 };
+    const pw = { ...EMPTY_PREFLIGHT_WARNINGS, ...(doc.preflightWarnings ?? {}) };
     const trackedTotal = pw.trackedInsertions + pw.trackedDeletions;
+    const paginationTotal =
+      pw.keepWithNextParas + pw.keepLinesParas + pw.pageBreakBeforeParas;
 
     const findings: Finding[] = [
       f("para", "Paragraphs", paragraphs, "info"),
