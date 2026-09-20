@@ -169,6 +169,20 @@ export interface PreflightWarnings {
   paginationFromStyles: boolean;
 }
 
+export const EMPTY_PREFLIGHT_WARNINGS: PreflightWarnings = {
+  trackedInsertions: 0,
+  trackedDeletions: 0,
+  hiddenRuns: 0,
+  textBoxes: 0,
+  keepWithNextParas: 0,
+  keepLinesParas: 0,
+  pageBreakBeforeParas: 0,
+  keepWithNextChain: 0,
+  paginationFromStyles: false,
+};
+
+
+
 export interface ParsedDoc {
   blocks: Block[];
   paragraphStyles: StyleDef[];

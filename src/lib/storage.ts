@@ -1,4 +1,4 @@
-import type { ParsedDoc } from "./types";
+import { EMPTY_PREFLIGHT_WARNINGS, type ParsedDoc } from "./types";
 
 const KEY = "msw-session-v1";
 const MAX_BYTES = 4_500_000; // ~4.5MB — well under typical localStorage 5MB cap

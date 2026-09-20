@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey } from "@/store/settings";
-import type { Block, ParagraphBlock } from "@/lib/types";
+import { EMPTY_PREFLIGHT_WARNINGS, type Block, type ParagraphBlock } from "@/lib/types";
 import { AlertTriangle, CheckCircle2, Info, Crosshair, ChevronDown, Wand2, Sparkles, Zap } from "lucide-react";
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
 
