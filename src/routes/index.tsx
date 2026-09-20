@@ -263,16 +263,7 @@ function UploadView() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex max-w-3xl items-center justify-end gap-2 px-6 pt-4">
-        <Link
-          to="/pricing"
-          className="text-[11px] font-semibold text-muted-foreground hover:text-foreground"
-        >
-          Pricing
-        </Link>
-        <AccountLink />
-      </div>
-      <main className="mx-auto max-w-3xl px-6 pb-16 pt-8">
+      <main className="mx-auto max-w-3xl px-6 pb-16 pt-12">
         <h1 className="font-display text-4xl font-bold tracking-tight text-balance">
           Manuscript formatting, done in your browser.
         </h1>
@@ -416,29 +407,6 @@ function timeAgo(ts: number) {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`;
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
   return `${Math.floor(s / 86400)}d ago`;
-}
-
-function AccountLink() {
-  const { user } = useAuth();
-  if (!user) {
-    return (
-      <Link
-        to="/login"
-        className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
-      >
-        Sign in
-      </Link>
-    );
-  }
-  return (
-    <Link
-      to="/account"
-      title={user.email ?? "Account"}
-      className="rounded-md border border-border px-2.5 py-1 text-[11px] font-semibold text-muted-foreground hover:bg-muted"
-    >
-      Account
-    </Link>
-  );
 }
 
 function Feature({ title, children }: { title: string; children: React.ReactNode }) {
