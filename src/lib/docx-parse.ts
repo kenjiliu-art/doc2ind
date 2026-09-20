@@ -447,10 +447,16 @@ export async function parseDocx(
   fontCounts.clear();
   sectionBreakSeen = false;
   styleIdToName = new Map();
+  stylePagination = new Map();
   preflightCounters.trackedInsertions = 0;
   preflightCounters.trackedDeletions = 0;
   preflightCounters.hiddenRuns = 0;
   preflightCounters.textBoxes = 0;
+  preflightCounters.keepWithNextParas = 0;
+  preflightCounters.keepLinesParas = 0;
+  preflightCounters.pageBreakBeforeParas = 0;
+  preflightCounters.keepWithNextChain = 0;
+  preflightCounters.paginationFromStyles = false;
   await report(0.02, "Reading file…");
   const zip = await JSZip.loadAsync(file);
   await report(0.12, "Reading styles…");
@@ -474,6 +480,16 @@ export async function parseDocx(
           if (tagOf(k) === "w:name") {
             const name = getAttr(k)["@_w:val"];
             if (name) styleIdToName.set(styleId, name);
+          } else if (tagOf(k) === "w:pPr") {
+            // Pagination properties inherited by every paragraph using this style.
+            const pag: StylePagination = {};
+            for (const pk of findTagChildren(k, "w:pPr")) {
+              const pt = tagOf(pk);
+              if (pt === "w:keepNext") pag.keepNext = onOff(pk);
+              else if (pt === "w:keepLines") pag.keepLines = onOff(pk);
+              else if (pt === "w:pageBreakBefore") pag.pageBreakBefore = onOff(pk);
+            }
+            if (Object.keys(pag).length > 0) stylePagination.set(styleId, pag);
           }
         }
       }
