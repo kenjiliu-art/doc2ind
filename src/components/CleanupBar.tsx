@@ -16,6 +16,7 @@ import {
   Trash2,
   Scissors,
   Space,
+  FileWarning,
 } from "lucide-react";
 import { useEditor } from "@/store/editor";
 import { useSettings, type AutoApplyKey, AUTO_APPLY_EXCLUSIONS } from "@/store/settings";
@@ -91,6 +92,13 @@ const WHITESPACE: AutoOpt[] = [
 ];
 
 const STRUCTURE: AutoOpt[] = [
+  {
+    key: "cleanWordPagination",
+    label: "Clean Word pagination formatting",
+    icon: FileWarning,
+    description:
+      "Removes hidden Word paragraph settings that can force text onto new pages, including accidental “Keep with next,” “Keep lines together,” and “Page break before” formatting — whether set on the paragraph or inherited from a Word style. Intentional chapter and section page breaks are preserved, and headings can still stay attached to the paragraph below them.",
+  },
   {
     key: "pageBreakBefore",
     label: "Section → page break",
