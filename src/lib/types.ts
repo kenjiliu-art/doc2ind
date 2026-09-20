@@ -32,10 +32,26 @@ export interface ParagraphRules {
   pageBreakBefore: boolean;
   pageBreakAfter: boolean;
   keepWithNext: boolean;
+  /** Word's "Keep lines together" — forces a whole paragraph onto one page. */
+  keepLinesTogether: boolean;
   smartQuotes: boolean;
   dashes: boolean;
   trimTrailing: boolean;
   multiSpaces: "none" | "en" | "em";
+}
+
+/** Word paragraph pagination metadata as found in the source file. */
+export interface ParagraphPagination {
+  /** Effective "Keep with next". */
+  keepNext: boolean;
+  /** Effective "Keep lines together". */
+  keepLines: boolean;
+  /** Effective "Page break before" paragraph property. */
+  pageBreakBefore: boolean;
+  /** True when a real manual page break character (<w:br w:type="page"/>) preceded the text. */
+  manualBreak: boolean;
+  /** True when any of the above came from the Word paragraph style rather than the paragraph. */
+  inherited: boolean;
 }
 
 export type BlockKind = "paragraph" | "table" | "image";
@@ -67,6 +83,8 @@ export interface ParagraphBlock {
   alignment?: "left" | "center" | "right" | "justify";
   /** True when the paragraph immediately follows a section break in the source. */
   sectionBreakBefore?: boolean;
+  /** Word pagination metadata captured at parse time. */
+  pagination?: ParagraphPagination;
   /** Per-paragraph override for space before, in twips (1pt = 20 twips). */
   spaceBefore?: number;
   /** Per-paragraph override for space after, in twips. */
@@ -139,6 +157,16 @@ export interface PreflightWarnings {
   hiddenRuns: number;
   /** Count of <w:txbxContent> blocks — these silently truncate InDesign imports & eat index markers. */
   textBoxes: number;
+  /** Body paragraphs carrying "Keep with next". */
+  keepWithNextParas: number;
+  /** Body paragraphs carrying "Keep lines together". */
+  keepLinesParas: number;
+  /** Body paragraphs carrying a "Page break before" paragraph property (no manual break character). */
+  pageBreakBeforeParas: number;
+  /** Longest run of consecutive paragraphs all marked "Keep with next". */
+  keepWithNextChain: number;
+  /** True when pagination settings appear to come from a Word style applied to nearly everything. */
+  paginationFromStyles: boolean;
 }
 
 export interface ParsedDoc {
