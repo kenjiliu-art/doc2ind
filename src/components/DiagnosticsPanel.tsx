@@ -247,6 +247,19 @@ export function DiagnosticsPanel({ onJump }: Props) {
           ? "InDesign silently truncates imports at text boxes and drops index markers. Move this content into the main flow in Word before importing."
           : undefined,
       ),
+      f(
+        "pagination",
+        "Word pagination settings",
+        paginationTotal,
+        paginationTotal === 0
+          ? "ok"
+          : paginationKeysCleaned
+            ? "fixed"
+            : "warn",
+        paginationTotal > 0
+          ? `${pw.keepWithNextParas} “Keep with next”, ${pw.keepLinesParas} “Keep lines together”, ${pw.pageBreakBeforeParas} “Page break before”${pw.keepWithNextChain > 3 ? ` — longest unbroken chain: ${pw.keepWithNextChain} paragraphs` : ""}${pw.paginationFromStyles ? ". Some come from Word style definitions." : ""}. InDesign reads these as Keep Options and pushes paragraphs onto new pages.`
+          : undefined,
+      ),
       f("tables", "Tables", tables, "info"),
       f("fn", "Footnotes", doc.footnotes.length, "info"),
       f(
