@@ -527,52 +527,13 @@ function EditorView() {
 
   const initialBreakdown = useEditor((s) => s.initialIssueBreakdown);
 
-  // --- Paywall / usage gating ---
-  const { user, loading: authLoading } = useAuth();
-  const queryClient = useQueryClient();
-  const getUsage = useServerFn(getUsageInfo);
-  const recordExportFn = useServerFn(recordExport);
-  const [paywallOpen, setPaywallOpen] = useState(false);
-  const paddleEnv = getPaddleEnvironment();
-
-  const { data: usage } = useQuery({
-    queryKey: ["usage", user?.id ?? "anon", paddleEnv],
-    queryFn: () => getUsage({ data: { environment: paddleEnv } }),
-    enabled: !!user,
-    staleTime: 10_000,
-    refetchInterval: (q) => (q.state.data?.hasAccess ? false : 5_000),
-  });
-
-  // Gate any export. Returns true if export may proceed (and records it).
-  const gateExport = async (kind: string): Promise<boolean> => {
-    if (authLoading) return false;
-    if (!user) {
-      setPaywallOpen(true);
-      return false;
-    }
-    try {
-      const res = await recordExportFn({ data: { kind, environment: paddleEnv } });
-      queryClient.invalidateQueries({ queryKey: ["usage", user.id, paddleEnv] });
-      if (!res.allowed) {
-        setPaywallOpen(true);
-        return false;
-      }
-      return true;
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not verify export quota");
-      return false;
-    }
-  };
-
   const onExportDocx = async () => {
-    if (!(await gateExport("docx"))) return;
     const current = countIssuesDetailed(doc);
     const blob = await buildDocx(doc);
     saveAs(blob, `${fileName}-reformatted.docx`);
     toastExportSummary(initialBreakdown, current, ".docx");
   };
   const onExportTagged = async () => {
-    if (!(await gateExport("tagged"))) return;
     const current = countIssuesDetailed(doc);
     const txt = buildTaggedText(doc);
     // BOM + octet-stream so Safari/Firefox force-download instead of opening inline,
