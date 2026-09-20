@@ -9,7 +9,9 @@ import type {
   StyleDef,
 } from "@/lib/types";
 import {
+  cleanWordPagination,
   collapseBlanksToSpacing,
+  hasUnintendedPagination,
   normalizeLists,
   removeEmptyParagraphs,
   sanitizeStyleNames,
@@ -25,6 +27,7 @@ import { countIssues, countIssuesDetailed, type IssueBreakdown } from "@/lib/hea
 const COMBO_WINDOW_MS = 2500;
 
 export type PreflightAction =
+  | "cleanWordPagination"
   | "collapseBlanksToSpacing"
   | "normalizeLists"
   | "removeEmptyParagraphs"
@@ -154,8 +157,14 @@ function countBleedParagraphs(doc: ParsedDoc): number {
   ).length;
 }
 
+/** Number of paragraphs carrying unintended Word pagination metadata. */
+function countPaginationParagraphs(doc: ParsedDoc): number {
+  return flatParagraphs(doc.blocks).filter(hasUnintendedPagination).length;
+}
+
 /** Metric used to measure what a given preflight pass "fixed" (before − after). */
 const PREFLIGHT_METRIC: Partial<Record<PreflightAction, (d: ParsedDoc) => number>> = {
+  cleanWordPagination: countPaginationParagraphs,
   collapseBlanksToSpacing: countEmptyParagraphs,
   removeEmptyParagraphs: countEmptyParagraphs,
   stripUnusedStyles: (d) => d.paragraphStyles.length,
