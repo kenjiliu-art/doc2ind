@@ -1,14 +1,10 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import kenjiLogo from "@/assets/kenji-logo.png";
 import { cn } from "@/lib/utils";
-import { useAuth } from "@/hooks/use-auth";
-import { supabase } from "@/integrations/supabase/client";
 
 export function StudioHeader() {
   const [hidden, setHidden] = useState(false);
   const lastScrollY = useRef(0);
-  const { user } = useAuth();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -55,28 +51,6 @@ export function StudioHeader() {
         <span className="text-[10px] uppercase tracking-[0.3em] text-[#8f2419]">
           Word 2 InDesign
         </span>
-        <div className="ml-auto flex items-center gap-3 text-xs">
-          {user ? (
-            <>
-              <span className="hidden text-muted-foreground sm:inline">
-                {user.email}
-              </span>
-              <button
-                onClick={() => supabase.auth.signOut()}
-                className="font-semibold text-muted-foreground hover:text-foreground"
-              >
-                Sign out
-              </button>
-            </>
-          ) : (
-            <Link
-              to="/login"
-              className="font-semibold text-primary hover:underline"
-            >
-              Sign in
-            </Link>
-          )}
-        </div>
       </div>
     </nav>
   );
