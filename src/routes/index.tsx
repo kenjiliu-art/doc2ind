@@ -1,7 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { cn } from "@/lib/utils";
 import { parseDocx } from "@/lib/docx-parse";
 import { useEditor } from "@/store/editor";
@@ -16,16 +14,11 @@ import { LivePreview, type PreviewFilter } from "@/components/LivePreview";
 import { PreviewFilters } from "@/components/PreviewFilters";
 import { CollapsibleSection } from "@/components/CollapsibleSection";
 import { HealthRing } from "@/components/HealthRing";
-import { PaywallModal } from "@/components/PaywallModal";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { FileText, Download, FileCode2, Settings2, Undo2, Redo2, RotateCcw } from "lucide-react";
 import type { Block, ParagraphBlock } from "@/lib/types";
 import { loadSession, clearSession } from "@/lib/storage";
 import { countIssuesDetailed, diffBreakdown, type IssueBreakdown } from "@/lib/health";
-import { useAuth } from "@/hooks/use-auth";
-import { getUsageInfo, recordExport } from "@/lib/usage.functions";
-import { getPaddleEnvironment } from "@/lib/paddle";
-import { PaymentTestModeBanner } from "@/components/PaymentTestModeBanner";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
@@ -196,63 +189,7 @@ function toastExportSummary(
 
 function IndexPage() {
   const doc = useEditor((s) => s.doc);
-  return (
-    <>
-      <PostCheckoutWatcher />
-      {doc ? <EditorView /> : <UploadView />}
-    </>
-  );
-}
-
-function PostCheckoutWatcher() {
-  const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const getUsage = useServerFn(getUsageInfo);
-  const paddleEnv = getPaddleEnvironment();
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("checkout") !== "success") return;
-    // Clean URL immediately so refreshes don't re-trigger.
-    params.delete("checkout");
-    const qs = params.toString();
-    window.history.replaceState(
-      {},
-      "",
-      window.location.pathname + (qs ? `?${qs}` : ""),
-    );
-    if (!user) return;
-
-    toast.success("Payment received — unlocking exports…");
-
-    let cancelled = false;
-    const deadline = Date.now() + 30_000;
-    const poll = async () => {
-      if (cancelled) return;
-      try {
-        const usage = await getUsage({ data: { environment: paddleEnv } });
-        queryClient.setQueryData(["usage", user.id, paddleEnv], usage);
-        if (usage.hasAccess) {
-          toast.success(
-            usage.entitlementKind === "lifetime"
-              ? "Lifetime Unlock active — unlimited exports."
-              : "Day Pass active for the next 24 hours.",
-          );
-          return;
-        }
-      } catch {
-        /* keep polling */
-      }
-      if (Date.now() < deadline) setTimeout(poll, 2_000);
-    };
-    poll();
-    return () => {
-      cancelled = true;
-    };
-  }, [user, queryClient, getUsage, paddleEnv]);
-
-  return null;
+  return doc ? <EditorView /> : <UploadView />;
 }
 
 function UploadView() {
